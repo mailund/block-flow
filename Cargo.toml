@@ -1,0 +1,12 @@
+[workspace]
+members = ["registry"]
+
+[package]
+name = "block-flow"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+registry = { path = "registry" }
+
+[dev-dependencies]
