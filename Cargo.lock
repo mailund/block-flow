@@ -10,5 +10,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "example-block"
+version = "0.1.0"
+dependencies = [
+ "registry",
+]
+
+[[package]]
 name = "registry"
 version = "0.1.0"
