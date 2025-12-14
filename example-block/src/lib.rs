@@ -1,4 +1,4 @@
-use block_macros::input;
+use block_macros::{input, output};
 use registry::{Registry, RegistryError};
 use std::cell::RefCell;
 use std::rc::Rc;
@@ -16,6 +16,7 @@ pub struct AdderInput {
 }
 
 /// Output for the adder block
+#[output]
 pub struct AdderOutput {
     pub sum: i32,
 }
@@ -25,43 +26,15 @@ pub struct AdderState {
     pub call_count: u32,
 }
 
-/// Keys for accessing output values in registry
-pub struct AdderOutKeys {
-    pub sum: String,
-}
-
-/// Writer that holds direct references to registry values
-pub struct AdderOutputWriter {
-    sum: Rc<RefCell<i32>>,
-}
-
-impl AdderOutput {
-    /// Create a writer from the registry using the provided keys
-    pub fn writer(
-        keys: &AdderOutKeys,
-        registry: &Registry,
-    ) -> Result<AdderOutputWriter, RegistryError> {
-        Ok(AdderOutputWriter {
-            sum: registry.get::<i32>(&keys.sum)?,
-        })
-    }
-}
-
 /// Wire channels for both input and output, returning reader and writer
 pub fn wire_channels(
     in_keys: &AdderInputKeys,
-    out_keys: &AdderOutKeys,
+    out_keys: &AdderOutputKeys,
     registry: &Registry,
 ) -> Result<(AdderInputReader, AdderOutputWriter), RegistryError> {
     let reader = AdderInput::reader(in_keys, registry)?;
     let writer = AdderOutput::writer(out_keys, registry)?;
     Ok((reader, writer))
-}
-impl AdderOutputWriter {
-    /// Write output values to the captured references
-    pub fn write(&self, output: &AdderOutput) {
-        *self.sum.borrow_mut() = output.sum;
-    }
 }
 
 impl AdderBlock {
@@ -87,7 +60,7 @@ impl AdderBlock {
     }
 
     /// Declare outputs in the registry
-    pub fn declare_outputs(&self, registry: &mut Registry, out_keys: &AdderOutKeys) {
+    pub fn declare_outputs(&self, registry: &mut Registry, out_keys: &AdderOutputKeys) {
         registry.ensure::<i32>(&out_keys.sum);
     }
 
@@ -96,7 +69,7 @@ impl AdderBlock {
         &self,
         registry: &Registry,
         in_keys: &AdderInputKeys,
-        out_keys: &AdderOutKeys,
+        out_keys: &AdderOutputKeys,
     ) -> Result<AdderWiredBlock, RegistryError> {
         // Create readers/writers that capture the Rc references
         let (input_reader, output_writer) = wire_channels(in_keys, out_keys, registry)?;
@@ -116,7 +89,7 @@ impl AdderBlock {
         &self,
         registry: &mut Registry,
         in_keys: &AdderInputKeys,
-        out_keys: &AdderOutKeys,
+        out_keys: &AdderOutputKeys,
     ) -> Result<AdderWiredBlock, RegistryError> {
         self.declare_outputs(registry, out_keys);
         self.wire(registry, in_keys, out_keys)
@@ -198,7 +171,7 @@ mod tests {
             b: "input_b".to_string(),
         };
 
-        let out_keys = AdderOutKeys {
+        let out_keys = AdderOutputKeys {
             sum: "output_sum".to_string(),
         };
 
@@ -230,7 +203,7 @@ mod tests {
             b: "input_b".to_string(),
         };
 
-        let out_keys = AdderOutKeys {
+        let out_keys = AdderOutputKeys {
             sum: "output_sum".to_string(),
         };
 
@@ -261,7 +234,7 @@ mod tests {
             b: "b".to_string(),
         };
 
-        let out_keys = AdderOutKeys {
+        let out_keys = AdderOutputKeys {
             sum: "sum".to_string(),
         };
 
