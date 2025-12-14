@@ -41,7 +41,7 @@ pub fn output_impl(_attr: TokenStream, item: TokenStream) -> TokenStream {
         let field_name = &field.ident;
         let field_type = &field.ty;
         quote! {
-            #field_name: registry.get::<#field_type>(&keys.#field_name)?
+            #field_name: registry.get::<#field_type>(&self.#field_name)?
         }
     });
 
@@ -56,29 +56,35 @@ pub fn output_impl(_attr: TokenStream, item: TokenStream) -> TokenStream {
     let expanded = quote! {
         #input
 
-        /// Keys for accessing registry values
+        /// Keys for accessing registry values for #struct_name
         pub struct #keys_name {
             #(#key_fields,)*
         }
 
-        /// Writer that holds direct references to registry values
+        /// Writer that holds direct references to registry values for #struct_name
         pub struct #writer_name {
             #(#writer_fields,)*
         }
 
-        impl #struct_name {
-            /// Create a writer from the registry using the provided keys
-            pub fn writer(keys: &#keys_name, registry: &registry::Registry) -> Result<#writer_name, registry::RegistryError> {
-                Ok(#writer_name {
-                    #(#writer_assignments,)*
-                })
+        impl #writer_name {
+            pub fn write(&self, output: &#struct_name) {
+                #(#write_assignments;)*
             }
         }
 
-        impl #writer_name {
-            /// Write output values to the captured references
-            pub fn write(&self, output: &#struct_name) {
-                #(#write_assignments;)*
+        impl registry::Writer<#struct_name> for #writer_name {
+            fn write(&self, output: &#struct_name) {
+                #writer_name::write(self, output)
+            }
+        }
+
+        impl registry::OutputKeys<#struct_name> for #keys_name {
+            type WriterType = #writer_name;
+
+            fn writer(&self, registry: &registry::Registry) -> Result<Self::WriterType, registry::RegistryError> {
+                Ok(#writer_name {
+                    #(#writer_assignments,)*
+                })
             }
         }
     };

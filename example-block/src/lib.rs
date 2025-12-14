@@ -1,7 +1,5 @@
 use block_macros::{input, output};
-use registry::{Registry, RegistryError};
-use std::cell::RefCell;
-use std::rc::Rc;
+use registry::{InputKeys, OutputKeys, Reader, Registry, RegistryError, Writer};
 
 /// A simple adder block that adds two numbers
 pub struct AdderBlock {
@@ -26,14 +24,13 @@ pub struct AdderState {
     pub call_count: u32,
 }
 
-/// Wire channels for both input and output, returning reader and writer
 pub fn wire_channels(
     in_keys: &AdderInputKeys,
     out_keys: &AdderOutputKeys,
     registry: &Registry,
 ) -> Result<(AdderInputReader, AdderOutputWriter), RegistryError> {
-    let reader = AdderInput::reader(in_keys, registry)?;
-    let writer = AdderOutput::writer(out_keys, registry)?;
+    let reader = in_keys.reader(registry)?; // Use the InputKeys trait
+    let writer = out_keys.writer(registry)?; // Use the OutputKeys trait
     Ok((reader, writer))
 }
 
@@ -175,14 +172,14 @@ mod tests {
             sum: "output_sum".to_string(),
         };
 
-        // Test AdderInput::reader
-        let reader = AdderInput::reader(&in_keys, &registry).unwrap();
+        // Test InputKeys trait
+        let reader = in_keys.reader(&registry).unwrap();
         let input = reader.read();
         assert_eq!(input.a, 7);
         assert_eq!(input.b, 13);
 
-        // Test AdderOutput::writer
-        let writer = AdderOutput::writer(&out_keys, &registry).unwrap();
+        // Test OutputKeys trait
+        let writer = out_keys.writer(&registry).unwrap();
         let output = AdderOutput { sum: 42 };
         writer.write(&output);
 
@@ -279,8 +276,8 @@ mod tests {
             y: "y_val".to_string(),
         };
 
-        // Create reader using the generated method
-        let reader = TestInput::reader(&keys, &registry).unwrap();
+        // Create reader using the trait method
+        let reader = keys.reader(&registry).unwrap();
         let input = reader.read();
 
         assert_eq!(input.x, 42);

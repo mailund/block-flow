@@ -41,7 +41,7 @@ pub fn input_impl(_attr: TokenStream, item: TokenStream) -> TokenStream {
         let field_name = &field.ident;
         let field_type = &field.ty;
         quote! {
-            #field_name: registry.get::<#field_type>(&keys.#field_name)?
+            #field_name: registry.get::<#field_type>(&self.#field_name)?
         }
     });
 
@@ -56,31 +56,37 @@ pub fn input_impl(_attr: TokenStream, item: TokenStream) -> TokenStream {
     let expanded = quote! {
         #input
 
-        /// Keys for accessing registry values
+        /// Keys for accessing registry values for #struct_name
         pub struct #keys_name {
             #(#key_fields,)*
         }
 
-        /// Reader that holds direct references to registry values
+        /// Reader that holds direct references to registry values for #struct_name
         pub struct #reader_name {
             #(#reader_fields,)*
         }
 
-        impl #struct_name {
-            /// Create a reader from the registry using the provided keys
-            pub fn reader(keys: &#keys_name, registry: &registry::Registry) -> Result<#reader_name, registry::RegistryError> {
-                Ok(#reader_name {
-                    #(#reader_assignments,)*
-                })
-            }
-        }
-
         impl #reader_name {
-            /// Read input values from the captured references
             pub fn read(&self) -> #struct_name {
                 #struct_name {
                     #(#read_assignments,)*
                 }
+            }
+        }
+
+        impl registry::Reader<#struct_name> for #reader_name {
+            fn read(&self) -> #struct_name {
+                #reader_name::read(self)
+            }
+        }
+
+        impl registry::InputKeys<#struct_name> for #keys_name {
+            type ReaderType = #reader_name;
+
+            fn reader(&self, registry: &registry::Registry) -> Result<Self::ReaderType, registry::RegistryError> {
+                Ok(#reader_name {
+                    #(#reader_assignments,)*
+                })
             }
         }
     };

@@ -33,6 +33,28 @@ impl std::fmt::Display for RegistryError {
 
 impl std::error::Error for RegistryError {}
 
+/// Trait for readers that can read values of type T
+pub trait Reader<T> {
+    fn read(&self) -> T;
+}
+
+/// Trait for keys that can create readers
+pub trait InputKeys<T> {
+    type ReaderType: Reader<T>;
+    fn reader(&self, registry: &Registry) -> Result<Self::ReaderType, RegistryError>;
+}
+
+/// Trait for writers that can write values of type T
+pub trait Writer<T> {
+    fn write(&self, output: &T);
+}
+
+/// Trait for keys that can create writers
+pub trait OutputKeys<T> {
+    type WriterType: Writer<T>;
+    fn writer(&self, registry: &Registry) -> Result<Self::WriterType, RegistryError>;
+}
+
 /// The registry for storing typed values
 pub struct Registry {
     store: HashMap<String, Rc<dyn Any>>,
