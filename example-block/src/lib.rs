@@ -1,3 +1,4 @@
+use block_macros::input;
 use registry::{Registry, RegistryError};
 use std::cell::RefCell;
 use std::rc::Rc;
@@ -8,6 +9,7 @@ pub struct AdderBlock {
 }
 
 /// Input for the adder block
+#[input]
 pub struct AdderInput {
     pub a: i32,
     pub b: i32,
@@ -23,39 +25,14 @@ pub struct AdderState {
     pub call_count: u32,
 }
 
-/// Input keys for the adder block
-pub struct AdderInKeys {
-    pub a: String,
-    pub b: String,
-}
-
-/// Output keys for the adder block  
+/// Keys for accessing output values in registry
 pub struct AdderOutKeys {
     pub sum: String,
-}
-
-/// Reader that holds direct references to registry values
-pub struct AdderInputReader {
-    a: Rc<RefCell<i32>>,
-    b: Rc<RefCell<i32>>,
 }
 
 /// Writer that holds direct references to registry values
 pub struct AdderOutputWriter {
     sum: Rc<RefCell<i32>>,
-}
-
-impl AdderInput {
-    /// Create a reader from the registry using the provided keys
-    pub fn reader(
-        keys: &AdderInKeys,
-        registry: &Registry,
-    ) -> Result<AdderInputReader, RegistryError> {
-        Ok(AdderInputReader {
-            a: registry.get::<i32>(&keys.a)?,
-            b: registry.get::<i32>(&keys.b)?,
-        })
-    }
 }
 
 impl AdderOutput {
@@ -72,7 +49,7 @@ impl AdderOutput {
 
 /// Wire channels for both input and output, returning reader and writer
 pub fn wire_channels(
-    in_keys: &AdderInKeys,
+    in_keys: &AdderInputKeys,
     out_keys: &AdderOutKeys,
     registry: &Registry,
 ) -> Result<(AdderInputReader, AdderOutputWriter), RegistryError> {
@@ -80,16 +57,6 @@ pub fn wire_channels(
     let writer = AdderOutput::writer(out_keys, registry)?;
     Ok((reader, writer))
 }
-impl AdderInputReader {
-    /// Read input values from the captured references
-    pub fn read(&self) -> AdderInput {
-        AdderInput {
-            a: *self.a.borrow(),
-            b: *self.b.borrow(),
-        }
-    }
-}
-
 impl AdderOutputWriter {
     /// Write output values to the captured references
     pub fn write(&self, output: &AdderOutput) {
@@ -128,7 +95,7 @@ impl AdderBlock {
     pub fn wire(
         &self,
         registry: &Registry,
-        in_keys: &AdderInKeys,
+        in_keys: &AdderInputKeys,
         out_keys: &AdderOutKeys,
     ) -> Result<AdderWiredBlock, RegistryError> {
         // Create readers/writers that capture the Rc references
@@ -148,7 +115,7 @@ impl AdderBlock {
     pub fn declare_and_wire(
         &self,
         registry: &mut Registry,
-        in_keys: &AdderInKeys,
+        in_keys: &AdderInputKeys,
         out_keys: &AdderOutKeys,
     ) -> Result<AdderWiredBlock, RegistryError> {
         self.declare_outputs(registry, out_keys);
@@ -226,7 +193,7 @@ mod tests {
         registry.put("input_b", 13);
         registry.put("output_sum", 0);
 
-        let in_keys = AdderInKeys {
+        let in_keys = AdderInputKeys {
             a: "input_a".to_string(),
             b: "input_b".to_string(),
         };
@@ -258,7 +225,7 @@ mod tests {
         registry.put("input_a", 7);
         registry.put("input_b", 13);
 
-        let in_keys = AdderInKeys {
+        let in_keys = AdderInputKeys {
             a: "input_a".to_string(),
             b: "input_b".to_string(),
         };
@@ -289,7 +256,7 @@ mod tests {
         registry.put("a", 1);
         registry.put("b", 2);
 
-        let in_keys = AdderInKeys {
+        let in_keys = AdderInputKeys {
             a: "a".to_string(),
             b: "b".to_string(),
         };
@@ -317,5 +284,33 @@ mod tests {
         wired.tick();
         let result = registry.get::<i32>("sum").unwrap();
         assert_eq!(*result.borrow(), 30);
+    }
+
+    #[test]
+    fn test_input_macro() {
+        use block_macros::input;
+
+        // Define a test input struct using the macro
+        #[input]
+        struct TestInput {
+            x: i32,
+            y: f64,
+        }
+
+        let mut registry = Registry::new();
+        registry.put("x_val", 42i32);
+        registry.put("y_val", 3.14f64);
+
+        let keys = TestInputKeys {
+            x: "x_val".to_string(),
+            y: "y_val".to_string(),
+        };
+
+        // Create reader using the generated method
+        let reader = TestInput::reader(&keys, &registry).unwrap();
+        let input = reader.read();
+
+        assert_eq!(input.x, 42);
+        assert_eq!(input.y, 3.14);
     }
 }
