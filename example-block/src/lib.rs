@@ -45,25 +45,41 @@ pub struct AdderOutputWriter {
     sum: Rc<RefCell<i32>>,
 }
 
-impl AdderInKeys {
-    /// Create a reader from the registry that captures the Rc references
-    pub fn reader(&self, registry: &Registry) -> Result<AdderInputReader, RegistryError> {
+impl AdderInput {
+    /// Create a reader from the registry using the provided keys
+    pub fn reader(
+        keys: &AdderInKeys,
+        registry: &Registry,
+    ) -> Result<AdderInputReader, RegistryError> {
         Ok(AdderInputReader {
-            a: registry.get::<i32>(&self.a)?,
-            b: registry.get::<i32>(&self.b)?,
+            a: registry.get::<i32>(&keys.a)?,
+            b: registry.get::<i32>(&keys.b)?,
         })
     }
 }
 
-impl AdderOutKeys {
-    /// Create a writer from the registry that captures the Rc references
-    pub fn writer(&self, registry: &Registry) -> Result<AdderOutputWriter, RegistryError> {
+impl AdderOutput {
+    /// Create a writer from the registry using the provided keys
+    pub fn writer(
+        keys: &AdderOutKeys,
+        registry: &Registry,
+    ) -> Result<AdderOutputWriter, RegistryError> {
         Ok(AdderOutputWriter {
-            sum: registry.get::<i32>(&self.sum)?,
+            sum: registry.get::<i32>(&keys.sum)?,
         })
     }
 }
 
+/// Wire channels for both input and output, returning reader and writer
+pub fn wire_channels(
+    in_keys: &AdderInKeys,
+    out_keys: &AdderOutKeys,
+    registry: &Registry,
+) -> Result<(AdderInputReader, AdderOutputWriter), RegistryError> {
+    let reader = AdderInput::reader(in_keys, registry)?;
+    let writer = AdderOutput::writer(out_keys, registry)?;
+    Ok((reader, writer))
+}
 impl AdderInputReader {
     /// Read input values from the captured references
     pub fn read(&self) -> AdderInput {
@@ -116,8 +132,7 @@ impl AdderBlock {
         out_keys: &AdderOutKeys,
     ) -> Result<AdderWiredBlock, RegistryError> {
         // Create readers/writers that capture the Rc references
-        let input_reader = in_keys.reader(registry)?;
-        let output_writer = out_keys.writer(registry)?;
+        let (input_reader, output_writer) = wire_channels(in_keys, out_keys, registry)?;
 
         let state = self.init_state();
 
@@ -205,32 +220,29 @@ mod tests {
     }
 
     #[test]
-    fn test_input_reader() {
+    fn test_input_output_readers() {
         let mut registry = Registry::new();
         registry.put("input_a", 7);
         registry.put("input_b", 13);
+        registry.put("output_sum", 0);
 
         let in_keys = AdderInKeys {
             a: "input_a".to_string(),
             b: "input_b".to_string(),
         };
 
-        let reader = in_keys.reader(&registry).unwrap();
-        let input = reader.read();
-        assert_eq!(input.a, 7);
-        assert_eq!(input.b, 13);
-    }
-
-    #[test]
-    fn test_output_writer() {
-        let mut registry = Registry::new();
-        registry.put("output_sum", 0);
-
         let out_keys = AdderOutKeys {
             sum: "output_sum".to_string(),
         };
 
-        let writer = out_keys.writer(&registry).unwrap();
+        // Test AdderInput::reader
+        let reader = AdderInput::reader(&in_keys, &registry).unwrap();
+        let input = reader.read();
+        assert_eq!(input.a, 7);
+        assert_eq!(input.b, 13);
+
+        // Test AdderOutput::writer
+        let writer = AdderOutput::writer(&out_keys, &registry).unwrap();
         let output = AdderOutput { sum: 42 };
         writer.write(&output);
 
