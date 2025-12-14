@@ -1,5 +1,5 @@
 [workspace]
-members = ["registry", "example-block", "block-macros"]
+members = ["registry", "example-block", "block-macros", "blocks"]
 
 [package]
 name = "block-flow"

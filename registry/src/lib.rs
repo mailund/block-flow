@@ -53,6 +53,7 @@ pub trait Writer<T> {
 pub trait OutputKeys<T> {
     type WriterType: Writer<T>;
     fn writer(&self, registry: &Registry) -> Result<Self::WriterType, RegistryError>;
+    fn register(&self, registry: &mut Registry);
 }
 
 /// The registry for storing typed values

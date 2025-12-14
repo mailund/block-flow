@@ -53,6 +53,10 @@ pub fn output_impl(_attr: TokenStream, item: TokenStream) -> TokenStream {
         }
     });
 
+    // Extract field names and types for register method
+    let field_names: Vec<_> = fields.iter().map(|field| &field.ident).collect();
+    let field_types: Vec<_> = fields.iter().map(|field| &field.ty).collect();
+
     let expanded = quote! {
         #input
 
@@ -85,6 +89,12 @@ pub fn output_impl(_attr: TokenStream, item: TokenStream) -> TokenStream {
                 Ok(#writer_name {
                     #(#writer_assignments,)*
                 })
+            }
+
+            fn register(&self, registry: &mut registry::Registry) {
+                #(
+                    registry.ensure::<#field_types>(&self.#field_names);
+                )*
             }
         }
     };

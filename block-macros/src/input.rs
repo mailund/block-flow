@@ -90,6 +90,5 @@ pub fn input_impl(_attr: TokenStream, item: TokenStream) -> TokenStream {
             }
         }
     };
-
     TokenStream::from(expanded)
 }

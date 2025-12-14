@@ -1,133 +1,103 @@
-use block_macros::{input, output};
-use registry::{InputKeys, OutputKeys, Reader, Registry, RegistryError, Writer};
+use block_macros::{block, block_spec, input, output, state};
+use blocks::{BlockSpec, WrappedBlock};
+use registry::{InputKeys, OutputKeys, Registry, RegistryError};
 
-/// A simple adder block that adds two numbers
-pub struct AdderBlock {
-    pub offset: i32,
-}
+#[block_spec]
+pub mod adder_block {
+    use super::*;
 
-/// Input for the adder block
-#[input]
-pub struct AdderInput {
-    pub a: i32,
-    pub b: i32,
-}
-
-/// Output for the adder block
-#[output]
-pub struct AdderOutput {
-    pub sum: i32,
-}
-
-/// State for the adder block (empty for this example)
-pub struct AdderState {
-    pub call_count: u32,
-}
-
-pub fn wire_channels(
-    in_keys: &AdderInputKeys,
-    out_keys: &AdderOutputKeys,
-    registry: &Registry,
-) -> Result<(AdderInputReader, AdderOutputWriter), RegistryError> {
-    let reader = in_keys.reader(registry)?; // Use the InputKeys trait
-    let writer = out_keys.writer(registry)?; // Use the OutputKeys trait
-    Ok((reader, writer))
-}
-
-impl AdderBlock {
-    /// Constructor
-    pub fn new(offset: i32) -> Self {
-        Self { offset }
+    /// A simple adder block that adds two numbers
+    #[input]
+    pub struct AdderInput {
+        pub a: i32,
+        pub b: i32,
     }
 
-    /// Initialize state
-    pub fn init_state(&self) -> AdderState {
-        AdderState { call_count: 0 }
+    /// Output for the adder block
+    #[output]
+    pub struct AdderOutput {
+        pub sum: i32,
     }
 
-    /// Pure execute function
-    pub fn execute(&self, input: AdderInput, state: AdderState) -> (AdderOutput, AdderState) {
-        let result = input.a + input.b + self.offset;
-        let new_state = AdderState {
-            call_count: state.call_count + 1,
-        };
-
-        let output = AdderOutput { sum: result };
-        (output, new_state)
+    /// State for the adder block
+    #[state]
+    pub struct AdderState {
+        pub call_count: u32,
     }
 
-    /// Declare outputs in the registry
-    pub fn declare_outputs(&self, registry: &mut Registry, out_keys: &AdderOutputKeys) {
-        registry.ensure::<i32>(&out_keys.sum);
+    #[block]
+    pub struct AdderBlock {
+        pub offset: i32,
     }
 
-    /// Wire the block to the registry
-    pub fn wire(
-        &self,
-        registry: &Registry,
-        in_keys: &AdderInputKeys,
-        out_keys: &AdderOutputKeys,
-    ) -> Result<AdderWiredBlock, RegistryError> {
-        // Create readers/writers that capture the Rc references
-        let (input_reader, output_writer) = wire_channels(in_keys, out_keys, registry)?;
+    impl AdderBlock {
+        /// Constructor
+        pub fn new(offset: i32) -> Self {
+            Self { offset }
+        }
 
-        let state = self.init_state();
+        /// Initialize state for this block
+        pub fn init_state(&self) -> AdderState {
+            AdderState { call_count: 0 }
+        }
 
-        Ok(AdderWiredBlock {
-            block: AdderBlock::new(self.offset),
-            input_reader,
-            output_writer,
-            state,
-        })
-    }
+        /// Execute the block logic
+        pub fn execute(&self, input: AdderInput, state: &AdderState) -> (AdderOutput, AdderState) {
+            let result = input.a + input.b + self.offset;
+            let new_state = AdderState {
+                call_count: state.call_count + 1,
+            };
 
-    /// Declare and wire in one step
-    pub fn declare_and_wire(
-        &self,
-        registry: &mut Registry,
-        in_keys: &AdderInputKeys,
-        out_keys: &AdderOutputKeys,
-    ) -> Result<AdderWiredBlock, RegistryError> {
-        self.declare_outputs(registry, out_keys);
-        self.wire(registry, in_keys, out_keys)
+            let output = AdderOutput { sum: result };
+            (output, new_state)
+        }
+
+        // === THIS WILL BE FIXED LATER ==========
+
+        /// Wire the block to the registry
+        pub fn wire(
+            &self,
+            registry: &Registry,
+            in_keys: &AdderInputKeys,
+            out_keys: &AdderOutputKeys,
+        ) -> Result<AdderWiredBlock, RegistryError> {
+            use super::{InputKeys, OutputKeys};
+
+            // Create readers/writers that capture the Rc references
+            let input_reader = in_keys.reader(registry)?;
+            let output_writer = out_keys.writer(registry)?;
+
+            let state = self.init_state();
+
+            Ok(AdderWiredBlock {
+                block: AdderBlock::new(self.offset),
+                input_reader,
+                output_writer,
+                state,
+            })
+        }
+
+        /// Declare and wire in one step
+        pub fn declare_and_wire(
+            &self,
+            registry: &mut Registry,
+            in_keys: &AdderInputKeys,
+            out_keys: &AdderOutputKeys,
+        ) -> Result<AdderWiredBlock, RegistryError> {
+            self.register_outputs(registry, out_keys);
+            self.wire(registry, in_keys, out_keys)
+        }
     }
 }
 
 /// A wired block that can be ticked
-pub struct AdderWiredBlock {
-    block: AdderBlock,
-    input_reader: AdderInputReader,
-    output_writer: AdderOutputWriter,
-    state: AdderState,
-}
+type AdderWiredBlock = WrappedBlock<adder_block::AdderBlock>;
 
-impl AdderWiredBlock {
-    pub fn tick(&mut self) {
-        // Read input from captured references
-        let input = self.input_reader.read();
-
-        // Execute the pure function
-        let (output, new_state) = self.block.execute(
-            input,
-            AdderState {
-                call_count: self.state.call_count,
-            },
-        );
-
-        // Write output to captured references
-        self.output_writer.write(&output);
-
-        // Update internal state
-        self.state = new_state;
-    }
-
-    pub fn execute(&mut self) {
-        self.tick();
-    }
-}
 #[cfg(test)]
 mod tests {
+    use super::adder_block::*;
     use super::*;
+    use blocks::Block;
 
     #[test]
     fn test_adder_block_pure_execution() {
@@ -136,7 +106,7 @@ mod tests {
         let input = AdderInput { a: 5, b: 3 };
         let state = block.init_state();
 
-        let (output, new_state) = block.execute(input, state);
+        let (output, new_state) = block.execute(input, &state);
 
         assert_eq!(output.sum, 18); // 5 + 3 + 10
         assert_eq!(new_state.call_count, 1);
@@ -147,11 +117,11 @@ mod tests {
         let block = AdderBlock::new(0);
         let state = block.init_state();
 
-        let (output1, new_state1) = block.execute(AdderInput { a: 1, b: 2 }, state);
+        let (output1, new_state1) = block.execute(AdderInput { a: 1, b: 2 }, &state);
         assert_eq!(output1.sum, 3);
         assert_eq!(new_state1.call_count, 1);
 
-        let (output2, new_state2) = block.execute(AdderInput { a: 10, b: 20 }, new_state1);
+        let (output2, new_state2) = block.execute(AdderInput { a: 10, b: 20 }, &new_state1);
         assert_eq!(output2.sum, 30);
         assert_eq!(new_state2.call_count, 2);
     }
@@ -186,6 +156,7 @@ mod tests {
         let result = registry.get::<i32>("output_sum").unwrap();
         assert_eq!(*result.borrow(), 42);
     }
+
     #[test]
     fn test_adder_block_with_registry() {
         let mut registry = Registry::new();
@@ -210,7 +181,7 @@ mod tests {
             .unwrap();
 
         // Execute one tick
-        wired.tick();
+        wired.execute();
 
         // Check output in registry
         let result = registry.get::<i32>("output_sum").unwrap();
@@ -240,7 +211,7 @@ mod tests {
             .unwrap();
 
         // First tick
-        wired.tick();
+        wired.execute();
         let result = registry.get::<i32>("sum").unwrap();
         assert_eq!(*result.borrow(), 3);
 
@@ -251,7 +222,7 @@ mod tests {
         *b_ref.borrow_mut() = 20;
 
         // Second tick should see updated values
-        wired.tick();
+        wired.execute();
         let result = registry.get::<i32>("sum").unwrap();
         assert_eq!(*result.borrow(), 30);
     }
