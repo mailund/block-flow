@@ -1,6 +1,5 @@
 use block_macros::{block, input, output, state};
-use blocks::{BlockSpec, ExecutionContext, WrappedBlock};
-use registry::{InputKeys, OutputKeys, Registry, RegistryError};
+use blocks::{BlockSpec, ExecutionContext};
 
 pub mod adder_block {
     use super::*;
@@ -58,54 +57,14 @@ pub mod adder_block {
             (output, new_state)
         }
     }
-
-    impl AdderBlock {
-        // === THIS WILL BE FIXED LATER ==========
-
-        /// Wire the block to the registry
-        pub fn wire(
-            &self,
-            registry: &Registry,
-            in_keys: &<AdderInput as blocks::BlockInput>::Keys,
-            out_keys: &<AdderOutput as blocks::BlockOutput>::Keys,
-        ) -> Result<AdderWiredBlock, RegistryError> {
-            use super::{InputKeys, OutputKeys};
-
-            // Create readers/writers that capture the Rc references
-            let input_reader = in_keys.reader(registry)?;
-            let output_writer = out_keys.writer(registry)?;
-
-            let state = self.init_state();
-
-            Ok(AdderWiredBlock {
-                block: AdderBlock::new(self.offset),
-                input_reader,
-                output_writer,
-                state,
-            })
-        }
-
-        /// Declare and wire in one step
-        pub fn declare_and_wire(
-            &self,
-            registry: &mut Registry,
-            in_keys: &<AdderInput as blocks::BlockInput>::Keys,
-            out_keys: &<AdderOutput as blocks::BlockOutput>::Keys,
-        ) -> Result<AdderWiredBlock, RegistryError> {
-            self.register_outputs(registry, out_keys);
-            self.wire(registry, in_keys, out_keys)
-        }
-    }
 }
-
-/// A wired block that can be ticked
-type AdderWiredBlock = WrappedBlock<adder_block::AdderBlock>;
 
 #[cfg(test)]
 mod tests {
     use super::adder_block::*;
     use super::*;
     use blocks::{Block, BlockInput, BlockOutput};
+    use registry::{InputKeys, OutputKeys, Registry};
 
     #[test]
     fn test_adder_block_pure_execution() {

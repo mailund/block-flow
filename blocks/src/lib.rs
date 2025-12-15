@@ -40,6 +40,46 @@ pub trait BlockSpec: BlockSpecAssociatedTypes {
             out_keys, registry,
         )
     }
+
+    /// Wire the block to the registry
+    fn wire(
+        self,
+        registry: &registry::Registry,
+        in_keys: &<Self::Input as BlockInput>::Keys,
+        out_keys: &<Self::Output as BlockOutput>::Keys,
+    ) -> Result<WrappedBlock<Self>, registry::RegistryError>
+    where
+        Self: Sized,
+    {
+        use registry::{InputKeys, OutputKeys};
+
+        // Create readers/writers that capture the Rc references
+        let input_reader = in_keys.reader(registry)?;
+        let output_writer = out_keys.writer(registry)?;
+
+        let state = self.init_state();
+
+        Ok(WrappedBlock {
+            block: self,
+            input_reader,
+            output_writer,
+            state,
+        })
+    }
+
+    /// Declare and wire in one step
+    fn declare_and_wire(
+        self,
+        registry: &mut registry::Registry,
+        in_keys: &<Self::Input as BlockInput>::Keys,
+        out_keys: &<Self::Output as BlockOutput>::Keys,
+    ) -> Result<WrappedBlock<Self>, registry::RegistryError>
+    where
+        Self: Sized,
+    {
+        self.register_outputs(registry, out_keys);
+        self.wire(registry, in_keys, out_keys)
+    }
 }
 
 pub struct WrappedBlock<B: BlockSpec> {
