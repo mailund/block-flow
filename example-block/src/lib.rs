@@ -24,7 +24,13 @@ pub mod adder_block {
         pub call_count: u32,
     }
 
-    #[block]
+    #[block(
+        input = AdderInput,
+        output = AdderOutput,
+        state = AdderState,
+        input_keys = AdderInputKeys,
+        output_keys = AdderOutputKeys
+    )]
     pub struct AdderBlock {
         pub offset: i32,
     }
@@ -37,12 +43,6 @@ pub mod adder_block {
     }
 
     impl BlockSpec for AdderBlock {
-        type Input = AdderInput;
-        type Output = AdderOutput;
-        type State = AdderState;
-        type InputKeys = AdderInputKeys;
-        type OutputKeys = AdderOutputKeys;
-
         /// Initialize state for this block
         fn init_state(&self) -> AdderState {
             AdderState { call_count: 0 }

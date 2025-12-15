@@ -1,4 +1,4 @@
-use registry::{InputKeys, OutputKeys, Reader, Writer};
+use registry;
 
 pub trait Block {
     fn execute(&mut self, context: &ExecutionContext);
@@ -8,14 +8,16 @@ pub struct ExecutionContext {
     pub time: u64,
 }
 
-pub trait BlockSpec {
+pub trait BlockSpecAssociatedTypes {
     type Input;
     type Output;
     type State;
 
-    type InputKeys: InputKeys<Self::Input>;
-    type OutputKeys: OutputKeys<Self::Output>;
+    type InputKeys: registry::InputKeys<Self::Input>;
+    type OutputKeys: registry::OutputKeys<Self::Output>;
+}
 
+pub trait BlockSpec: BlockSpecAssociatedTypes {
     fn init_state(&self) -> Self::State;
     fn execute(
         &self,
@@ -31,16 +33,16 @@ pub trait BlockSpec {
 
 pub struct WrappedBlock<B: BlockSpec> {
     pub block: B,
-    pub input_reader: <B::InputKeys as InputKeys<B::Input>>::ReaderType,
-    pub output_writer: <B::OutputKeys as OutputKeys<B::Output>>::WriterType,
+    pub input_reader: <B::InputKeys as registry::InputKeys<B::Input>>::ReaderType,
+    pub output_writer: <B::OutputKeys as registry::OutputKeys<B::Output>>::WriterType,
     pub state: B::State,
 }
 
 impl<B: BlockSpec> WrappedBlock<B> {
     pub fn new(
         block: B,
-        input_reader: <B::InputKeys as InputKeys<B::Input>>::ReaderType,
-        output_writer: <B::OutputKeys as OutputKeys<B::Output>>::WriterType,
+        input_reader: <B::InputKeys as registry::InputKeys<B::Input>>::ReaderType,
+        output_writer: <B::OutputKeys as registry::OutputKeys<B::Output>>::WriterType,
     ) -> Self {
         let state = block.init_state();
         Self {
@@ -54,6 +56,7 @@ impl<B: BlockSpec> WrappedBlock<B> {
 
 impl<B: BlockSpec> Block for WrappedBlock<B> {
     fn execute(&mut self, context: &ExecutionContext) {
+        use registry::{Reader, Writer};
         let input = self.input_reader.read();
         let (output, new_state) = self.block.execute(context, input, &self.state);
         self.output_writer.write(&output);

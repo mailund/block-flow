@@ -1,5 +1,6 @@
 use proc_macro::TokenStream;
 
+mod block;
 // mod block_spec; // Removed - better to write BlockSpec implementations manually
 mod input;
 mod output;
@@ -21,7 +22,6 @@ pub fn state(_attr: TokenStream, item: TokenStream) -> TokenStream {
 }
 
 #[proc_macro_attribute]
-pub fn block(_attr: TokenStream, item: TokenStream) -> TokenStream {
-    // Just a marker for now - return input unchanged
-    item
+pub fn block(attr: TokenStream, item: TokenStream) -> TokenStream {
+    block::block_impl(attr, item)
 }
