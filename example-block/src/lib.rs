@@ -6,24 +6,24 @@ pub mod adder_block {
 
     /// A simple adder block that adds two numbers
     #[input]
-    pub struct AdderInput {
+    pub struct Input {
         pub a: i32,
         pub b: i32,
     }
 
     /// Output for the adder block
     #[output]
-    pub struct AdderOutput {
+    pub struct Output {
         pub sum: i32,
     }
 
     /// State for the adder block
     #[state]
-    pub struct AdderState {
+    pub struct State {
         pub call_count: u32,
     }
 
-    #[block(input = AdderInput, output = AdderOutput, state = AdderState)]
+    #[block]
     pub struct AdderBlock {
         pub offset: i32,
     }
@@ -37,23 +37,23 @@ pub mod adder_block {
 
     impl BlockSpec for AdderBlock {
         /// Initialize state for this block
-        fn init_state(&self) -> AdderState {
-            AdderState { call_count: 0 }
+        fn init_state(&self) -> State {
+            State { call_count: 0 }
         }
 
         /// Execute the block logic
         fn execute(
             &self,
             _context: &ExecutionContext,
-            input: AdderInput,
-            state: &AdderState,
-        ) -> (AdderOutput, AdderState) {
+            input: Input,
+            state: &State,
+        ) -> (Output, State) {
             let result = input.a + input.b + self.offset;
-            let new_state = AdderState {
+            let new_state = State {
                 call_count: state.call_count + 1,
             };
 
-            let output = AdderOutput { sum: result };
+            let output = Output { sum: result };
             (output, new_state)
         }
     }
@@ -70,7 +70,7 @@ mod tests {
     fn test_adder_block_pure_execution() {
         let block = AdderBlock::new(10);
 
-        let input = AdderInput { a: 5, b: 3 };
+        let input = Input { a: 5, b: 3 };
         let state = block.init_state();
         let context = ExecutionContext { time: 0 };
 
@@ -86,12 +86,11 @@ mod tests {
         let state = block.init_state();
         let context = ExecutionContext { time: 0 };
 
-        let (output1, new_state1) = block.execute(&context, AdderInput { a: 1, b: 2 }, &state);
+        let (output1, new_state1) = block.execute(&context, Input { a: 1, b: 2 }, &state);
         assert_eq!(output1.sum, 3);
         assert_eq!(new_state1.call_count, 1);
 
-        let (output2, new_state2) =
-            block.execute(&context, AdderInput { a: 10, b: 20 }, &new_state1);
+        let (output2, new_state2) = block.execute(&context, Input { a: 10, b: 20 }, &new_state1);
         assert_eq!(output2.sum, 30);
         assert_eq!(new_state2.call_count, 2);
     }
@@ -103,8 +102,8 @@ mod tests {
         registry.put("input_b", 13);
         registry.put("output_sum", 0);
 
-        type InputKeys = <AdderInput as BlockInput>::Keys;
-        type OutputKeys = <AdderOutput as BlockOutput>::Keys;
+        type InputKeys = <Input as BlockInput>::Keys;
+        type OutputKeys = <Output as BlockOutput>::Keys;
 
         let in_keys = InputKeys {
             a: "input_a".to_string(),
@@ -123,7 +122,7 @@ mod tests {
 
         // Test OutputKeys trait
         let writer = out_keys.writer(&registry).unwrap();
-        let output = AdderOutput { sum: 42 };
+        let output = Output { sum: 42 };
         writer.write(&output);
 
         let result = registry.get::<i32>("output_sum").unwrap();
@@ -139,8 +138,8 @@ mod tests {
         registry.put("input_a", 7);
         registry.put("input_b", 13);
 
-        type InputKeys = <AdderInput as BlockInput>::Keys;
-        type OutputKeys = <AdderOutput as BlockOutput>::Keys;
+        type InputKeys = <Input as BlockInput>::Keys;
+        type OutputKeys = <Output as BlockOutput>::Keys;
 
         let in_keys = InputKeys {
             a: "input_a".to_string(),
@@ -174,8 +173,8 @@ mod tests {
         registry.put("a", 1);
         registry.put("b", 2);
 
-        type InputKeys = <AdderInput as BlockInput>::Keys;
-        type OutputKeys = <AdderOutput as BlockOutput>::Keys;
+        type InputKeys = <Input as BlockInput>::Keys;
+        type OutputKeys = <Output as BlockOutput>::Keys;
 
         let in_keys = InputKeys {
             a: "a".to_string(),
