@@ -1,14 +1,20 @@
 use proc_macro::TokenStream;
 use quote::quote;
-use syn::{parse_macro_input, Data, DeriveInput, Fields};
+use syn::{Data, DeriveInput, Fields};
 
 pub fn input_impl(_attr: TokenStream, item: TokenStream) -> TokenStream {
-    let input = parse_macro_input!(item as DeriveInput);
+    let input = syn::parse::<DeriveInput>(item).unwrap();
     let struct_name = &input.ident;
 
-    // Generate the keys struct name and reader struct name
-    let keys_name = syn::Ident::new(&format!("{}Keys", struct_name), struct_name.span());
-    let reader_name = syn::Ident::new(&format!("{}Reader", struct_name), struct_name.span());
+    // Generate the keys struct name and reader struct name with hygienic names
+    let keys_name = syn::Ident::new(
+        &format!("{}Keys", struct_name),
+        proc_macro2::Span::call_site(),
+    );
+    let reader_name = syn::Ident::new(
+        &format!("{}Reader", struct_name),
+        proc_macro2::Span::call_site(),
+    );
 
     // Extract fields from the struct
     let fields = match &input.data {
@@ -88,6 +94,10 @@ pub fn input_impl(_attr: TokenStream, item: TokenStream) -> TokenStream {
                     #(#reader_assignments,)*
                 })
             }
+        }
+
+        impl blocks::BlockInput for #struct_name {
+            type Keys = #keys_name;
         }
     };
     TokenStream::from(expanded)

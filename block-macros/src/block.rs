@@ -1,6 +1,6 @@
 use proc_macro::TokenStream;
 use quote::quote;
-use syn::{parse_macro_input, DeriveInput, Meta, Expr, Path};
+use syn::{parse_macro_input, DeriveInput, Expr, Meta, Path};
 
 pub fn block_impl(attr: TokenStream, item: TokenStream) -> TokenStream {
     let input = parse_macro_input!(item as DeriveInput);
@@ -10,25 +10,23 @@ pub fn block_impl(attr: TokenStream, item: TokenStream) -> TokenStream {
     if attr.is_empty() {
         let expanded = quote! {
             #input
-            compile_error!("Missing required arguments to #[block] macro: input, output, state, input_keys, output_keys");
+            compile_error!("Missing required arguments to #[block] macro: input, output, state");
         };
         return TokenStream::from(expanded);
     }
 
     // Parse the attributes using syn's proper parser
-    let args: syn::punctuated::Punctuated<Meta, syn::Token![,]> = 
+    let args: syn::punctuated::Punctuated<Meta, syn::Token![,]> =
         syn::parse_macro_input!(attr with syn::punctuated::Punctuated::parse_terminated);
 
     let mut input_type: Option<Path> = None;
     let mut output_type: Option<Path> = None;
     let mut state_type: Option<Path> = None;
-    let mut input_keys_type: Option<Path> = None;
-    let mut output_keys_type: Option<Path> = None;
 
     for meta in args {
         if let Meta::NameValue(meta_name_value) = meta {
             let name = meta_name_value.path.get_ident().unwrap().to_string();
-            
+
             // Handle both string literals and identifiers
             match &meta_name_value.value {
                 Expr::Lit(expr_lit) => {
@@ -38,22 +36,16 @@ pub fn block_impl(attr: TokenStream, item: TokenStream) -> TokenStream {
                             "input" => input_type = Some(type_path),
                             "output" => output_type = Some(type_path),
                             "state" => state_type = Some(type_path),
-                            "input_keys" => input_keys_type = Some(type_path),
-                            "output_keys" => output_keys_type = Some(type_path),
                             _ => {}
                         }
                     }
                 }
-                Expr::Path(expr_path) => {
-                    match name.as_str() {
-                        "input" => input_type = Some(expr_path.path.clone()),
-                        "output" => output_type = Some(expr_path.path.clone()),
-                        "state" => state_type = Some(expr_path.path.clone()),
-                        "input_keys" => input_keys_type = Some(expr_path.path.clone()),
-                        "output_keys" => output_keys_type = Some(expr_path.path.clone()),
-                        _ => {}
-                    }
-                }
+                Expr::Path(expr_path) => match name.as_str() {
+                    "input" => input_type = Some(expr_path.path.clone()),
+                    "output" => output_type = Some(expr_path.path.clone()),
+                    "state" => state_type = Some(expr_path.path.clone()),
+                    _ => {}
+                },
                 _ => {}
             }
         }
@@ -69,12 +61,6 @@ pub fn block_impl(attr: TokenStream, item: TokenStream) -> TokenStream {
     }
     if state_type.is_none() {
         missing_args.push("state");
-    }
-    if input_keys_type.is_none() {
-        missing_args.push("input_keys");
-    }
-    if output_keys_type.is_none() {
-        missing_args.push("output_keys");
     }
 
     if !missing_args.is_empty() {
@@ -92,8 +78,6 @@ pub fn block_impl(attr: TokenStream, item: TokenStream) -> TokenStream {
     let input_type = input_type.unwrap();
     let output_type = output_type.unwrap();
     let state_type = state_type.unwrap();
-    let input_keys_type = input_keys_type.unwrap();
-    let output_keys_type = output_keys_type.unwrap();
 
     let expanded = quote! {
         #input
@@ -102,8 +86,6 @@ pub fn block_impl(attr: TokenStream, item: TokenStream) -> TokenStream {
             type Input = #input_type;
             type Output = #output_type;
             type State = #state_type;
-            type InputKeys = #input_keys_type;
-            type OutputKeys = #output_keys_type;
         }
     };
 

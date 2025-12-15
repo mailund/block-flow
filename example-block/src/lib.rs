@@ -24,13 +24,7 @@ pub mod adder_block {
         pub call_count: u32,
     }
 
-    #[block(
-        input = AdderInput,
-        output = AdderOutput,
-        state = AdderState,
-        input_keys = AdderInputKeys,
-        output_keys = AdderOutputKeys
-    )]
+    #[block(input = AdderInput, output = AdderOutput, state = AdderState)]
     pub struct AdderBlock {
         pub offset: i32,
     }
@@ -72,8 +66,8 @@ pub mod adder_block {
         pub fn wire(
             &self,
             registry: &Registry,
-            in_keys: &AdderInputKeys,
-            out_keys: &AdderOutputKeys,
+            in_keys: &<AdderInput as blocks::BlockInput>::Keys,
+            out_keys: &<AdderOutput as blocks::BlockOutput>::Keys,
         ) -> Result<AdderWiredBlock, RegistryError> {
             use super::{InputKeys, OutputKeys};
 
@@ -95,8 +89,8 @@ pub mod adder_block {
         pub fn declare_and_wire(
             &self,
             registry: &mut Registry,
-            in_keys: &AdderInputKeys,
-            out_keys: &AdderOutputKeys,
+            in_keys: &<AdderInput as blocks::BlockInput>::Keys,
+            out_keys: &<AdderOutput as blocks::BlockOutput>::Keys,
         ) -> Result<AdderWiredBlock, RegistryError> {
             self.register_outputs(registry, out_keys);
             self.wire(registry, in_keys, out_keys)
@@ -111,7 +105,7 @@ type AdderWiredBlock = WrappedBlock<adder_block::AdderBlock>;
 mod tests {
     use super::adder_block::*;
     use super::*;
-    use blocks::Block;
+    use blocks::{Block, BlockInput, BlockOutput};
 
     #[test]
     fn test_adder_block_pure_execution() {
@@ -150,12 +144,15 @@ mod tests {
         registry.put("input_b", 13);
         registry.put("output_sum", 0);
 
-        let in_keys = AdderInputKeys {
+        type InputKeys = <AdderInput as BlockInput>::Keys;
+        type OutputKeys = <AdderOutput as BlockOutput>::Keys;
+
+        let in_keys = InputKeys {
             a: "input_a".to_string(),
             b: "input_b".to_string(),
         };
 
-        let out_keys = AdderOutputKeys {
+        let out_keys = OutputKeys {
             sum: "output_sum".to_string(),
         };
 
@@ -183,12 +180,15 @@ mod tests {
         registry.put("input_a", 7);
         registry.put("input_b", 13);
 
-        let in_keys = AdderInputKeys {
+        type InputKeys = <AdderInput as BlockInput>::Keys;
+        type OutputKeys = <AdderOutput as BlockOutput>::Keys;
+
+        let in_keys = InputKeys {
             a: "input_a".to_string(),
             b: "input_b".to_string(),
         };
 
-        let out_keys = AdderOutputKeys {
+        let out_keys = OutputKeys {
             sum: "output_sum".to_string(),
         };
 
@@ -215,12 +215,15 @@ mod tests {
         registry.put("a", 1);
         registry.put("b", 2);
 
-        let in_keys = AdderInputKeys {
+        type InputKeys = <AdderInput as BlockInput>::Keys;
+        type OutputKeys = <AdderOutput as BlockOutput>::Keys;
+
+        let in_keys = InputKeys {
             a: "a".to_string(),
             b: "b".to_string(),
         };
 
-        let out_keys = AdderOutputKeys {
+        let out_keys = OutputKeys {
             sum: "sum".to_string(),
         };
 

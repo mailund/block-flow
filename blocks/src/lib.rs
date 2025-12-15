@@ -8,13 +8,18 @@ pub struct ExecutionContext {
     pub time: u64,
 }
 
-pub trait BlockSpecAssociatedTypes {
-    type Input;
-    type Output;
-    type State;
+pub trait BlockInput: Sized {
+    type Keys: registry::InputKeys<Self>;
+}
 
-    type InputKeys: registry::InputKeys<Self::Input>;
-    type OutputKeys: registry::OutputKeys<Self::Output>;
+pub trait BlockOutput: Sized {
+    type Keys: registry::OutputKeys<Self>;
+}
+
+pub trait BlockSpecAssociatedTypes {
+    type Input: BlockInput;
+    type Output: BlockOutput;
+    type State;
 }
 
 pub trait BlockSpec: BlockSpecAssociatedTypes {
@@ -26,23 +31,32 @@ pub trait BlockSpec: BlockSpecAssociatedTypes {
         state: &Self::State,
     ) -> (Self::Output, Self::State);
 
-    fn register_outputs(&self, registry: &mut registry::Registry, out_keys: &Self::OutputKeys) {
-        <Self::OutputKeys as registry::OutputKeys<Self::Output>>::register(out_keys, registry)
+    fn register_outputs(
+        &self,
+        registry: &mut registry::Registry,
+        out_keys: &<Self::Output as BlockOutput>::Keys,
+    ) {
+        <<Self::Output as BlockOutput>::Keys as registry::OutputKeys<Self::Output>>::register(
+            out_keys, registry,
+        )
     }
 }
 
 pub struct WrappedBlock<B: BlockSpec> {
     pub block: B,
-    pub input_reader: <B::InputKeys as registry::InputKeys<B::Input>>::ReaderType,
-    pub output_writer: <B::OutputKeys as registry::OutputKeys<B::Output>>::WriterType,
+    pub input_reader: <<B::Input as BlockInput>::Keys as registry::InputKeys<B::Input>>::ReaderType,
+    pub output_writer:
+        <<B::Output as BlockOutput>::Keys as registry::OutputKeys<B::Output>>::WriterType,
     pub state: B::State,
 }
 
 impl<B: BlockSpec> WrappedBlock<B> {
     pub fn new(
         block: B,
-        input_reader: <B::InputKeys as registry::InputKeys<B::Input>>::ReaderType,
-        output_writer: <B::OutputKeys as registry::OutputKeys<B::Output>>::WriterType,
+        input_reader: <<B::Input as BlockInput>::Keys as registry::InputKeys<B::Input>>::ReaderType,
+        output_writer: <<B::Output as BlockOutput>::Keys as registry::OutputKeys<
+            B::Output,
+        >>::WriterType,
     ) -> Self {
         let state = block.init_state();
         Self {

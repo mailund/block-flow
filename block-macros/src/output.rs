@@ -1,14 +1,20 @@
 use proc_macro::TokenStream;
 use quote::quote;
-use syn::{parse_macro_input, Data, DeriveInput, Fields};
+use syn::{Data, DeriveInput, Fields};
 
 pub fn output_impl(_attr: TokenStream, item: TokenStream) -> TokenStream {
-    let input = parse_macro_input!(item as DeriveInput);
+    let input = syn::parse::<DeriveInput>(item).unwrap();
     let struct_name = &input.ident;
 
-    // Generate the keys struct name and writer struct name
-    let keys_name = syn::Ident::new(&format!("{}Keys", struct_name), struct_name.span());
-    let writer_name = syn::Ident::new(&format!("{}Writer", struct_name), struct_name.span());
+    // Generate the keys struct name and writer struct name with hygienic names
+    let keys_name = syn::Ident::new(
+        &format!("{}Keys", struct_name),
+        proc_macro2::Span::call_site(),
+    );
+    let writer_name = syn::Ident::new(
+        &format!("{}Writer", struct_name),
+        proc_macro2::Span::call_site(),
+    );
 
     // Extract fields from the struct
     let fields = match &input.data {
@@ -54,7 +60,10 @@ pub fn output_impl(_attr: TokenStream, item: TokenStream) -> TokenStream {
     });
 
     // Extract field names and types for register method
-    let field_names: Vec<_> = fields.iter().map(|field| &field.ident).collect();
+    let field_names: Vec<_> = fields
+        .iter()
+        .map(|field| field.ident.as_ref().unwrap())
+        .collect();
     let field_types: Vec<_> = fields.iter().map(|field| &field.ty).collect();
 
     let expanded = quote! {
@@ -96,6 +105,10 @@ pub fn output_impl(_attr: TokenStream, item: TokenStream) -> TokenStream {
                     registry.ensure::<#field_types>(&self.#field_names);
                 )*
             }
+        }
+
+        impl blocks::BlockOutput for #struct_name {
+            type Keys = #keys_name;
         }
     };
 
