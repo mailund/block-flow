@@ -1,8 +1,7 @@
-use block_macros::{block, block_spec, input, output, state};
+use block_macros::{block, input, output, state};
 use blocks::{BlockSpec, ExecutionContext, WrappedBlock};
 use registry::{InputKeys, OutputKeys, Registry, RegistryError};
 
-#[block_spec]
 pub mod adder_block {
     use super::*;
 
@@ -35,14 +34,22 @@ pub mod adder_block {
         pub fn new(offset: i32) -> Self {
             Self { offset }
         }
+    }
+
+    impl BlockSpec for AdderBlock {
+        type Input = AdderInput;
+        type Output = AdderOutput;
+        type State = AdderState;
+        type InputKeys = AdderInputKeys;
+        type OutputKeys = AdderOutputKeys;
 
         /// Initialize state for this block
-        pub fn init_state(&self) -> AdderState {
+        fn init_state(&self) -> AdderState {
             AdderState { call_count: 0 }
         }
 
         /// Execute the block logic
-        pub fn execute(
+        fn execute(
             &self,
             _context: &ExecutionContext,
             input: AdderInput,
@@ -56,7 +63,9 @@ pub mod adder_block {
             let output = AdderOutput { sum: result };
             (output, new_state)
         }
+    }
 
+    impl AdderBlock {
         // === THIS WILL BE FIXED LATER ==========
 
         /// Wire the block to the registry

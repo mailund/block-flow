@@ -1,4 +1,4 @@
-use registry::{InputKeys, OutputKeys, Reader, Registry, Writer};
+use registry::{InputKeys, OutputKeys, Reader, Writer};
 
 pub trait Block {
     fn execute(&mut self, context: &ExecutionContext);
@@ -24,7 +24,9 @@ pub trait BlockSpec {
         state: &Self::State,
     ) -> (Self::Output, Self::State);
 
-    fn register_outputs(&self, registry: &mut Registry, out_keys: &Self::OutputKeys);
+    fn register_outputs(&self, registry: &mut registry::Registry, out_keys: &Self::OutputKeys) {
+        <Self::OutputKeys as registry::OutputKeys<Self::Output>>::register(out_keys, registry)
+    }
 }
 
 pub struct WrappedBlock<B: BlockSpec> {
