@@ -96,7 +96,7 @@ pub fn input_impl(_attr: TokenStream, item: TokenStream) -> TokenStream {
             }
         }
 
-        impl blocks::BlockInput for #struct_name {
+        impl block_traits::BlockInput for #struct_name {
             type Keys = #keys_name;
         }
     };

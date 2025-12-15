@@ -107,7 +107,7 @@ pub fn output_impl(_attr: TokenStream, item: TokenStream) -> TokenStream {
             }
         }
 
-        impl blocks::BlockOutput for #struct_name {
+        impl block_traits::BlockOutput for #struct_name {
             type Keys = #keys_name;
         }
     };

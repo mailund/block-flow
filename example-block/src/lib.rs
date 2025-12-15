@@ -1,5 +1,5 @@
 use block_macros::{block, input, output, state};
-use blocks::{BlockSpec, ExecutionContext};
+use block_traits::{BlockSpec, ExecutionContext};
 
 pub mod adder_block {
     use super::*;
@@ -63,7 +63,7 @@ pub mod adder_block {
 mod tests {
     use super::adder_block::*;
     use super::*;
-    use blocks::{Block, BlockInput, BlockOutput};
+    use block_traits::{Block, BlockInput, BlockOutput};
     use registry::{InputKeys, OutputKeys, Registry};
 
     #[test]

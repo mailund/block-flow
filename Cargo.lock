@@ -19,9 +19,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "block_traits"
+version = "0.1.0"
+dependencies = [
+ "registry",
+]
+
+[[package]]
 name = "blocks"
 version = "0.1.0"
 dependencies = [
+ "block-macros",
+ "block_traits",
  "registry",
 ]
 
@@ -30,6 +39,7 @@ name = "example-block"
 version = "0.1.0"
 dependencies = [
  "block-macros",
+ "block_traits",
  "blocks",
  "registry",
 ]

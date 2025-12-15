@@ -5,3 +5,5 @@ edition = "2021"
 
 [dependencies]
 registry = { path = "../registry" }
+block-macros = { path = "../block-macros" }
+block_traits = { path = "../block_traits" }

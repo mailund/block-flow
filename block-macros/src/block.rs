@@ -53,7 +53,7 @@ pub fn block_impl(attr: TokenStream, item: TokenStream) -> TokenStream {
     let expanded = quote! {
         #input
 
-        impl blocks::BlockSpecAssociatedTypes for #struct_name {
+        impl block_traits::BlockSpecAssociatedTypes for #struct_name {
             type Input = #input_type;
             type Output = #output_type;
             type State = #state_type;
