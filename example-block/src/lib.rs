@@ -1,5 +1,5 @@
 use block_macros::{block, block_spec, input, output, state};
-use blocks::{BlockSpec, WrappedBlock};
+use blocks::{BlockSpec, ExecutionContext, WrappedBlock};
 use registry::{InputKeys, OutputKeys, Registry, RegistryError};
 
 #[block_spec]
@@ -42,7 +42,12 @@ pub mod adder_block {
         }
 
         /// Execute the block logic
-        pub fn execute(&self, input: AdderInput, state: &AdderState) -> (AdderOutput, AdderState) {
+        pub fn execute(
+            &self,
+            _context: &ExecutionContext,
+            input: AdderInput,
+            state: &AdderState,
+        ) -> (AdderOutput, AdderState) {
             let result = input.a + input.b + self.offset;
             let new_state = AdderState {
                 call_count: state.call_count + 1,
@@ -105,8 +110,9 @@ mod tests {
 
         let input = AdderInput { a: 5, b: 3 };
         let state = block.init_state();
+        let context = ExecutionContext { time: 0 };
 
-        let (output, new_state) = block.execute(input, &state);
+        let (output, new_state) = block.execute(&context, input, &state);
 
         assert_eq!(output.sum, 18); // 5 + 3 + 10
         assert_eq!(new_state.call_count, 1);
@@ -116,12 +122,14 @@ mod tests {
     fn test_adder_block_multiple_calls() {
         let block = AdderBlock::new(0);
         let state = block.init_state();
+        let context = ExecutionContext { time: 0 };
 
-        let (output1, new_state1) = block.execute(AdderInput { a: 1, b: 2 }, &state);
+        let (output1, new_state1) = block.execute(&context, AdderInput { a: 1, b: 2 }, &state);
         assert_eq!(output1.sum, 3);
         assert_eq!(new_state1.call_count, 1);
 
-        let (output2, new_state2) = block.execute(AdderInput { a: 10, b: 20 }, &new_state1);
+        let (output2, new_state2) =
+            block.execute(&context, AdderInput { a: 10, b: 20 }, &new_state1);
         assert_eq!(output2.sum, 30);
         assert_eq!(new_state2.call_count, 2);
     }
@@ -181,7 +189,8 @@ mod tests {
             .unwrap();
 
         // Execute one tick
-        wired.execute();
+        let context = ExecutionContext { time: 0 };
+        wired.execute(&context);
 
         // Check output in registry
         let result = registry.get::<i32>("output_sum").unwrap();
@@ -211,7 +220,8 @@ mod tests {
             .unwrap();
 
         // First tick
-        wired.execute();
+        let context = ExecutionContext { time: 0 };
+        wired.execute(&context);
         let result = registry.get::<i32>("sum").unwrap();
         assert_eq!(*result.borrow(), 3);
 
@@ -222,7 +232,7 @@ mod tests {
         *b_ref.borrow_mut() = 20;
 
         // Second tick should see updated values
-        wired.execute();
+        wired.execute(&context);
         let result = registry.get::<i32>("sum").unwrap();
         assert_eq!(*result.borrow(), 30);
     }

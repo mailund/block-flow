@@ -1,7 +1,11 @@
 use registry::{InputKeys, OutputKeys, Reader, Registry, Writer};
 
 pub trait Block {
-    fn execute(&mut self);
+    fn execute(&mut self, context: &ExecutionContext);
+}
+
+pub struct ExecutionContext {
+    pub time: u64,
 }
 
 pub trait BlockSpec {
@@ -13,7 +17,12 @@ pub trait BlockSpec {
     type OutputKeys: OutputKeys<Self::Output>;
 
     fn init_state(&self) -> Self::State;
-    fn execute(&self, input: Self::Input, state: &Self::State) -> (Self::Output, Self::State);
+    fn execute(
+        &self,
+        context: &ExecutionContext,
+        input: Self::Input,
+        state: &Self::State,
+    ) -> (Self::Output, Self::State);
 
     fn register_outputs(&self, registry: &mut Registry, out_keys: &Self::OutputKeys);
 }
@@ -42,9 +51,9 @@ impl<B: BlockSpec> WrappedBlock<B> {
 }
 
 impl<B: BlockSpec> Block for WrappedBlock<B> {
-    fn execute(&mut self) {
+    fn execute(&mut self, context: &ExecutionContext) {
         let input = self.input_reader.read();
-        let (output, new_state) = self.block.execute(input, &self.state);
+        let (output, new_state) = self.block.execute(context, input, &self.state);
         self.output_writer.write(&output);
         self.state = new_state;
     }

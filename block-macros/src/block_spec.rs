@@ -71,8 +71,8 @@ pub fn block_spec_impl(_attr: TokenStream, item: TokenStream) -> TokenStream {
                 self.init_state()
             }
 
-            fn execute(&self, input: Self::Input, state: &Self::State) -> (Self::Output, Self::State) {
-                self.execute(input, state)
+            fn execute(&self, context: &blocks::ExecutionContext, input: Self::Input, state: &Self::State) -> (Self::Output, Self::State) {
+                self.execute(context, input, state)
             }
 
             fn register_outputs(&self, registry: &mut registry::Registry, out_keys: &Self::OutputKeys) {
