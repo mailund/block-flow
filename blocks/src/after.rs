@@ -1,5 +1,4 @@
-use block_macros::{block, input, output, state};
-use block_traits::{BlockSpec, ExecutionContext};
+use super::*;
 
 #[input]
 pub struct Input {
