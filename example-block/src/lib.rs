@@ -1,4 +1,4 @@
-use block_macros::{block, input, output, state};
+use block_macros::{block, init_params, input, output, state};
 use block_traits::{BlockSpec, ExecutionContext};
 
 pub mod adder_block {
@@ -23,19 +23,23 @@ pub mod adder_block {
         pub call_count: u32,
     }
 
+    #[init_params]
+    pub struct InitParams {
+        pub offset: i32,
+    }
+
     #[block]
     pub struct AdderBlock {
         pub offset: i32,
     }
 
-    impl AdderBlock {
-        /// Constructor
-        pub fn new(offset: i32) -> Self {
-            Self { offset }
-        }
-    }
-
     impl BlockSpec for AdderBlock {
+        fn new_from_init_params(params: &InitParams) -> Self {
+            Self {
+                offset: params.offset,
+            }
+        }
+
         /// Initialize state for this block
         fn init_state(&self) -> State {
             State { call_count: 0 }
@@ -68,7 +72,7 @@ mod tests {
 
     #[test]
     fn test_adder_block_pure_execution() {
-        let block = AdderBlock::new(10);
+        let block = AdderBlock::new_from_init_params(&InitParams { offset: 10 });
 
         let input = Input { a: 5, b: 3 };
         let state = block.init_state();
@@ -82,7 +86,7 @@ mod tests {
 
     #[test]
     fn test_adder_block_multiple_calls() {
-        let block = AdderBlock::new(0);
+        let block = AdderBlock::new_from_init_params(&InitParams { offset: 0 });
         let state = block.init_state();
         let context = ExecutionContext { time: 0 };
 
@@ -132,7 +136,7 @@ mod tests {
     #[test]
     fn test_adder_block_with_registry() {
         let mut registry = ChannelRegistry::new();
-        let block = AdderBlock::new(100);
+        let block = AdderBlock::new_from_init_params(&InitParams { offset: 100 });
 
         // Setup input data
         registry.put("input_a", 7);
@@ -167,7 +171,7 @@ mod tests {
     #[test]
     fn test_adder_block_registry_updates() {
         let mut registry = ChannelRegistry::new();
-        let block = AdderBlock::new(0);
+        let block = AdderBlock::new_from_init_params(&InitParams { offset: 0 });
 
         // Setup input data
         registry.put("a", 1);

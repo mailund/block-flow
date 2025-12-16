@@ -9,7 +9,7 @@
 /// use block_traits::*;
 /// use channels::*;
 /// use serde::{Serialize, Deserialize};
-/// use serialization::SerializableStruct;
+/// use serialization::structs::SerializableStruct;
 ///
 /// // Define a simple input type
 /// #[derive(Clone)]
@@ -42,7 +42,7 @@
 /// }
 /// ```
 pub trait BlockInput: Sized {
-    type Keys: channels::InputKeys<Self> + serialization::keys::SerializableStruct;
+    type Keys: channels::InputKeys<Self> + serialization::structs::SerializableStruct;
 }
 
 /// Trait for block output data types.
@@ -56,7 +56,7 @@ pub trait BlockInput: Sized {
 /// use block_traits::*;
 /// use channels::*;
 /// use serde::{Serialize, Deserialize};
-/// use serialization::SerializableStruct;
+/// use serialization::structs::SerializableStruct;
 ///
 /// // Define a simple output type
 /// #[derive(Clone)]
@@ -98,7 +98,7 @@ pub trait BlockInput: Sized {
 /// }
 /// ```
 pub trait BlockOutput: Sized {
-    type Keys: channels::OutputKeys<Self> + serialization::keys::SerializableStruct;
+    type Keys: channels::OutputKeys<Self> + serialization::structs::SerializableStruct;
 }
 
 /// Associated types for block specifications.
@@ -114,7 +114,7 @@ pub trait BlockOutput: Sized {
 /// use block_traits::*;
 /// use channels::*;
 /// use serde::{Serialize, Deserialize};
-/// use serialization::SerializableStruct;
+/// use serialization::structs::SerializableStruct;
 ///
 /// // Define wrapper types that implement the required traits
 /// #[derive(Clone)]
@@ -128,8 +128,13 @@ pub trait BlockOutput: Sized {
 /// struct NoInputKeys;
 /// #[derive(Serialize, Deserialize)]
 /// struct CountOutputKeys;
+/// #[derive(Serialize, Deserialize)]
+/// struct CounterInitParams {
+///     initial_count: i32,
+/// }
 /// impl SerializableStruct for NoInputKeys {}
 /// impl SerializableStruct for CountOutputKeys {}
+/// impl SerializableStruct for CounterInitParams {}
 ///
 /// impl InputKeys<NoInput> for NoInputKeys {
 ///     type ReaderType = MockReader<NoInput>;
@@ -172,12 +177,14 @@ pub trait BlockOutput: Sized {
 ///     type Input = NoInput;     // No input needed
 ///     type Output = CountOutput; // Outputs a count
 ///     type State = i32;          // Internal counter state
+///     type InitParameters = CounterInitParams; // Initialization parameters
 /// }
 /// ```
 pub trait BlockSpecAssociatedTypes {
     type Input: BlockInput;
     type Output: BlockOutput;
-    type State;
+    type State; // FIXME: Should be serializable at some point
+    type InitParameters: serialization::structs::SerializableStruct;
 }
 
 /// Main trait for defining block behavior.
@@ -192,7 +199,7 @@ pub trait BlockSpecAssociatedTypes {
 /// use block_traits::*;
 /// use channels::*;
 /// use serde::{Serialize, Deserialize};
-/// use serialization::SerializableStruct;
+/// use serialization::structs::SerializableStruct;
 ///
 /// // Define wrapper types that implement the required traits
 /// #[derive(Clone)]
@@ -206,8 +213,11 @@ pub trait BlockSpecAssociatedTypes {
 /// struct IntInputKeys;
 /// #[derive(Serialize, Deserialize)]
 /// struct IntOutputKeys;
+/// #[derive(Serialize, Deserialize)]
+/// struct DoublerInitParams;
 /// impl SerializableStruct for IntInputKeys {}
 /// impl SerializableStruct for IntOutputKeys {}
+/// impl SerializableStruct for DoublerInitParams {}
 ///
 /// impl InputKeys<IntInput> for IntInputKeys {
 ///     type ReaderType = MockReader<IntInput>;
@@ -250,9 +260,14 @@ pub trait BlockSpecAssociatedTypes {
 ///     type Input = IntInput;
 ///     type Output = IntOutput;
 ///     type State = (); // No state needed
+///     type InitParameters = DoublerInitParams;
 /// }
 ///
 /// impl BlockSpec for DoublerBlock {
+///     fn new_from_init_params(_params: &DoublerInitParams) -> Self {
+///         DoublerBlock
+///     }
+///
 ///     fn init_state(&self) -> Self::State {
 ///         () // No initialization needed
 ///     }
@@ -280,7 +295,7 @@ pub trait BlockSpec: BlockSpecAssociatedTypes {
     /// use block_traits::*;
     /// use channels::*;
     /// use serde::{Serialize, Deserialize};
-    /// use serialization::SerializableStruct;
+    /// use serialization::structs::SerializableStruct;
     ///
     /// // Define proper input/output types
     /// #[derive(Clone)]
@@ -291,8 +306,11 @@ pub trait BlockSpec: BlockSpecAssociatedTypes {
     /// struct NoInputKeys;
     /// #[derive(Serialize, Deserialize)]
     /// struct NoOutputKeys;
+    /// #[derive(Serialize, Deserialize)]
+    /// struct CounterInitParams { initial_value: i32 }
     /// impl SerializableStruct for NoInputKeys {}
     /// impl SerializableStruct for NoOutputKeys {}
+    /// impl SerializableStruct for CounterInitParams {}
     ///
     /// impl BlockInput for NoInput { type Keys = NoInputKeys; }
     /// impl BlockOutput for NoOutput { type Keys = NoOutputKeys; }
@@ -320,9 +338,11 @@ pub trait BlockSpec: BlockSpecAssociatedTypes {
     ///     type Input = NoInput;
     ///     type Output = NoOutput;
     ///     type State = i32;
+    ///     type InitParameters = CounterInitParams;
     /// }
     ///
     /// impl BlockSpec for CounterBlock {
+    ///     fn new_from_init_params(params: &CounterInitParams) -> Self { CounterBlock }
     ///     fn init_state(&self) -> i32 {
     ///         0  // Start counter at zero
     ///     }
@@ -330,6 +350,21 @@ pub trait BlockSpec: BlockSpecAssociatedTypes {
     /// }
     /// ```
     fn init_state(&self) -> Self::State;
+
+    /// Create a new instance of the block from initialization parameters.
+    ///
+    /// This method creates and returns a new instance of the block configured
+    /// with the provided parameters. This is the primary way to instantiate
+    /// blocks with specific configuration at runtime.
+    ///
+    /// # Parameters
+    ///
+    /// * `params` - The initialization parameters for this block
+    ///
+    /// # Returns
+    ///
+    /// A new instance of the block configured with the given parameters
+    fn new_from_init_params(params: &Self::InitParameters) -> Self;
 
     /// Execute the block's main logic.
     ///
@@ -355,7 +390,7 @@ pub trait BlockSpec: BlockSpecAssociatedTypes {
     /// use block_traits::*;
     /// use channels::*;
     /// use serde::{Serialize, Deserialize};
-    /// use serialization::SerializableStruct;
+    /// use serialization::structs::SerializableStruct;
     ///
     /// // Define proper input/output types
     /// #[derive(Clone)]
@@ -389,16 +424,23 @@ pub trait BlockSpec: BlockSpecAssociatedTypes {
     /// struct MockWriter<T> { written: std::cell::RefCell<Option<T>> }
     /// impl<T: Clone> Writer<T> for MockWriter<T> { fn write(&self, data: &T) { *self.written.borrow_mut() = Some(data.clone()); } }
     ///
+    /// #[derive(serde::Serialize, serde::Deserialize)]
+    /// struct InitParams;
+    /// impl serialization::structs::SerializableStruct for InitParams {}
+    ///
     /// struct AdderBlock;
     ///
     /// impl BlockSpecAssociatedTypes for AdderBlock {
     ///     type Input = IntInput;
     ///     type Output = IntOutput;
     ///     type State = i32;
+    ///     type InitParameters = InitParams;
     /// }
     ///
     /// impl BlockSpec for AdderBlock {
-    ///     # fn init_state(&self) -> i32 { 0 }
+    ///     fn new_from_init_params(_params: &InitParams) -> Self { AdderBlock }
+    ///
+    ///     fn init_state(&self) -> i32 { 0 }
     ///     
     ///     fn execute(&self, _context: &ExecutionContext, input: IntInput, state: &i32) -> (IntOutput, i32) {
     ///         let new_state = state + 1;  // Increment execution counter
@@ -548,6 +590,17 @@ mod tests {
     use channels::*;
     use std::cell::RefCell;
 
+    // Test init parameter structs
+    #[derive(serde::Serialize, serde::Deserialize)]
+    struct DoublerInitParams;
+
+    impl serialization::structs::SerializableStruct for DoublerInitParams {}
+
+    #[derive(serde::Serialize, serde::Deserialize)]
+    struct AccumulatorInitParams;
+
+    impl serialization::structs::SerializableStruct for AccumulatorInitParams {}
+
     // Test implementations for unit tests
     #[derive(Clone, Debug, PartialEq)]
     struct TestInput {
@@ -588,8 +641,8 @@ mod tests {
         }
     }
 
-    impl serialization::SerializableStruct for TestInputKeys {}
-    impl serialization::SerializableStruct for TestOutputKeys {}
+    impl serialization::structs::SerializableStruct for TestInputKeys {}
+    impl serialization::structs::SerializableStruct for TestOutputKeys {}
 
     impl InputKeys<TestInput> for TestInputKeys {
         type ReaderType = MockReader<TestInput>;
@@ -630,9 +683,14 @@ mod tests {
         type Input = TestInput;
         type Output = TestOutput;
         type State = i32; // Execution counter
+        type InitParameters = DoublerInitParams;
     }
 
     impl BlockSpec for DoublerBlock {
+        fn new_from_init_params(_params: &DoublerInitParams) -> Self {
+            DoublerBlock
+        }
+
         fn init_state(&self) -> Self::State {
             0
         }
@@ -760,9 +818,14 @@ mod tests {
         type Input = TestInput;
         type Output = TestOutput;
         type State = i32; // Accumulates input values
+        type InitParameters = AccumulatorInitParams;
     }
 
     impl BlockSpec for AccumulatorBlock {
+        fn new_from_init_params(_params: &AccumulatorInitParams) -> Self {
+            AccumulatorBlock
+        }
+
         fn init_state(&self) -> Self::State {
             0
         }

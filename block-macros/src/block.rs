@@ -9,6 +9,7 @@ pub fn block_impl(attr: TokenStream, item: TokenStream) -> TokenStream {
     let mut input_type: Option<Path> = None;
     let mut output_type: Option<Path> = None;
     let mut state_type: Option<Path> = None;
+    let mut init_type: Option<Path> = None;
 
     // Parse the attributes if provided
     if !attr.is_empty() {
@@ -29,6 +30,7 @@ pub fn block_impl(attr: TokenStream, item: TokenStream) -> TokenStream {
                                 "input" => input_type = Some(type_path),
                                 "output" => output_type = Some(type_path),
                                 "state" => state_type = Some(type_path),
+                                "init" => init_type = Some(type_path),
                                 _ => {}
                             }
                         }
@@ -37,6 +39,7 @@ pub fn block_impl(attr: TokenStream, item: TokenStream) -> TokenStream {
                         "input" => input_type = Some(expr_path.path.clone()),
                         "output" => output_type = Some(expr_path.path.clone()),
                         "state" => state_type = Some(expr_path.path.clone()),
+                        "init" => init_type = Some(expr_path.path.clone()),
                         _ => {}
                     },
                     _ => {}
@@ -49,6 +52,7 @@ pub fn block_impl(attr: TokenStream, item: TokenStream) -> TokenStream {
     let input_type = input_type.unwrap_or_else(|| syn::parse_str("Input").unwrap());
     let output_type = output_type.unwrap_or_else(|| syn::parse_str("Output").unwrap());
     let state_type = state_type.unwrap_or_else(|| syn::parse_str("State").unwrap());
+    let init_params = init_type.unwrap_or_else(|| syn::parse_str("InitParams").unwrap());
 
     let expanded = quote! {
         #input
@@ -57,6 +61,7 @@ pub fn block_impl(attr: TokenStream, item: TokenStream) -> TokenStream {
             type Input = #input_type;
             type Output = #output_type;
             type State = #state_type;
+            type InitParameters = #init_params;
         }
     };
 

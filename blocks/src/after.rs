@@ -13,10 +13,17 @@ pub struct Output {
 #[state]
 pub struct State;
 
+#[init_params]
+pub struct InitParams;
+
 #[block]
 pub struct AfterBlock;
 
 impl BlockSpec for AfterBlock {
+    fn new_from_init_params(_params: &InitParams) -> Self {
+        AfterBlock
+    }
+
     fn init_state(&self) -> State {
         State
     }

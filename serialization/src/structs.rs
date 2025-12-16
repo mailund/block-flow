@@ -16,7 +16,7 @@ use crate::error::Result;
 ///
 /// ```rust
 /// use serde::{Deserialize, Serialize};
-/// use serialization::keys::SerializableStruct;
+/// use serialization::structs::SerializableStruct;
 ///
 /// #[derive(Serialize, Deserialize)]
 /// struct MyConfig {
@@ -62,7 +62,7 @@ pub trait StructSerializer {
 /// # Examples
 ///
 /// ```rust
-/// use serialization::keys::{JsonStructSerializer, StructSerializer, SerializableStruct};
+/// use serialization::structs::{JsonStructSerializer, StructSerializer, SerializableStruct};
 /// use serde::{Deserialize, Serialize};
 ///
 /// #[derive(Serialize, Deserialize, PartialEq, Debug)]

@@ -9,8 +9,8 @@
 //! - Protocol Buffers (efficient binary format)
 
 pub mod error;
-pub mod keys;
 pub mod serializer;
+pub mod structs;
 
 pub use error::{Result, SerializationError};
-pub use keys::{JsonStructSerializer, SerializableStruct, StructSerializer};
+pub use structs::{JsonStructSerializer, SerializableStruct, StructSerializer};

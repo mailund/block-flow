@@ -97,7 +97,7 @@ pub fn input_impl(_attr: TokenStream, item: TokenStream) -> TokenStream {
             }
         }
 
-        impl serialization::SerializableStruct for #keys_name {}
+        impl serialization::structs::SerializableStruct for #keys_name {}
 
         impl block_traits::BlockInput for #struct_name {
             type Keys = #keys_name;
