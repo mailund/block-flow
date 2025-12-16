@@ -1,0 +1,138 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, master ]
+    paths:
+      - '**.rs'
+      - '**/Cargo.toml'
+      - '**/Cargo.lock'
+  pull_request:
+    branches: [ main, master ]
+    paths:
+      - '**.rs'
+      - '**/Cargo.toml'
+      - '**/Cargo.lock'
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+      
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          key: test
+      
+      - name: Build
+        run: cargo build --verbose --workspace
+      
+      - name: Run tests
+        run: cargo test --workspace --verbose
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          key: lint
+      
+      - name: Check formatting
+        run: cargo fmt --all -- --check
+      
+      - name: Run clippy
+        run: cargo clippy --workspace --all-targets --all-features -- -D warnings
+
+  coverage:
+    name: Code Coverage
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+      
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          key: coverage
+      
+      - name: Install tarpaulin
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-tarpaulin
+      
+      - name: Generate coverage
+        run: cargo tarpaulin --workspace --verbose --timeout 300 --out xml --output-dir coverage
+
+      - name: Check coverage threshold
+        run: |
+          # Extract coverage percentage from XML report
+          COVERAGE=$(grep -o 'line-rate="[0-9.]*"' coverage/cobertura.xml | head -1 | grep -o '[0-9.]*')
+          COVERAGE_PERCENT=$(echo "$COVERAGE * 100" | bc -l | cut -d. -f1)
+          
+          echo "Current coverage: ${COVERAGE_PERCENT}%"
+          
+          # Set minimum threshold (you can adjust this value)
+          MIN_THRESHOLD=20
+          
+          if [ "$COVERAGE_PERCENT" -lt "$MIN_THRESHOLD" ]; then
+            echo "Coverage $COVERAGE_PERCENT% is below minimum threshold of $MIN_THRESHOLD%"
+            exit 1
+          else
+            echo "Coverage $COVERAGE_PERCENT% meets minimum threshold of $MIN_THRESHOLD%"
+          fi
+          
+          # Check for coverage drop if we have a baseline
+          if [ -f coverage/baseline.txt ]; then
+            BASELINE=$(cat coverage/baseline.txt)
+            BASELINE_PERCENT=$(echo "$BASELINE * 100" | bc -l | cut -d. -f1)
+            DIFF=$(echo "$COVERAGE_PERCENT - $BASELINE_PERCENT" | bc -l)
+            
+            echo "Baseline coverage: ${BASELINE_PERCENT}%"
+            echo "Coverage change: ${DIFF}%"
+            
+            # Fail if coverage dropped by more than 10%
+            if (( $(echo "$DIFF < -10" | bc -l) )); then
+              echo "Coverage dropped by more than 10% (from ${BASELINE_PERCENT}% to ${COVERAGE_PERCENT}%)"
+              exit 1
+            else
+              echo "Coverage change is within acceptable range"
+            fi
+          else
+            echo "No baseline coverage found, setting current coverage as baseline"
+          fi
+          
+          # Store current coverage as baseline for next run
+          echo "$COVERAGE" > coverage/baseline.txt
+
+      - name: Upload coverage artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-reports
+          path: coverage/
+          retention-days: 30
