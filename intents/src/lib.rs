@@ -109,6 +109,8 @@ impl BlockIntents for ZeroIntents {
     }
 }
 
+// FIXME: Use these types to set the slot IDs.
+
 #[derive(Clone, Debug)]
 pub struct OneIntent(pub Intent);
 impl OneIntent {
