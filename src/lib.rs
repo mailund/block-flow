@@ -15,7 +15,7 @@ pub use block_traits::*;
 pub use blocks::*;
 
 // Re-export registry functionality
-pub use registry::*;
+pub use channels::*;
 
 // Re-export macros
 pub use block_macros::*;

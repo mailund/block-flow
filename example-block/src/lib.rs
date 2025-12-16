@@ -64,7 +64,7 @@ mod tests {
     use super::adder_block::*;
     use super::*;
     use block_traits::{Block, BlockInput, BlockOutput};
-    use registry::{InputKeys, OutputKeys, Registry};
+    use channels::{ChannelRegistry, InputKeys, OutputKeys};
 
     #[test]
     fn test_adder_block_pure_execution() {
@@ -97,7 +97,7 @@ mod tests {
 
     #[test]
     fn test_input_output_readers() {
-        let mut registry = Registry::new();
+        let mut registry = ChannelRegistry::new();
         registry.put("input_a", 7);
         registry.put("input_b", 13);
         registry.put("output_sum", 0);
@@ -131,7 +131,7 @@ mod tests {
 
     #[test]
     fn test_adder_block_with_registry() {
-        let mut registry = Registry::new();
+        let mut registry = ChannelRegistry::new();
         let block = AdderBlock::new(100);
 
         // Setup input data
@@ -166,7 +166,7 @@ mod tests {
 
     #[test]
     fn test_adder_block_registry_updates() {
-        let mut registry = Registry::new();
+        let mut registry = ChannelRegistry::new();
         let block = AdderBlock::new(0);
 
         // Setup input data
@@ -218,7 +218,7 @@ mod tests {
             y: f64,
         }
 
-        let mut registry = Registry::new();
+        let mut registry = ChannelRegistry::new();
         registry.put("x_val", 42i32);
         registry.put("y_val", 3.5f64);
 

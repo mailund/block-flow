@@ -85,22 +85,22 @@ pub fn output_impl(_attr: TokenStream, item: TokenStream) -> TokenStream {
             }
         }
 
-        impl registry::Writer<#struct_name> for #writer_name {
+        impl channels::Writer<#struct_name> for #writer_name {
             fn write(&self, output: &#struct_name) {
                 #writer_name::write(self, output)
             }
         }
 
-        impl registry::OutputKeys<#struct_name> for #keys_name {
+        impl channels::OutputKeys<#struct_name> for #keys_name {
             type WriterType = #writer_name;
 
-            fn writer(&self, registry: &registry::Registry) -> Result<Self::WriterType, registry::RegistryError> {
+            fn writer(&self, registry: &channels::ChannelRegistry) -> Result<Self::WriterType, channels::RegistryError> {
                 Ok(#writer_name {
                     #(#writer_assignments,)*
                 })
             }
 
-            fn register(&self, registry: &mut registry::Registry) {
+            fn register(&self, registry: &mut channels::ChannelRegistry) {
                 #(
                     registry.ensure::<#field_types>(&self.#field_names);
                 )*

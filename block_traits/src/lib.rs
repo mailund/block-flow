@@ -7,7 +7,7 @@
 ///
 /// ```rust
 /// use block_traits::*;
-/// use registry::*;
+/// use channels::*;
 ///
 /// // Define a simple input type
 /// #[derive(Clone)]
@@ -21,7 +21,7 @@
 /// impl InputKeys<SimpleInput> for SimpleInputKeys {
 ///     type ReaderType = MockReader<SimpleInput>;
 ///     
-///     fn reader(&self, _registry: &Registry) -> Result<Self::ReaderType, RegistryError> {
+///     fn reader(&self, _registry: &ChannelRegistry) -> Result<Self::ReaderType, RegistryError> {
 ///         Ok(MockReader { data: SimpleInput { value: 42 } })
 ///     }
 /// }
@@ -37,7 +37,7 @@
 /// }
 /// ```
 pub trait BlockInput: Sized {
-    type Keys: registry::InputKeys<Self>;
+    type Keys: channels::InputKeys<Self>;
 }
 
 /// Trait for block output data types.
@@ -49,7 +49,7 @@ pub trait BlockInput: Sized {
 ///
 /// ```rust
 /// use block_traits::*;
-/// use registry::*;
+/// use channels::*;
 ///
 /// // Define a simple output type
 /// #[derive(Clone)]
@@ -63,11 +63,11 @@ pub trait BlockInput: Sized {
 /// impl OutputKeys<SimpleOutput> for SimpleOutputKeys {
 ///     type WriterType = MockWriter<SimpleOutput>;
 ///     
-///     fn writer(&self, _registry: &Registry) -> Result<Self::WriterType, RegistryError> {
+///     fn writer(&self, _registry: &ChannelRegistry) -> Result<Self::WriterType, RegistryError> {
 ///         Ok(MockWriter { written: std::cell::RefCell::new(None) })
 ///     }
 ///     
-///     fn register(&self, _registry: &mut Registry) {
+///     fn register(&self, _registry: &mut ChannelRegistry) {
 ///         // Registration logic would go here
 ///     }
 /// }
@@ -88,7 +88,7 @@ pub trait BlockInput: Sized {
 /// }
 /// ```
 pub trait BlockOutput: Sized {
-    type Keys: registry::OutputKeys<Self>;
+    type Keys: channels::OutputKeys<Self>;
 }
 
 /// Associated types for block specifications.
@@ -102,7 +102,7 @@ pub trait BlockOutput: Sized {
 ///
 /// ```rust
 /// use block_traits::*;
-/// use registry::*;
+/// use channels::*;
 ///
 /// // Define wrapper types that implement the required traits
 /// #[derive(Clone)]
@@ -117,17 +117,17 @@ pub trait BlockOutput: Sized {
 ///
 /// impl InputKeys<NoInput> for NoInputKeys {
 ///     type ReaderType = MockReader<NoInput>;
-///     fn reader(&self, _registry: &Registry) -> Result<Self::ReaderType, RegistryError> {
+///     fn reader(&self, _registry: &ChannelRegistry) -> Result<Self::ReaderType, RegistryError> {
 ///         Ok(MockReader { data: NoInput })
 ///     }
 /// }
 ///
 /// impl OutputKeys<CountOutput> for CountOutputKeys {
 ///     type WriterType = MockWriter<CountOutput>;
-///     fn writer(&self, _registry: &Registry) -> Result<Self::WriterType, RegistryError> {
+///     fn writer(&self, _registry: &ChannelRegistry) -> Result<Self::WriterType, RegistryError> {
 ///         Ok(MockWriter { written: std::cell::RefCell::new(None) })
 ///     }
-///     fn register(&self, _registry: &mut Registry) {}
+///     fn register(&self, _registry: &mut ChannelRegistry) {}
 /// }
 ///
 /// impl BlockInput for NoInput {
@@ -174,7 +174,7 @@ pub trait BlockSpecAssociatedTypes {
 ///
 /// ```rust
 /// use block_traits::*;
-/// use registry::*;
+/// use channels::*;
 ///
 /// // Define wrapper types that implement the required traits
 /// #[derive(Clone)]
@@ -189,17 +189,17 @@ pub trait BlockSpecAssociatedTypes {
 ///
 /// impl InputKeys<IntInput> for IntInputKeys {
 ///     type ReaderType = MockReader<IntInput>;
-///     fn reader(&self, _registry: &Registry) -> Result<Self::ReaderType, RegistryError> {
+///     fn reader(&self, _registry: &ChannelRegistry) -> Result<Self::ReaderType, RegistryError> {
 ///         Ok(MockReader { data: IntInput { value: 21 } })
 ///     }
 /// }
 ///
 /// impl OutputKeys<IntOutput> for IntOutputKeys {
 ///     type WriterType = MockWriter<IntOutput>;
-///     fn writer(&self, _registry: &Registry) -> Result<Self::WriterType, RegistryError> {
+///     fn writer(&self, _registry: &ChannelRegistry) -> Result<Self::WriterType, RegistryError> {
 ///         Ok(MockWriter { written: std::cell::RefCell::new(None) })
 ///     }
-///     fn register(&self, _registry: &mut Registry) {}
+///     fn register(&self, _registry: &mut ChannelRegistry) {}
 /// }
 ///
 /// impl BlockInput for IntInput {
@@ -256,10 +256,10 @@ pub trait BlockSpec: BlockSpecAssociatedTypes {
 
     fn register_outputs(
         &self,
-        registry: &mut registry::Registry,
+        registry: &mut channels::ChannelRegistry,
         out_keys: &<Self::Output as BlockOutput>::Keys,
     ) {
-        <<Self::Output as BlockOutput>::Keys as registry::OutputKeys<Self::Output>>::register(
+        <<Self::Output as BlockOutput>::Keys as channels::OutputKeys<Self::Output>>::register(
             out_keys, registry,
         )
     }
@@ -267,14 +267,14 @@ pub trait BlockSpec: BlockSpecAssociatedTypes {
     /// Wire the block to the registry
     fn wire(
         self,
-        registry: &registry::Registry,
+        registry: &channels::ChannelRegistry,
         in_keys: &<Self::Input as BlockInput>::Keys,
         out_keys: &<Self::Output as BlockOutput>::Keys,
-    ) -> Result<WrappedBlock<Self>, registry::RegistryError>
+    ) -> Result<WrappedBlock<Self>, channels::RegistryError>
     where
         Self: Sized,
     {
-        use registry::{InputKeys, OutputKeys};
+        use channels::{InputKeys, OutputKeys};
 
         // Create readers/writers that capture the Rc references
         let input_reader = in_keys.reader(registry)?;
@@ -293,10 +293,10 @@ pub trait BlockSpec: BlockSpecAssociatedTypes {
     /// Declare and wire in one step
     fn declare_and_wire(
         self,
-        registry: &mut registry::Registry,
+        registry: &mut channels::ChannelRegistry,
         in_keys: &<Self::Input as BlockInput>::Keys,
         out_keys: &<Self::Output as BlockOutput>::Keys,
-    ) -> Result<WrappedBlock<Self>, registry::RegistryError>
+    ) -> Result<WrappedBlock<Self>, channels::RegistryError>
     where
         Self: Sized,
     {
@@ -348,17 +348,17 @@ pub struct ExecutionContext {
 
 pub struct WrappedBlock<B: BlockSpec> {
     pub block: B,
-    pub input_reader: <<B::Input as BlockInput>::Keys as registry::InputKeys<B::Input>>::ReaderType,
+    pub input_reader: <<B::Input as BlockInput>::Keys as channels::InputKeys<B::Input>>::ReaderType,
     pub output_writer:
-        <<B::Output as BlockOutput>::Keys as registry::OutputKeys<B::Output>>::WriterType,
+        <<B::Output as BlockOutput>::Keys as channels::OutputKeys<B::Output>>::WriterType,
     pub state: B::State,
 }
 
 impl<B: BlockSpec> WrappedBlock<B> {
     pub fn new(
         block: B,
-        input_reader: <<B::Input as BlockInput>::Keys as registry::InputKeys<B::Input>>::ReaderType,
-        output_writer: <<B::Output as BlockOutput>::Keys as registry::OutputKeys<
+        input_reader: <<B::Input as BlockInput>::Keys as channels::InputKeys<B::Input>>::ReaderType,
+        output_writer: <<B::Output as BlockOutput>::Keys as channels::OutputKeys<
             B::Output,
         >>::WriterType,
     ) -> Self {
@@ -374,7 +374,7 @@ impl<B: BlockSpec> WrappedBlock<B> {
 
 impl<B: BlockSpec> Block for WrappedBlock<B> {
     fn execute(&mut self, context: &ExecutionContext) {
-        use registry::{Reader, Writer};
+        use channels::{Reader, Writer};
         let input = self.input_reader.read();
         let (output, new_state) = self.block.execute(context, input, &self.state);
         self.output_writer.write(&output);
@@ -385,7 +385,7 @@ impl<B: BlockSpec> Block for WrappedBlock<B> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use registry::*;
+    use channels::*;
     use std::cell::RefCell;
 
     // Test implementations for unit tests
@@ -429,7 +429,7 @@ mod tests {
     impl InputKeys<TestInput> for TestInputKeys {
         type ReaderType = MockReader<TestInput>;
 
-        fn reader(&self, _registry: &Registry) -> Result<Self::ReaderType, RegistryError> {
+        fn reader(&self, _registry: &ChannelRegistry) -> Result<Self::ReaderType, RegistryError> {
             Ok(MockReader {
                 data: TestInput { value: self.value },
             })
@@ -439,13 +439,13 @@ mod tests {
     impl OutputKeys<TestOutput> for TestOutputKeys {
         type WriterType = MockWriter<TestOutput>;
 
-        fn writer(&self, _registry: &Registry) -> Result<Self::WriterType, RegistryError> {
+        fn writer(&self, _registry: &ChannelRegistry) -> Result<Self::WriterType, RegistryError> {
             Ok(MockWriter {
                 written: RefCell::new(None),
             })
         }
 
-        fn register(&self, _registry: &mut Registry) {
+        fn register(&self, _registry: &mut ChannelRegistry) {
             // Mock implementation
         }
     }

@@ -1,5 +1,5 @@
 [workspace]
-members = ["registry", "example-block", "block-macros", "blocks"]
+members = ["channels", "example-block", "block-macros", "blocks"]
 
 [package]
 name = "block-flow"
@@ -12,7 +12,7 @@ path = "src/lib.rs"
 [dependencies]
 block_traits = { path = "block_traits" }
 blocks = { path = "blocks" }
-registry = { path = "registry" }
+channels = { path = "channels" }
 block-macros = { path = "block-macros" }
 
 [dev-dependencies]

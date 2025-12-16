@@ -41,7 +41,7 @@ pub trait Reader<T> {
 /// Trait for keys that can create readers
 pub trait InputKeys<T> {
     type ReaderType: Reader<T>;
-    fn reader(&self, registry: &Registry) -> Result<Self::ReaderType, RegistryError>;
+    fn reader(&self, registry: &ChannelRegistry) -> Result<Self::ReaderType, RegistryError>;
 }
 
 /// Trait for writers that can write values of type T
@@ -52,16 +52,16 @@ pub trait Writer<T> {
 /// Trait for keys that can create writers
 pub trait OutputKeys<T> {
     type WriterType: Writer<T>;
-    fn writer(&self, registry: &Registry) -> Result<Self::WriterType, RegistryError>;
-    fn register(&self, registry: &mut Registry);
+    fn writer(&self, registry: &ChannelRegistry) -> Result<Self::WriterType, RegistryError>;
+    fn register(&self, registry: &mut ChannelRegistry);
 }
 
 /// The registry for storing typed values
-pub struct Registry {
+pub struct ChannelRegistry {
     store: HashMap<String, Rc<dyn Any>>,
 }
 
-impl Registry {
+impl ChannelRegistry {
     /// Create a new empty registry
     pub fn new() -> Self {
         Self {
@@ -112,7 +112,7 @@ impl Registry {
     }
 }
 
-impl Default for Registry {
+impl Default for ChannelRegistry {
     fn default() -> Self {
         Self::new()
     }
@@ -124,7 +124,7 @@ mod tests {
 
     #[test]
     fn test_put_and_get() {
-        let mut registry = Registry::new();
+        let mut registry = ChannelRegistry::new();
 
         // Put a value
         registry.put("test_key", 42i32);
@@ -136,7 +136,7 @@ mod tests {
 
     #[test]
     fn test_put_and_get_string() {
-        let mut registry = Registry::new();
+        let mut registry = ChannelRegistry::new();
 
         registry.put("message", "Hello, World!".to_string());
 
@@ -146,7 +146,7 @@ mod tests {
 
     #[test]
     fn test_get_nonexistent_key() {
-        let registry = Registry::new();
+        let registry = ChannelRegistry::new();
 
         let result = registry.get::<i32>("missing");
         assert_eq!(
@@ -157,7 +157,7 @@ mod tests {
 
     #[test]
     fn test_get_wrong_type() {
-        let mut registry = Registry::new();
+        let mut registry = ChannelRegistry::new();
 
         registry.put("number", 42i32);
 
@@ -172,7 +172,7 @@ mod tests {
 
     #[test]
     fn test_ensure_new_key() {
-        let mut registry = Registry::new();
+        let mut registry = ChannelRegistry::new();
 
         let value = registry.ensure::<i32>("new_key");
         assert_eq!(*value.borrow(), 0); // Default for i32
@@ -184,7 +184,7 @@ mod tests {
 
     #[test]
     fn test_ensure_existing_key() {
-        let mut registry = Registry::new();
+        let mut registry = ChannelRegistry::new();
 
         registry.put("existing", 42i32);
 
@@ -201,7 +201,7 @@ mod tests {
 
     #[test]
     fn test_ensure_with_custom_default() {
-        let mut registry = Registry::new();
+        let mut registry = ChannelRegistry::new();
 
         #[derive(Default, PartialEq, Debug)]
         struct CustomStruct {
@@ -214,7 +214,7 @@ mod tests {
 
     #[test]
     fn test_mutable_access() {
-        let mut registry = Registry::new();
+        let mut registry = ChannelRegistry::new();
 
         registry.put("counter", 0i32);
 
@@ -231,7 +231,7 @@ mod tests {
 
     #[test]
     fn test_multiple_references() {
-        let mut registry = Registry::new();
+        let mut registry = ChannelRegistry::new();
 
         registry.put("shared", vec![1, 2, 3]);
 

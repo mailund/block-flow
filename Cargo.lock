@@ -9,7 +9,7 @@ dependencies = [
  "block-macros",
  "block_traits",
  "blocks",
- "registry",
+ "channels",
 ]
 
 [[package]]
@@ -25,7 +25,7 @@ dependencies = [
 name = "block_traits"
 version = "0.1.0"
 dependencies = [
- "registry",
+ "channels",
 ]
 
 [[package]]
@@ -34,8 +34,12 @@ version = "0.1.0"
 dependencies = [
  "block-macros",
  "block_traits",
- "registry",
+ "channels",
 ]
+
+[[package]]
+name = "channels"
+version = "0.1.0"
 
 [[package]]
 name = "example-block"
@@ -44,7 +48,7 @@ dependencies = [
  "block-macros",
  "block_traits",
  "blocks",
- "registry",
+ "channels",
 ]
 
 [[package]]
@@ -64,10 +68,6 @@ checksum = "a338cc41d27e6cc6dce6cefc13a0729dfbb81c262b1f519331575dd80ef3067f"
 dependencies = [
  "proc-macro2",
 ]
-
-[[package]]
-name = "registry"
-version = "0.1.0"
 
 [[package]]
 name = "syn"

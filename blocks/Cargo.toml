@@ -4,6 +4,6 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-registry = { path = "../registry" }
+channels = { path = "../channels" }
 block-macros = { path = "../block-macros" }
 block_traits = { path = "../block_traits" }
