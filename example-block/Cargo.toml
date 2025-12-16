@@ -11,5 +11,6 @@ block_traits = { path = "../block_traits" }
 serialization = { path = "../serialization" }
 serde = { version = "1.0", features = ["derive"] }
 weave = { path = "../weave" }
+intents = { path = "../intents" }
 
 [dev-dependencies]

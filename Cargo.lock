@@ -24,6 +24,7 @@ dependencies = [
 name = "block-macros"
 version = "0.1.0"
 dependencies = [
+ "intents",
  "proc-macro2",
  "quote",
  "serialization",
@@ -35,6 +36,7 @@ name = "block_traits"
 version = "0.1.0"
 dependencies = [
  "channels",
+ "intents",
  "serde",
  "serialization",
  "serialization-macros",
@@ -47,6 +49,7 @@ dependencies = [
  "block-macros",
  "block_traits",
  "channels",
+ "intents",
  "serde",
  "serde_json",
  "serialization",
@@ -82,6 +85,7 @@ dependencies = [
  "block_traits",
  "blocks",
  "channels",
+ "intents",
  "serde",
  "serialization",
  "weave",
@@ -103,6 +107,13 @@ dependencies = [
  "libc",
  "r-efi",
  "wasip2",
+]
+
+[[package]]
+name = "intents"
+version = "0.1.0"
+dependencies = [
+ "trade_types",
 ]
 
 [[package]]
