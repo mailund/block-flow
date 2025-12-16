@@ -220,7 +220,7 @@ mod tests {
 
         let mut registry = Registry::new();
         registry.put("x_val", 42i32);
-        registry.put("y_val", 3.14f64);
+        registry.put("y_val", 3.5f64);
 
         let keys = TestInputKeys {
             x: "x_val".to_string(),
@@ -232,6 +232,6 @@ mod tests {
         let input = reader.read();
 
         assert_eq!(input.x, 42);
-        assert_eq!(input.y, 3.14);
+        assert_eq!(input.y, 3.5);
     }
 }

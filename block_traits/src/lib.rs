@@ -1,5 +1,3 @@
-use registry;
-
 pub trait BlockInput: Sized {
     type Keys: registry::InputKeys<Self>;
 }
