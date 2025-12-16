@@ -13,6 +13,7 @@ pub fn init_params_impl(_attr: TokenStream, item: TokenStream) -> TokenStream {
     );
 
     let expanded = quote! {
+        #[derive(Clone, Debug)]
         #s
         impl ::serialization::structs::SerializableStruct for #name {}
     };

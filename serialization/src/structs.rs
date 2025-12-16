@@ -115,6 +115,10 @@ impl StructSerializer for JsonStructSerializer {
     }
 }
 
+pub fn read_struct_from_json<S: SerializableStruct>(data: &[u8]) -> Result<S> {
+    crate::serializer::Serializer::from_json(data)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

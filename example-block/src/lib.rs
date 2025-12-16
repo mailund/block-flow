@@ -244,4 +244,30 @@ mod tests {
         assert_eq!(input.x, 42);
         assert_eq!(input.y, 3.5);
     }
+
+    #[test]
+    fn get_node_from_json() {
+        let json = r#"
+        {
+            "input_keys": {
+                "a": "input_a",
+                "b": "input_b"
+            },
+            "output_keys": {
+                "sum": "output_sum"
+            },
+            "init_params": {
+                "offset": 5
+            }
+        }
+        "#;
+
+        let summary: weave::BlockSerializationSummary<adder_block::AdderBlock> =
+            serialization::read_struct_from_json(json.as_bytes()).unwrap();
+
+        assert_eq!(summary.init_params.offset, 5);
+        assert_eq!(summary.input_keys.a, "input_a");
+        assert_eq!(summary.input_keys.b, "input_b");
+        assert_eq!(summary.output_keys.sum, "output_sum");
+    }
 }

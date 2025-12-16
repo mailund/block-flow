@@ -7,6 +7,9 @@ use std::rc::Rc;
 #[derive(Debug, PartialEq)]
 pub enum RegistryError {
     KeyNotFound(String),
+    CycleDetected(String),
+    DuplicateOutputKey(String),
+    MissingProducer(String),
     TypeMismatch {
         key: String,
         expected: &'static str,
@@ -18,6 +21,15 @@ impl std::fmt::Display for RegistryError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             RegistryError::KeyNotFound(key) => write!(f, "Key '{}' not found in registry", key),
+            RegistryError::CycleDetected(details) => {
+                write!(f, "Cycle detected in registry: {}", details)
+            }
+            RegistryError::DuplicateOutputKey(key) => {
+                write!(f, "Duplicate output key '{key}' in registry")
+            }
+            RegistryError::MissingProducer(err) => {
+                write!(f, "Missing producer error: {err}")
+            }
             RegistryError::TypeMismatch {
                 key,
                 expected,
@@ -73,6 +85,11 @@ impl ChannelRegistry {
         Self {
             store: HashMap::new(),
         }
+    }
+
+    pub fn has(&self, key: impl Into<String>) -> bool {
+        let key = key.into();
+        self.store.contains_key(&key)
     }
 
     /// Put a value into the registry
