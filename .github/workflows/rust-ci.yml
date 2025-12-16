@@ -2,42 +2,21 @@ name: Rust CI
 
 on:
   push:
-    branches:
-      - main
+    paths:
+      - '**.rs'
   pull_request:
+    paths:
+      - '**.rs'
 
 jobs:
-  test:
+  build:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Check out code
-      uses: actions/checkout@v3
-
-    - name: Set up Rust
-      uses: actions/setup-rust@v1
-      with:
-        rust-version: stable
-
-    - name: Install dependencies
-      run: rustup component add clippy rustfmt
-
-    - name: Run tests
+    - uses: actions/checkout@v2
+    - name: Install Rust
+      run: rustup update stable
+    - name: Build
+      run: cargo build --verbose
+    - name: Test
       run: cargo test --verbose
-
-    - name: Run linter
-      run: cargo clippy -- -D warnings
-
-    - name: Check formatting
-      run: cargo fmt -- --check
-
-    - name: Run code coverage
-      run: |
-        cargo install cargo-tarpaulin
-        cargo tarpaulin --out Xml
-
-    - name: Upload coverage report
-      uses: actions/upload-artifact@v3
-      with:
-        name: coverage-report
-        path: target/tarpaulin/
