@@ -5,6 +5,7 @@ members = [
     "serialization-macros",
     "weave",
     "trade-types",
+    "intents",
 ]
 
 [package]

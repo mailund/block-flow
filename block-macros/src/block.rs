@@ -10,6 +10,7 @@ pub fn block_impl(attr: TokenStream, item: TokenStream) -> TokenStream {
     let mut output_type: Option<Path> = None;
     let mut state_type: Option<Path> = None;
     let mut init_type: Option<Path> = None;
+    let mut intents_type: Option<Path> = None;
 
     // Parse the attributes if provided
     if !attr.is_empty() {
@@ -31,6 +32,7 @@ pub fn block_impl(attr: TokenStream, item: TokenStream) -> TokenStream {
                                 "output" => output_type = Some(type_path),
                                 "state" => state_type = Some(type_path),
                                 "init" => init_type = Some(type_path),
+                                "intents" => intents_type = Some(type_path),
                                 _ => {}
                             }
                         }
@@ -40,6 +42,7 @@ pub fn block_impl(attr: TokenStream, item: TokenStream) -> TokenStream {
                         "output" => output_type = Some(expr_path.path.clone()),
                         "state" => state_type = Some(expr_path.path.clone()),
                         "init" => init_type = Some(expr_path.path.clone()),
+                        "intents" => intents_type = Some(expr_path.path.clone()),
                         _ => {}
                     },
                     _ => {}
@@ -53,6 +56,8 @@ pub fn block_impl(attr: TokenStream, item: TokenStream) -> TokenStream {
     let output_type = output_type.unwrap_or_else(|| syn::parse_str("Output").unwrap());
     let state_type = state_type.unwrap_or_else(|| syn::parse_str("State").unwrap());
     let init_params = init_type.unwrap_or_else(|| syn::parse_str("InitParams").unwrap());
+    let intents_type =
+        intents_type.unwrap_or_else(|| syn::parse_str("::intents::ZeroIntents").unwrap());
 
     let expanded = quote! {
         #input
@@ -62,6 +67,7 @@ pub fn block_impl(attr: TokenStream, item: TokenStream) -> TokenStream {
             type Output = #output_type;
             type State = #state_type;
             type InitParameters = #init_params;
+            type Intents = #intents_type;
         }
     };
 

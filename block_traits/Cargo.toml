@@ -8,3 +8,4 @@ channels = { path = "../channels" }
 serde = { version = "1.0", features = ["derive"] }
 serialization = { path = "../serialization" }
 serialization-macros = { path = "../serialization-macros" }
+intents = { path = "../intents" }

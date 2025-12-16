@@ -30,12 +30,18 @@ pub mod adder_block {
 
     #[block]
     pub struct AdderBlock {
+        pub block_id: u32,
         pub offset: i32,
     }
 
     impl BlockSpec for AdderBlock {
+        fn block_id(&self) -> u32 {
+            self.block_id
+        }
+
         fn new_from_init_params(params: &InitParams) -> Self {
             Self {
+                block_id: 0,
                 offset: params.offset,
             }
         }
@@ -51,14 +57,15 @@ pub mod adder_block {
             _context: &ExecutionContext,
             input: Input,
             state: &State,
-        ) -> (Output, State) {
+        ) -> (Output, State, Self::Intents) {
             let result = input.a + input.b + self.offset;
             let new_state = State {
                 call_count: state.call_count + 1,
             };
 
             let output = Output { sum: result };
-            (output, new_state)
+
+            (output, new_state, ::intents::ZeroIntents::new())
         }
     }
 }
@@ -79,7 +86,7 @@ mod tests {
         let state = block.init_state();
         let context = ExecutionContext { time: 0 };
 
-        let (output, new_state) = block.execute(&context, input, &state);
+        let (output, new_state, _intents) = block.execute(&context, input, &state);
 
         assert_eq!(output.sum, 18); // 5 + 3 + 10
         assert_eq!(new_state.call_count, 1);
@@ -91,11 +98,12 @@ mod tests {
         let state = block.init_state();
         let context = ExecutionContext { time: 0 };
 
-        let (output1, new_state1) = block.execute(&context, Input { a: 1, b: 2 }, &state);
+        let (output1, new_state1, _intents) = block.execute(&context, Input { a: 1, b: 2 }, &state);
         assert_eq!(output1.sum, 3);
         assert_eq!(new_state1.call_count, 1);
 
-        let (output2, new_state2) = block.execute(&context, Input { a: 10, b: 20 }, &new_state1);
+        let (output2, new_state2, _intents) =
+            block.execute(&context, Input { a: 10, b: 20 }, &new_state1);
         assert_eq!(output2.sum, 30);
         assert_eq!(new_state2.call_count, 2);
     }

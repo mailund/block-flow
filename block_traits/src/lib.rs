@@ -195,6 +195,7 @@ pub trait BlockOutput: Sized {
 ///     type Output = CountOutput;            // Outputs a count
 ///     type State = i32;                     // Internal counter state
 ///     type InitParameters = CounterInitParams;
+///     type Intents = ::intents::ZeroIntents;
 /// }
 /// ```
 pub trait BlockSpecAssociatedTypes {
@@ -202,6 +203,7 @@ pub trait BlockSpecAssociatedTypes {
     type Output: BlockOutput;
     type State; // FIXME: Should be serializable at some point
     type InitParameters: ::serialization::structs::SerializableStruct;
+    type Intents: ::intents::BlockIntents;
 }
 
 /// Execution context passed to blocks during execution.
@@ -285,21 +287,28 @@ pub struct ExecutionContext {
 ///     type Output = IntOutput;
 ///     type State = (); // No state needed
 ///     type InitParameters = DoublerInitParams;
+///     type Intents = ::intents::ZeroIntents;
 /// }
 ///
 /// impl BlockSpec for DoublerBlock {
+///     fn block_id(&self) -> u32 {
+///         8765
+///     }
+///
 ///     fn new_from_init_params(_params: &DoublerInitParams) -> Self { DoublerBlock }
 ///
 ///     fn init_state(&self) -> Self::State { () }
 ///
 ///     fn execute(&self, _context: &ExecutionContext, input: Self::Input, _state: &Self::State)
-///         -> (Self::Output, Self::State)
+///         -> (Self::Output, Self::State, Self::Intents)
 ///     {
-///         (IntOutput { result: input.value * 2 }, ())
+///         (IntOutput { result: input.value * 2 }, (), ::intents::ZeroIntents::new())
 ///     }
 /// }
 /// ```
 pub trait BlockSpec: BlockSpecAssociatedTypes {
+    fn block_id(&self) -> u32;
+
     fn init_state(&self) -> Self::State;
 
     fn new_from_init_params(params: &Self::InitParameters) -> Self;
@@ -309,7 +318,7 @@ pub trait BlockSpec: BlockSpecAssociatedTypes {
         context: &ExecutionContext,
         input: Self::Input,
         state: &Self::State,
-    ) -> (Self::Output, Self::State);
+    ) -> (Self::Output, Self::State, Self::Intents);
 }
 
 pub struct EncapsulatedBlock<B: BlockSpec> {
@@ -345,7 +354,8 @@ impl<B: BlockSpec> TypeErasedBlock for EncapsulatedBlock<B> {
     fn execute(&mut self, context: &ExecutionContext) {
         use channels::{Reader, Writer};
         let input = self.input_reader.read();
-        let (output, new_state) = self.block.execute(context, input, &self.state);
+        let (output, new_state, _intents) = self.block.execute(context, input, &self.state);
+        // FIXME: ignoring intents for now
         self.output_writer.write(&output);
         self.state = new_state;
     }
@@ -476,9 +486,14 @@ mod tests {
         type Output = TestOutput;
         type State = i32; // Execution counter
         type InitParameters = DoublerInitParams;
+        type Intents = ::intents::ZeroIntents;
     }
 
     impl BlockSpec for DoublerBlock {
+        fn block_id(&self) -> u32 {
+            8765
+        }
+
         fn new_from_init_params(_params: &DoublerInitParams) -> Self {
             DoublerBlock
         }
@@ -492,11 +507,11 @@ mod tests {
             _context: &ExecutionContext,
             input: Self::Input,
             state: &Self::State,
-        ) -> (Self::Output, Self::State) {
+        ) -> (Self::Output, Self::State, Self::Intents) {
             let output = TestOutput {
                 result: input.value * 2,
             };
-            (output, state + 1)
+            (output, state + 1, Self::Intents::new())
         }
     }
 
@@ -520,7 +535,7 @@ mod tests {
         let input = TestInput { value: 21 };
         let state = 0;
 
-        let (output, new_state) = block.execute(&context, input, &state);
+        let (output, new_state, _intents) = block.execute(&context, input, &state);
 
         assert_eq!(output.result, 42);
         assert_eq!(new_state, 1);
@@ -535,7 +550,7 @@ mod tests {
 
         // Execute multiple times to test state changes
         for expected_count in 1..=3 {
-            let (output, new_state) = block.execute(&context, input.clone(), &state);
+            let (output, new_state, _intents) = block.execute(&context, input.clone(), &state);
             assert_eq!(output.result, 10); // 5 * 2
             assert_eq!(new_state, expected_count);
             state = new_state;
@@ -611,9 +626,14 @@ mod tests {
         type Output = TestOutput;
         type State = i32; // Accumulates input values
         type InitParameters = AccumulatorInitParams;
+        type Intents = ::intents::ZeroIntents;
     }
 
     impl BlockSpec for AccumulatorBlock {
+        fn block_id(&self) -> u32 {
+            42
+        }
+
         fn new_from_init_params(_params: &AccumulatorInitParams) -> Self {
             AccumulatorBlock
         }
@@ -627,10 +647,10 @@ mod tests {
             _context: &ExecutionContext,
             input: Self::Input,
             state: &Self::State,
-        ) -> (Self::Output, Self::State) {
+        ) -> (Self::Output, Self::State, Self::Intents) {
             let new_state = state + input.value;
             let output = TestOutput { result: new_state };
-            (output, new_state)
+            (output, new_state, Self::Intents::new())
         }
     }
 
@@ -650,7 +670,7 @@ mod tests {
         let expected_results = vec![5, 15, 18];
 
         for (input, expected) in inputs.into_iter().zip(expected_results) {
-            let (output, new_state) = block.execute(&context, input, &state);
+            let (output, new_state, _intents) = block.execute(&context, input, &state);
             assert_eq!(output.result, expected);
             assert_eq!(new_state, expected);
             state = new_state;

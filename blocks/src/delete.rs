@@ -1,4 +1,5 @@
 use super::*;
+use intents::ZeroIntents;
 
 #[input]
 pub struct Input {
@@ -15,11 +16,17 @@ pub struct State;
 pub struct InitParams;
 
 #[block]
-pub struct DeleteBlock;
+pub struct DeleteBlock {
+    pub block_id: u32,
+}
 
 impl BlockSpec for DeleteBlock {
+    fn block_id(&self) -> u32 {
+        self.block_id
+    }
+
     fn new_from_init_params(_params: &InitParams) -> Self {
-        DeleteBlock
+        DeleteBlock { block_id: 0 }
     }
 
     fn init_state(&self) -> State {
@@ -31,7 +38,7 @@ impl BlockSpec for DeleteBlock {
         _context: &ExecutionContext,
         input: Input,
         _state: &State,
-    ) -> (Output, State) {
+    ) -> (Output, State, Self::Intents) {
         if input.should_delete {
             // In a real implementation, this would trigger deletion logic.
             println!("DeleteBlock: Deletion triggered.");
@@ -39,6 +46,6 @@ impl BlockSpec for DeleteBlock {
             println!("DeleteBlock: No deletion.");
         }
         let output = Output;
-        (output, State)
+        (output, State, ZeroIntents::new())
     }
 }

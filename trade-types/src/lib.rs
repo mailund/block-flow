@@ -22,14 +22,14 @@ impl Price {
     }
 }
 
-pub struct Cents(u32);
+pub struct Cents(pub u32);
 impl Into<Price> for Cents {
     fn into(self) -> Price {
         Price { cents: self.0 }
     }
 }
 
-pub struct Euros(u32);
+pub struct Euros(pub u32);
 impl Into<Price> for Euros {
     fn into(self) -> Price {
         Price {
@@ -38,6 +38,7 @@ impl Into<Price> for Euros {
     }
 }
 
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Quantity {
     kw: u32,
 }
@@ -50,20 +51,21 @@ impl Quantity {
     }
 }
 
-pub struct Kw(u32);
+pub struct Kw(pub u32);
 impl Into<Quantity> for Kw {
     fn into(self) -> Quantity {
         Quantity { kw: self.0 }
     }
 }
 
-pub struct Mw(u32);
+pub struct Mw(pub u32);
 impl Into<Quantity> for Mw {
     fn into(self) -> Quantity {
         Quantity { kw: self.0 * 1000 }
     }
 }
 
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub enum Side {
     Buy,
     Sell,

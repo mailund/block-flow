@@ -1,3 +1,5 @@
+use intents::ZeroIntents;
+
 use super::*;
 
 #[input]
@@ -18,12 +20,20 @@ pub struct InitParams {
 
 #[block]
 pub struct AfterBlock {
+    pub block_id: u32,
     time: u64,
 }
 
 impl BlockSpec for AfterBlock {
+    fn block_id(&self) -> u32 {
+        self.block_id
+    }
+
     fn new_from_init_params(params: &InitParams) -> Self {
-        AfterBlock { time: params.time }
+        AfterBlock {
+            block_id: 0,
+            time: params.time,
+        }
     }
 
     fn init_state(&self) -> State {
@@ -35,9 +45,9 @@ impl BlockSpec for AfterBlock {
         context: &ExecutionContext,
         _input: Input,
         _state: &State,
-    ) -> (Output, State) {
+    ) -> (Output, State, Self::Intents) {
         let is_after = context.time > self.time;
         let output = Output { is_after };
-        (output, State)
+        (output, State, ZeroIntents::new())
     }
 }
