@@ -34,25 +34,20 @@ pub trait SerializableStruct: Serialize + for<'de> Deserialize<'de> {}
 /// to be used for struct serialization.
 pub trait StructSerializer {
     /// Serialize struct to bytes
-    fn serialize<S: SerializableStruct>(&self, name: &str, data: &S) -> Result<Vec<u8>>;
+    fn serialize<S: SerializableStruct>(&self, data: &S) -> Result<Vec<u8>>;
 
     /// Deserialize struct from bytes
-    fn deserialize<S: SerializableStruct>(&self, name: &str, data: &[u8]) -> Result<S>;
+    fn deserialize<S: SerializableStruct>(&self, data: &[u8]) -> Result<S>;
 
     /// Serialize struct to a writer
     fn serialize_to_writer<S: SerializableStruct, W: Write>(
         &self,
-        name: &str,
         data: &S,
         writer: W,
     ) -> Result<()>;
 
     /// Deserialize struct from a reader
-    fn deserialize_from_reader<S: SerializableStruct, R: Read>(
-        &self,
-        name: &str,
-        reader: R,
-    ) -> Result<S>;
+    fn deserialize_from_reader<S: SerializableStruct, R: Read>(&self, reader: R) -> Result<S>;
 }
 
 /// JSON implementation of StructSerializer
@@ -79,8 +74,8 @@ pub trait StructSerializer {
 ///     field_b: 42,
 /// };
 ///
-/// let bytes = serializer.serialize("TestData", &data).unwrap();
-/// let restored: TestData = serializer.deserialize("TestData", &bytes).unwrap();
+/// let bytes = serializer.serialize(&data).unwrap();
+/// let restored: TestData = serializer.deserialize(&bytes).unwrap();
 /// assert_eq!(data, restored);
 /// ```
 pub struct JsonStructSerializer;
@@ -99,28 +94,23 @@ impl Default for JsonStructSerializer {
 }
 
 impl StructSerializer for JsonStructSerializer {
-    fn serialize<S: SerializableStruct>(&self, _name: &str, data: &S) -> Result<Vec<u8>> {
+    fn serialize<S: SerializableStruct>(&self, data: &S) -> Result<Vec<u8>> {
         crate::serializer::Serializer::to_json_pretty(data)
     }
 
-    fn deserialize<S: SerializableStruct>(&self, _name: &str, data: &[u8]) -> Result<S> {
+    fn deserialize<S: SerializableStruct>(&self, data: &[u8]) -> Result<S> {
         crate::serializer::Serializer::from_json(data)
     }
 
     fn serialize_to_writer<S: SerializableStruct, W: Write>(
         &self,
-        _name: &str,
         data: &S,
         writer: W,
     ) -> Result<()> {
         crate::serializer::Serializer::to_json_pretty_writer(data, writer)
     }
 
-    fn deserialize_from_reader<S: SerializableStruct, R: Read>(
-        &self,
-        _name: &str,
-        reader: R,
-    ) -> Result<S> {
+    fn deserialize_from_reader<S: SerializableStruct, R: Read>(&self, reader: R) -> Result<S> {
         crate::serializer::Serializer::from_json_reader(reader)
     }
 }
@@ -164,8 +154,8 @@ mod tests {
         let serializer = JsonStructSerializer::new();
         let config = create_test_config_a();
 
-        let bytes = serializer.serialize("TestConfigA", &config).unwrap();
-        let restored: TestConfigA = serializer.deserialize("TestConfigA", &bytes).unwrap();
+        let bytes = serializer.serialize(&config).unwrap();
+        let restored: TestConfigA = serializer.deserialize(&bytes).unwrap();
 
         assert_eq!(config, restored);
     }
@@ -175,8 +165,8 @@ mod tests {
         let serializer = JsonStructSerializer::new();
         let config = create_test_config_b();
 
-        let bytes = serializer.serialize("TestConfigB", &config).unwrap();
-        let restored: TestConfigB = serializer.deserialize("TestConfigB", &bytes).unwrap();
+        let bytes = serializer.serialize(&config).unwrap();
+        let restored: TestConfigB = serializer.deserialize(&bytes).unwrap();
 
         assert_eq!(config, restored);
     }
@@ -189,13 +179,11 @@ mod tests {
 
         // Write to buffer
         serializer
-            .serialize_to_writer("TestConfigA", &config, &mut buffer)
+            .serialize_to_writer(&config, &mut buffer)
             .unwrap();
 
         // Read from buffer
-        let restored: TestConfigA = serializer
-            .deserialize_from_reader("TestConfigA", &buffer[..])
-            .unwrap();
+        let restored: TestConfigA = serializer.deserialize_from_reader(&buffer[..]).unwrap();
 
         assert_eq!(config, restored);
     }
@@ -208,7 +196,7 @@ mod tests {
             field_b: "config_channel".to_string(),
         };
 
-        let bytes = serializer.serialize("TestConfig", &config).unwrap();
+        let bytes = serializer.serialize(&config).unwrap();
         let json_str = String::from_utf8(bytes).unwrap();
 
         // Should be pretty-printed JSON
@@ -225,14 +213,14 @@ mod tests {
         let config = create_test_config_a();
 
         // The name parameter doesn't affect JSON serialization
-        let bytes1 = serializer.serialize("Name1", &config).unwrap();
-        let bytes2 = serializer.serialize("Name2", &config).unwrap();
+        let bytes1 = serializer.serialize(&config).unwrap();
+        let bytes2 = serializer.serialize(&config).unwrap();
 
         assert_eq!(bytes1, bytes2);
 
         // Both should deserialize to the same thing regardless of name
-        let restored1: TestConfigA = serializer.deserialize("Name1", &bytes1).unwrap();
-        let restored2: TestConfigA = serializer.deserialize("Name2", &bytes2).unwrap();
+        let restored1: TestConfigA = serializer.deserialize(&bytes1).unwrap();
+        let restored2: TestConfigA = serializer.deserialize(&bytes2).unwrap();
 
         assert_eq!(restored1, restored2);
         assert_eq!(restored1, config);

@@ -1,3 +1,6 @@
+mod block_serialization;
+pub use block_serialization::{BlockSerialisation, BlockSerializationSummary};
+
 /// Trait for block input data types.
 ///
 /// This trait defines the associated types needed for a block's input.
@@ -42,7 +45,7 @@
 /// }
 /// ```
 pub trait BlockInput: Sized {
-    type Keys: channels::InputKeys<Self> + serialization::structs::SerializableStruct;
+    type Keys: ::channels::InputKeys<Self> + ::serialization::structs::SerializableStruct;
 }
 
 /// Trait for block output data types.
@@ -98,7 +101,7 @@ pub trait BlockInput: Sized {
 /// }
 /// ```
 pub trait BlockOutput: Sized {
-    type Keys: channels::OutputKeys<Self> + serialization::structs::SerializableStruct;
+    type Keys: ::channels::OutputKeys<Self> + ::serialization::structs::SerializableStruct;
 }
 
 /// Associated types for block specifications.
@@ -184,7 +187,7 @@ pub trait BlockSpecAssociatedTypes {
     type Input: BlockInput;
     type Output: BlockOutput;
     type State; // FIXME: Should be serializable at some point
-    type InitParameters: serialization::structs::SerializableStruct;
+    type InitParameters: ::serialization::structs::SerializableStruct;
 }
 
 /// Main trait for defining block behavior.
@@ -594,12 +597,12 @@ mod tests {
     #[derive(serde::Serialize, serde::Deserialize)]
     struct DoublerInitParams;
 
-    impl serialization::structs::SerializableStruct for DoublerInitParams {}
+    impl ::serialization::structs::SerializableStruct for DoublerInitParams {}
 
     #[derive(serde::Serialize, serde::Deserialize)]
     struct AccumulatorInitParams;
 
-    impl serialization::structs::SerializableStruct for AccumulatorInitParams {}
+    impl ::serialization::structs::SerializableStruct for AccumulatorInitParams {}
 
     // Test implementations for unit tests
     #[derive(Clone, Debug, PartialEq)]
@@ -614,7 +617,7 @@ mod tests {
 
     #[derive(serde::Serialize, serde::Deserialize)]
     struct TestInputKeys {
-        value: i32,
+        value: String,
     }
 
     #[derive(serde::Serialize, serde::Deserialize)]
@@ -641,16 +644,28 @@ mod tests {
         }
     }
 
-    impl serialization::structs::SerializableStruct for TestInputKeys {}
-    impl serialization::structs::SerializableStruct for TestOutputKeys {}
+    impl ::serialization::structs::SerializableStruct for TestInputKeys {}
+    impl ::serialization::structs::SerializableStruct for TestOutputKeys {}
+
+    impl ChannelKeys for TestInputKeys {
+        fn channel_names(&self) -> Vec<String> {
+            vec![self.value.clone()]
+        }
+    }
 
     impl InputKeys<TestInput> for TestInputKeys {
         type ReaderType = MockReader<TestInput>;
 
         fn reader(&self, _registry: &ChannelRegistry) -> Result<Self::ReaderType, RegistryError> {
             Ok(MockReader {
-                data: TestInput { value: self.value },
+                data: TestInput { value: 0 },
             })
+        }
+    }
+
+    impl ChannelKeys for TestOutputKeys {
+        fn channel_names(&self) -> Vec<String> {
+            vec![]
         }
     }
 

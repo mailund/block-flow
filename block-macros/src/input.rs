@@ -87,6 +87,14 @@ pub fn input_impl(_attr: TokenStream, item: TokenStream) -> TokenStream {
             }
         }
 
+        impl channels::ChannelKeys for #keys_name {
+            fn channel_names(&self) -> Vec<String> {
+                vec![
+                    // FIXME #(self.#fields.to_string(),)*
+                ]
+            }
+        }
+
         impl channels::InputKeys<#struct_name> for #keys_name {
             type ReaderType = #reader_name;
 

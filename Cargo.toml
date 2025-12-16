@@ -1,5 +1,9 @@
 [workspace]
-members = ["channels", "example-block", "block-macros", "blocks", "serialization"]
+members = [
+    "channels", "example-block", "block-macros", "blocks", 
+    "serialization",
+    "serialization-macros"
+]
 
 [package]
 name = "block-flow"
@@ -13,7 +17,8 @@ path = "src/lib.rs"
 block_traits = { path = "block_traits" }
 blocks = { path = "blocks" }
 channels = { path = "channels" }
-block-macros = { path = "block-macros" }
 serialization = { path = "serialization" }
+block-macros = { path = "block-macros" }
+serialization-macros = { path = "serialization-macros" }
 
 [dev-dependencies]

@@ -17,6 +17,7 @@ dependencies = [
  "blocks",
  "channels",
  "serialization",
+ "serialization-macros",
 ]
 
 [[package]]
@@ -36,6 +37,7 @@ dependencies = [
  "channels",
  "serde",
  "serialization",
+ "serialization-macros",
 ]
 
 [[package]]
@@ -222,6 +224,16 @@ dependencies = [
  "serde",
  "serde_json",
  "tempfile",
+]
+
+[[package]]
+name = "serialization-macros"
+version = "0.1.0"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "serialization",
+ "syn",
 ]
 
 [[package]]

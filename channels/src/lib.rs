@@ -38,8 +38,14 @@ pub trait Reader<T> {
     fn read(&self) -> T;
 }
 
+/// Trait for keys that work along channels. Used for mapping
+/// input/output keys to their channel names.
+pub trait ChannelKeys {
+    fn channel_names(&self) -> Vec<String>;
+}
+
 /// Trait for keys that can create readers
-pub trait InputKeys<T> {
+pub trait InputKeys<T>: ChannelKeys {
     type ReaderType: Reader<T>;
     fn reader(&self, registry: &ChannelRegistry) -> Result<Self::ReaderType, RegistryError>;
 }
@@ -50,7 +56,7 @@ pub trait Writer<T> {
 }
 
 /// Trait for keys that can create writers
-pub trait OutputKeys<T> {
+pub trait OutputKeys<T>: ChannelKeys {
     type WriterType: Writer<T>;
     fn writer(&self, registry: &ChannelRegistry) -> Result<Self::WriterType, RegistryError>;
     fn register(&self, registry: &mut ChannelRegistry);
