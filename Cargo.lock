@@ -6,6 +6,9 @@ version = 4
 name = "block-flow"
 version = "0.1.0"
 dependencies = [
+ "block-macros",
+ "block_traits",
+ "blocks",
  "registry",
 ]
 

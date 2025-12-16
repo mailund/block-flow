@@ -6,6 +6,13 @@ name = "block-flow"
 version = "0.1.0"
 edition = "2021"
 
+[lib]
+path = "src/lib.rs"
+
 [dependencies]
+block_traits = { path = "block_traits" }
+blocks = { path = "blocks" }
+registry = { path = "registry" }
+block-macros = { path = "block-macros" }
 
 [dev-dependencies]
