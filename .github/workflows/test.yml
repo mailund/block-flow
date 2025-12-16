@@ -10,6 +10,8 @@ jobs:
   test:
     name: Test Workspace
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     
     steps:
       - name: Checkout code
@@ -48,6 +50,8 @@ jobs:
   coverage:
     name: Code Coverage (Local Only)
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     
     steps:
       - name: Checkout code
