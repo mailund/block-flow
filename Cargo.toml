@@ -2,7 +2,8 @@
 members = [
     "channels", "example-block", "block-macros", "blocks", 
     "serialization",
-    "serialization-macros"
+    "serialization-macros",
+    "weave"
 ]
 
 [package]

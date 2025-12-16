@@ -24,6 +24,7 @@ pub fn output_impl(_attr: TokenStream, item: TokenStream) -> TokenStream {
         },
         _ => panic!("Only structs are supported"),
     };
+    let field_idents = fields.iter().map(|f| f.ident.as_ref().unwrap());
 
     // Generate key fields (all String types)
     let key_fields = fields.iter().map(|field| {
@@ -67,10 +68,11 @@ pub fn output_impl(_attr: TokenStream, item: TokenStream) -> TokenStream {
     let field_types: Vec<_> = fields.iter().map(|field| &field.ty).collect();
 
     let expanded = quote! {
+        #[derive(Clone, Debug)]
         #input
 
         /// Keys for accessing registry values for #struct_name
-        #[derive(serde::Serialize, serde::Deserialize)]
+        #[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
         pub struct #keys_name {
             #(#key_fields,)*
         }
@@ -91,6 +93,15 @@ pub fn output_impl(_attr: TokenStream, item: TokenStream) -> TokenStream {
                 #writer_name::write(self, output)
             }
         }
+
+        impl channels::ChannelKeys for #keys_name {
+            fn channel_names(&self) -> Vec<String> {
+                vec![
+                    #(self.#field_idents.clone(),)*
+                ]
+            }
+        }
+
 
         impl channels::OutputKeys<#struct_name> for #keys_name {
             type WriterType = #writer_name;

@@ -1,6 +1,3 @@
-mod block_serialization;
-pub use block_serialization::{BlockSerialisation, BlockSerializationSummary};
-
 /// Trait for block input data types.
 ///
 /// This trait defines the associated types needed for a block's input.
@@ -26,9 +23,19 @@ pub use block_serialization::{BlockSerialisation, BlockSerializationSummary};
 ///
 /// impl SerializableStruct for SimpleInputKeys {}
 ///
+/// impl ChannelKeys for SimpleInputKeys {
+///     fn channel_names(&self) -> Vec<String> { vec![] }
+/// }
+///
+/// // Mock reader for testing
+/// struct MockReader<T> { data: T }
+/// impl<T: Clone> Reader<T> for MockReader<T> {
+///     fn read(&self) -> T { self.data.clone() }
+/// }
+///
 /// impl InputKeys<SimpleInput> for SimpleInputKeys {
 ///     type ReaderType = MockReader<SimpleInput>;
-///     
+///
 ///     fn reader(&self, _registry: &ChannelRegistry) -> Result<Self::ReaderType, RegistryError> {
 ///         Ok(MockReader { data: SimpleInput { value: 42 } })
 ///     }
@@ -36,12 +43,6 @@ pub use block_serialization::{BlockSerialisation, BlockSerializationSummary};
 ///
 /// impl BlockInput for SimpleInput {
 ///     type Keys = SimpleInputKeys;
-/// }
-///
-/// // Mock reader for testing
-/// struct MockReader<T> { data: T }
-/// impl<T: Clone> Reader<T> for MockReader<T> {
-///     fn read(&self) -> T { self.data.clone() }
 /// }
 /// ```
 pub trait BlockInput: Sized {
@@ -73,20 +74,8 @@ pub trait BlockInput: Sized {
 ///
 /// impl SerializableStruct for SimpleOutputKeys {}
 ///
-/// impl OutputKeys<SimpleOutput> for SimpleOutputKeys {
-///     type WriterType = MockWriter<SimpleOutput>;
-///     
-///     fn writer(&self, _registry: &ChannelRegistry) -> Result<Self::WriterType, RegistryError> {
-///         Ok(MockWriter { written: std::cell::RefCell::new(None) })
-///     }
-///     
-///     fn register(&self, _registry: &mut ChannelRegistry) {
-///         // Registration logic would go here
-///     }
-/// }
-///
-/// impl BlockOutput for SimpleOutput {
-///     type Keys = SimpleOutputKeys;
+/// impl ChannelKeys for SimpleOutputKeys {
+///     fn channel_names(&self) -> Vec<String> { vec![] }
 /// }
 ///
 /// // Mock writer for testing
@@ -99,6 +88,22 @@ pub trait BlockInput: Sized {
 ///         *self.written.borrow_mut() = Some(data.clone());
 ///     }
 /// }
+///
+/// impl OutputKeys<SimpleOutput> for SimpleOutputKeys {
+///     type WriterType = MockWriter<SimpleOutput>;
+///
+///     fn writer(&self, _registry: &ChannelRegistry) -> Result<Self::WriterType, RegistryError> {
+///         Ok(MockWriter { written: std::cell::RefCell::new(None) })
+///     }
+///
+///     fn register(&self, _registry: &mut ChannelRegistry) {
+///         // Registration logic would go here
+///     }
+/// }
+///
+/// impl BlockOutput for SimpleOutput {
+///     type Keys = SimpleOutputKeys;
+/// }
 /// ```
 pub trait BlockOutput: Sized {
     type Keys: ::channels::OutputKeys<Self> + ::serialization::structs::SerializableStruct;
@@ -108,7 +113,7 @@ pub trait BlockOutput: Sized {
 ///
 /// This trait groups the three core types that define a block:
 /// - `Input`: The data the block consumes
-/// - `Output`: The data the block produces  
+/// - `Output`: The data the block produces
 /// - `State`: The internal state the block maintains between executions
 ///
 /// # Examples
@@ -119,25 +124,45 @@ pub trait BlockOutput: Sized {
 /// use serde::{Serialize, Deserialize};
 /// use serialization::structs::SerializableStruct;
 ///
-/// // Define wrapper types that implement the required traits
 /// #[derive(Clone)]
 /// struct NoInput;
 ///
 /// #[derive(Clone)]
 /// struct CountOutput { count: i32 }
 ///
-/// // Mock implementations
 /// #[derive(Serialize, Deserialize)]
 /// struct NoInputKeys;
+///
 /// #[derive(Serialize, Deserialize)]
 /// struct CountOutputKeys;
+///
 /// #[derive(Serialize, Deserialize)]
 /// struct CounterInitParams {
 ///     initial_count: i32,
 /// }
+///
 /// impl SerializableStruct for NoInputKeys {}
 /// impl SerializableStruct for CountOutputKeys {}
 /// impl SerializableStruct for CounterInitParams {}
+///
+/// impl ChannelKeys for NoInputKeys {
+///     fn channel_names(&self) -> Vec<String> { vec![] }
+/// }
+///
+/// impl ChannelKeys for CountOutputKeys {
+///     fn channel_names(&self) -> Vec<String> { vec![] }
+/// }
+///
+/// // Mock reader/writer
+/// struct MockReader<T> { data: T }
+/// impl<T: Clone> Reader<T> for MockReader<T> {
+///     fn read(&self) -> T { self.data.clone() }
+/// }
+///
+/// struct MockWriter<T> { written: std::cell::RefCell<Option<T>> }
+/// impl<T: Clone> Writer<T> for MockWriter<T> {
+///     fn write(&self, data: &T) { *self.written.borrow_mut() = Some(data.clone()); }
+/// }
 ///
 /// impl InputKeys<NoInput> for NoInputKeys {
 ///     type ReaderType = MockReader<NoInput>;
@@ -162,25 +187,14 @@ pub trait BlockOutput: Sized {
 ///     type Keys = CountOutputKeys;
 /// }
 ///
-/// // Mock reader/writer
-/// struct MockReader<T> { data: T }
-/// impl<T: Clone> Reader<T> for MockReader<T> {
-///     fn read(&self) -> T { self.data.clone() }
-/// }
-///
-/// struct MockWriter<T> { written: std::cell::RefCell<Option<T>> }
-/// impl<T: Clone> Writer<T> for MockWriter<T> {
-///     fn write(&self, data: &T) { *self.written.borrow_mut() = Some(data.clone()); }
-/// }
-///
 /// // Define associated types for a counter block
 /// struct CounterBlockSpec;
 ///
 /// impl BlockSpecAssociatedTypes for CounterBlockSpec {
-///     type Input = NoInput;     // No input needed
-///     type Output = CountOutput; // Outputs a count
-///     type State = i32;          // Internal counter state
-///     type InitParameters = CounterInitParams; // Initialization parameters
+///     type Input = NoInput;                 // No input needed
+///     type Output = CountOutput;            // Outputs a count
+///     type State = i32;                     // Internal counter state
+///     type InitParameters = CounterInitParams;
 /// }
 /// ```
 pub trait BlockSpecAssociatedTypes {
@@ -188,6 +202,11 @@ pub trait BlockSpecAssociatedTypes {
     type Output: BlockOutput;
     type State; // FIXME: Should be serializable at some point
     type InitParameters: ::serialization::structs::SerializableStruct;
+}
+
+/// Execution context passed to blocks during execution.
+pub struct ExecutionContext {
+    pub time: u64,
 }
 
 /// Main trait for defining block behavior.
@@ -204,23 +223,42 @@ pub trait BlockSpecAssociatedTypes {
 /// use serde::{Serialize, Deserialize};
 /// use serialization::structs::SerializableStruct;
 ///
-/// // Define wrapper types that implement the required traits
 /// #[derive(Clone)]
 /// struct IntInput { value: i32 }
 ///
 /// #[derive(Clone)]
 /// struct IntOutput { result: i32 }
 ///
-/// // Mock implementations
 /// #[derive(Serialize, Deserialize)]
 /// struct IntInputKeys;
+///
 /// #[derive(Serialize, Deserialize)]
 /// struct IntOutputKeys;
+///
 /// #[derive(Serialize, Deserialize)]
 /// struct DoublerInitParams;
+///
 /// impl SerializableStruct for IntInputKeys {}
 /// impl SerializableStruct for IntOutputKeys {}
 /// impl SerializableStruct for DoublerInitParams {}
+///
+/// impl ChannelKeys for IntInputKeys {
+///     fn channel_names(&self) -> Vec<String> { vec![] }
+/// }
+/// impl ChannelKeys for IntOutputKeys {
+///     fn channel_names(&self) -> Vec<String> { vec![] }
+/// }
+///
+/// // Mock reader/writer
+/// struct MockReader<T> { data: T }
+/// impl<T: Clone> Reader<T> for MockReader<T> {
+///     fn read(&self) -> T { self.data.clone() }
+/// }
+///
+/// struct MockWriter<T> { written: std::cell::RefCell<Option<T>> }
+/// impl<T: Clone> Writer<T> for MockWriter<T> {
+///     fn write(&self, data: &T) { *self.written.borrow_mut() = Some(data.clone()); }
+/// }
 ///
 /// impl InputKeys<IntInput> for IntInputKeys {
 ///     type ReaderType = MockReader<IntInput>;
@@ -237,26 +275,9 @@ pub trait BlockSpecAssociatedTypes {
 ///     fn register(&self, _registry: &mut ChannelRegistry) {}
 /// }
 ///
-/// impl BlockInput for IntInput {
-///     type Keys = IntInputKeys;
-/// }
+/// impl BlockInput for IntInput { type Keys = IntInputKeys; }
+/// impl BlockOutput for IntOutput { type Keys = IntOutputKeys; }
 ///
-/// impl BlockOutput for IntOutput {
-///     type Keys = IntOutputKeys;
-/// }
-///
-/// // Mock reader/writer
-/// struct MockReader<T> { data: T }
-/// impl<T: Clone> Reader<T> for MockReader<T> {
-///     fn read(&self) -> T { self.data.clone() }
-/// }
-///
-/// struct MockWriter<T> { written: std::cell::RefCell<Option<T>> }
-/// impl<T: Clone> Writer<T> for MockWriter<T> {
-///     fn write(&self, data: &T) { *self.written.borrow_mut() = Some(data.clone()); }
-/// }
-///
-/// // A simple doubler block that multiplies input by 2
 /// struct DoublerBlock;
 ///
 /// impl BlockSpecAssociatedTypes for DoublerBlock {
@@ -267,291 +288,31 @@ pub trait BlockSpecAssociatedTypes {
 /// }
 ///
 /// impl BlockSpec for DoublerBlock {
-///     fn new_from_init_params(_params: &DoublerInitParams) -> Self {
-///         DoublerBlock
-///     }
+///     fn new_from_init_params(_params: &DoublerInitParams) -> Self { DoublerBlock }
 ///
-///     fn init_state(&self) -> Self::State {
-///         () // No initialization needed
-///     }
-///     
-///     fn execute(
-///         &self,
-///         _context: &ExecutionContext,
-///         input: Self::Input,
-///         state: &Self::State,
-///     ) -> (Self::Output, Self::State) {
-///         (IntOutput { result: input.value * 2 }, *state)
+///     fn init_state(&self) -> Self::State { () }
+///
+///     fn execute(&self, _context: &ExecutionContext, input: Self::Input, _state: &Self::State)
+///         -> (Self::Output, Self::State)
+///     {
+///         (IntOutput { result: input.value * 2 }, ())
 ///     }
 /// }
 /// ```
 pub trait BlockSpec: BlockSpecAssociatedTypes {
-    /// Initialize the block's state.
-    ///
-    /// This method is called once when the block is first created to set up
-    /// its initial internal state. The state persists across multiple executions
-    /// and can be used to maintain data between calls to `execute`.
-    ///
-    /// # Examples
-    ///
-    /// ```rust
-    /// use block_traits::*;
-    /// use channels::*;
-    /// use serde::{Serialize, Deserialize};
-    /// use serialization::structs::SerializableStruct;
-    ///
-    /// // Define proper input/output types
-    /// #[derive(Clone)]
-    /// struct NoInput;
-    /// #[derive(Clone)]
-    /// struct NoOutput;
-    /// #[derive(Serialize, Deserialize)]
-    /// struct NoInputKeys;
-    /// #[derive(Serialize, Deserialize)]
-    /// struct NoOutputKeys;
-    /// #[derive(Serialize, Deserialize)]
-    /// struct CounterInitParams { initial_value: i32 }
-    /// impl SerializableStruct for NoInputKeys {}
-    /// impl SerializableStruct for NoOutputKeys {}
-    /// impl SerializableStruct for CounterInitParams {}
-    ///
-    /// impl BlockInput for NoInput { type Keys = NoInputKeys; }
-    /// impl BlockOutput for NoOutput { type Keys = NoOutputKeys; }
-    /// impl InputKeys<NoInput> for NoInputKeys {
-    ///     type ReaderType = MockReader<NoInput>;
-    ///     fn reader(&self, _registry: &ChannelRegistry) -> Result<Self::ReaderType, RegistryError> {
-    ///         Ok(MockReader { data: NoInput })
-    ///     }
-    /// }
-    /// impl OutputKeys<NoOutput> for NoOutputKeys {
-    ///     type WriterType = MockWriter<NoOutput>;
-    ///     fn writer(&self, _registry: &ChannelRegistry) -> Result<Self::WriterType, RegistryError> {
-    ///         Ok(MockWriter { written: std::cell::RefCell::new(None) })
-    ///     }
-    ///     fn register(&self, _registry: &mut ChannelRegistry) {}
-    /// }
-    /// struct MockReader<T> { data: T }
-    /// impl<T: Clone> Reader<T> for MockReader<T> { fn read(&self) -> T { self.data.clone() } }
-    /// struct MockWriter<T> { written: std::cell::RefCell<Option<T>> }
-    /// impl<T: Clone> Writer<T> for MockWriter<T> { fn write(&self, data: &T) { *self.written.borrow_mut() = Some(data.clone()); } }
-    ///
-    /// struct CounterBlock;
-    ///
-    /// impl BlockSpecAssociatedTypes for CounterBlock {
-    ///     type Input = NoInput;
-    ///     type Output = NoOutput;
-    ///     type State = i32;
-    ///     type InitParameters = CounterInitParams;
-    /// }
-    ///
-    /// impl BlockSpec for CounterBlock {
-    ///     fn new_from_init_params(params: &CounterInitParams) -> Self { CounterBlock }
-    ///     fn init_state(&self) -> i32 {
-    ///         0  // Start counter at zero
-    ///     }
-    ///     # fn execute(&self, _ctx: &ExecutionContext, _input: NoInput, state: &i32) -> (NoOutput, i32) { (NoOutput, *state) }
-    /// }
-    /// ```
     fn init_state(&self) -> Self::State;
 
-    /// Create a new instance of the block from initialization parameters.
-    ///
-    /// This method creates and returns a new instance of the block configured
-    /// with the provided parameters. This is the primary way to instantiate
-    /// blocks with specific configuration at runtime.
-    ///
-    /// # Parameters
-    ///
-    /// * `params` - The initialization parameters for this block
-    ///
-    /// # Returns
-    ///
-    /// A new instance of the block configured with the given parameters
     fn new_from_init_params(params: &Self::InitParameters) -> Self;
 
-    /// Execute the block's main logic.
-    ///
-    /// This method performs the core computation of the block, taking input data
-    /// and the current state, then returning output data and an updated state.
-    /// The method is pure and should not have side effects beyond returning values.
-    ///
-    /// # Parameters
-    ///
-    /// * `context` - Runtime execution context containing metadata like timestamps
-    /// * `input` - The input data for this execution cycle  
-    /// * `state` - The current internal state of the block
-    ///
-    /// # Returns
-    ///
-    /// A tuple containing:
-    /// * `Output` - The computed output data
-    /// * `State` - The updated state for the next execution
-    ///
-    /// # Examples
-    ///
-    /// ```rust
-    /// use block_traits::*;
-    /// use channels::*;
-    /// use serde::{Serialize, Deserialize};
-    /// use serialization::structs::SerializableStruct;
-    ///
-    /// // Define proper input/output types
-    /// #[derive(Clone)]
-    /// struct IntInput { value: i32 }
-    /// #[derive(Clone)]
-    /// struct IntOutput { result: i32 }
-    /// #[derive(Serialize, Deserialize)]
-    /// struct IntInputKeys;
-    /// #[derive(Serialize, Deserialize)]
-    /// struct IntOutputKeys;
-    /// impl SerializableStruct for IntInputKeys {}
-    /// impl SerializableStruct for IntOutputKeys {}
-    ///
-    /// impl BlockInput for IntInput { type Keys = IntInputKeys; }
-    /// impl BlockOutput for IntOutput { type Keys = IntOutputKeys; }
-    /// impl InputKeys<IntInput> for IntInputKeys {
-    ///     type ReaderType = MockReader<IntInput>;
-    ///     fn reader(&self, _registry: &ChannelRegistry) -> Result<Self::ReaderType, RegistryError> {
-    ///         Ok(MockReader { data: IntInput { value: 42 } })
-    ///     }
-    /// }
-    /// impl OutputKeys<IntOutput> for IntOutputKeys {
-    ///     type WriterType = MockWriter<IntOutput>;
-    ///     fn writer(&self, _registry: &ChannelRegistry) -> Result<Self::WriterType, RegistryError> {
-    ///         Ok(MockWriter { written: std::cell::RefCell::new(None) })
-    ///     }
-    ///     fn register(&self, _registry: &mut ChannelRegistry) {}
-    /// }
-    /// struct MockReader<T> { data: T }
-    /// impl<T: Clone> Reader<T> for MockReader<T> { fn read(&self) -> T { self.data.clone() } }
-    /// struct MockWriter<T> { written: std::cell::RefCell<Option<T>> }
-    /// impl<T: Clone> Writer<T> for MockWriter<T> { fn write(&self, data: &T) { *self.written.borrow_mut() = Some(data.clone()); } }
-    ///
-    /// #[derive(serde::Serialize, serde::Deserialize)]
-    /// struct InitParams;
-    /// impl serialization::structs::SerializableStruct for InitParams {}
-    ///
-    /// struct AdderBlock;
-    ///
-    /// impl BlockSpecAssociatedTypes for AdderBlock {
-    ///     type Input = IntInput;
-    ///     type Output = IntOutput;
-    ///     type State = i32;
-    ///     type InitParameters = InitParams;
-    /// }
-    ///
-    /// impl BlockSpec for AdderBlock {
-    ///     fn new_from_init_params(_params: &InitParams) -> Self { AdderBlock }
-    ///
-    ///     fn init_state(&self) -> i32 { 0 }
-    ///     
-    ///     fn execute(&self, _context: &ExecutionContext, input: IntInput, state: &i32) -> (IntOutput, i32) {
-    ///         let new_state = state + 1;  // Increment execution counter
-    ///         let output = IntOutput { result: input.value + *state }; // Add input to current state
-    ///         (output, new_state)
-    ///     }
-    /// }
-    /// ```
     fn execute(
         &self,
         context: &ExecutionContext,
         input: Self::Input,
         state: &Self::State,
     ) -> (Self::Output, Self::State);
-
-    fn register_outputs(
-        &self,
-        registry: &mut channels::ChannelRegistry,
-        out_keys: &<Self::Output as BlockOutput>::Keys,
-    ) {
-        <<Self::Output as BlockOutput>::Keys as channels::OutputKeys<Self::Output>>::register(
-            out_keys, registry,
-        )
-    }
-
-    /// Wire the block to the registry
-    fn wire(
-        self,
-        registry: &channels::ChannelRegistry,
-        in_keys: &<Self::Input as BlockInput>::Keys,
-        out_keys: &<Self::Output as BlockOutput>::Keys,
-    ) -> Result<WrappedBlock<Self>, channels::RegistryError>
-    where
-        Self: Sized,
-    {
-        use channels::{InputKeys, OutputKeys};
-
-        // Create readers/writers that capture the Rc references
-        let input_reader = in_keys.reader(registry)?;
-        let output_writer = out_keys.writer(registry)?;
-
-        let state = self.init_state();
-
-        Ok(WrappedBlock {
-            block: self,
-            input_reader,
-            output_writer,
-            state,
-        })
-    }
-
-    /// Declare and wire in one step
-    fn declare_and_wire(
-        self,
-        registry: &mut channels::ChannelRegistry,
-        in_keys: &<Self::Input as BlockInput>::Keys,
-        out_keys: &<Self::Output as BlockOutput>::Keys,
-    ) -> Result<WrappedBlock<Self>, channels::RegistryError>
-    where
-        Self: Sized,
-    {
-        self.register_outputs(registry, out_keys);
-        self.wire(registry, in_keys, out_keys)
-    }
 }
 
-/// Trait for executable blocks.
-///
-/// This is the runtime interface for blocks that have been wired to the registry.
-/// The `execute` method is called to run the block's logic.
-///
-/// # Examples
-///
-/// ```rust
-/// use block_traits::*;
-///
-/// struct SimpleBlock {
-///     counter: i32,
-/// }
-///
-/// impl Block for SimpleBlock {
-///     fn execute(&mut self, _context: &ExecutionContext) {
-///         self.counter += 1;
-///         println!("Block executed {} times", self.counter);
-///     }
-/// }
-/// ```
-pub trait Block {
-    fn execute(&mut self, context: &ExecutionContext);
-}
-
-/// Execution context passed to blocks during execution.
-///
-/// Contains runtime information that blocks may need during execution.
-///
-/// # Examples
-///
-/// ```rust
-/// use block_traits::*;
-///
-/// let context = ExecutionContext { time: 1234567890 };
-/// assert_eq!(context.time, 1234567890);
-/// ```
-pub struct ExecutionContext {
-    pub time: u64,
-}
-
-pub struct WrappedBlock<B: BlockSpec> {
+pub struct EncapsulatedBlock<B: BlockSpec> {
     pub block: B,
     pub input_reader: <<B::Input as BlockInput>::Keys as channels::InputKeys<B::Input>>::ReaderType,
     pub output_writer:
@@ -559,13 +320,12 @@ pub struct WrappedBlock<B: BlockSpec> {
     pub state: B::State,
 }
 
-impl<B: BlockSpec> WrappedBlock<B> {
+impl<B: BlockSpec> EncapsulatedBlock<B> {
     pub fn new(
         block: B,
         input_reader: <<B::Input as BlockInput>::Keys as channels::InputKeys<B::Input>>::ReaderType,
-        output_writer: <<B::Output as BlockOutput>::Keys as channels::OutputKeys<
-            B::Output,
-        >>::WriterType,
+        output_writer:
+            <<B::Output as BlockOutput>::Keys as channels::OutputKeys<B::Output>>::WriterType,
     ) -> Self {
         let state = block.init_state();
         Self {
@@ -577,13 +337,30 @@ impl<B: BlockSpec> WrappedBlock<B> {
     }
 }
 
-impl<B: BlockSpec> Block for WrappedBlock<B> {
+pub trait TypeErasedBlock {
+    fn execute(&mut self, context: &ExecutionContext);
+}
+
+impl<B: BlockSpec> TypeErasedBlock for EncapsulatedBlock<B> {
     fn execute(&mut self, context: &ExecutionContext) {
         use channels::{Reader, Writer};
         let input = self.input_reader.read();
         let (output, new_state) = self.block.execute(context, input, &self.state);
         self.output_writer.write(&output);
         self.state = new_state;
+    }
+}
+
+pub struct Block {
+    block: Box<dyn TypeErasedBlock>,
+}
+impl Block {
+    pub fn new(block: Box<dyn TypeErasedBlock>) -> Self {
+        Self { block }
+    }
+
+    pub fn execute(&mut self, context: &ExecutionContext) {
+        self.block.execute(context);
     }
 }
 
@@ -775,7 +552,7 @@ mod tests {
             written: RefCell::new(None),
         };
 
-        let wrapped = WrappedBlock::new(block, reader, writer);
+        let wrapped = EncapsulatedBlock::new(block, reader, writer);
         assert_eq!(wrapped.state, 0); // Should be initialized
     }
 
@@ -789,7 +566,7 @@ mod tests {
             written: RefCell::new(None),
         };
 
-        let mut wrapped = WrappedBlock::new(block, reader, writer);
+        let mut wrapped = EncapsulatedBlock::new(block, reader, writer);
         let context = ExecutionContext { time: 200 };
 
         wrapped.execute(&context);
@@ -813,7 +590,7 @@ mod tests {
             written: RefCell::new(None),
         };
 
-        let mut wrapped = WrappedBlock::new(block, reader, writer);
+        let mut wrapped = EncapsulatedBlock::new(block, reader, writer);
         let context = ExecutionContext { time: 300 };
 
         // Execute multiple times

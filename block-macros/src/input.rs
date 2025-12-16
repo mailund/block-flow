@@ -25,6 +25,8 @@ pub fn input_impl(_attr: TokenStream, item: TokenStream) -> TokenStream {
         _ => panic!("Only structs are supported"),
     };
 
+    let field_idents = fields.iter().map(|f| f.ident.as_ref().unwrap());
+
     // Generate key fields (all String types)
     let key_fields = fields.iter().map(|field| {
         let field_name = &field.ident;
@@ -60,10 +62,11 @@ pub fn input_impl(_attr: TokenStream, item: TokenStream) -> TokenStream {
     });
 
     let expanded = quote! {
+        #[derive(Clone, Debug)]
         #input
 
         /// Keys for accessing registry values for #struct_name
-        #[derive(serde::Serialize, serde::Deserialize)]
+        #[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
         pub struct #keys_name {
             #(#key_fields,)*
         }
@@ -90,7 +93,7 @@ pub fn input_impl(_attr: TokenStream, item: TokenStream) -> TokenStream {
         impl channels::ChannelKeys for #keys_name {
             fn channel_names(&self) -> Vec<String> {
                 vec![
-                    // FIXME #(self.#fields.to_string(),)*
+                    #(self.#field_idents.clone(),)*
                 ]
             }
         }

@@ -67,8 +67,9 @@ pub mod adder_block {
 mod tests {
     use super::adder_block::*;
     use super::*;
-    use block_traits::{Block, BlockInput, BlockOutput};
+    use block_traits::{BlockInput, BlockOutput};
     use channels::{ChannelRegistry, InputKeys, OutputKeys};
+    use weave::BlockNode;
 
     #[test]
     fn test_adder_block_pure_execution() {
@@ -136,7 +137,6 @@ mod tests {
     #[test]
     fn test_adder_block_with_registry() {
         let mut registry = ChannelRegistry::new();
-        let block = AdderBlock::new_from_init_params(&InitParams { offset: 100 });
 
         // Setup input data
         registry.put("input_a", 7);
@@ -154,10 +154,13 @@ mod tests {
             sum: "output_sum".to_string(),
         };
 
-        // Declare and wire the block
-        let mut wired = block
-            .declare_and_wire(&mut registry, &in_keys, &out_keys)
-            .unwrap();
+        let mut wired = weave::BlockSerialisation::new_node::<AdderBlock>(
+            in_keys.clone(),
+            out_keys.clone(),
+            InitParams { offset: 100 },
+        )
+        .weave(&mut registry)
+        .unwrap();
 
         // Execute one tick
         let context = ExecutionContext { time: 0 };
@@ -171,7 +174,6 @@ mod tests {
     #[test]
     fn test_adder_block_registry_updates() {
         let mut registry = ChannelRegistry::new();
-        let block = AdderBlock::new_from_init_params(&InitParams { offset: 0 });
 
         // Setup input data
         registry.put("a", 1);
@@ -189,9 +191,13 @@ mod tests {
             sum: "sum".to_string(),
         };
 
-        let mut wired = block
-            .declare_and_wire(&mut registry, &in_keys, &out_keys)
-            .unwrap();
+        let mut wired = weave::BlockSerialisation::new_node::<AdderBlock>(
+            in_keys.clone(),
+            out_keys.clone(),
+            InitParams { offset: 0 },
+        )
+        .weave(&mut registry)
+        .unwrap();
 
         // First tick
         let context = ExecutionContext { time: 0 };

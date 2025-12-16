@@ -81,6 +81,7 @@ dependencies = [
  "channels",
  "serde",
  "serialization",
+ "weave",
 ]
 
 [[package]]
@@ -273,6 +274,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0562428422c63773dad2c345a1882263bbf4d65cf3f42e90921f787ef5ad58e7"
 dependencies = [
  "wit-bindgen",
+]
+
+[[package]]
+name = "weave"
+version = "0.1.0"
+dependencies = [
+ "block_traits",
+ "channels",
+ "serde",
+ "serde_json",
+ "serialization",
+ "serialization-macros",
 ]
 
 [[package]]
