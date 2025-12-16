@@ -11,6 +11,8 @@ mod after;
 pub use after::AfterBlock;
 mod delete;
 pub use delete::DeleteBlock;
+mod simple_order;
+pub use simple_order::SimpleOrderBlock;
 
 #[derive(Serialize, Deserialize)]
 #[serde(tag = "type", content = "data")]
@@ -19,6 +21,7 @@ pub enum BlockType {
     // but it will do for now.
     After(BlockSerializationSummary<after::AfterBlock>),
     Delete(BlockSerializationSummary<delete::DeleteBlock>),
+    SimpleOrder(BlockSerializationSummary<simple_order::SimpleOrderBlock>),
 }
 
 #[derive(Debug)]

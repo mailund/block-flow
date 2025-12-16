@@ -8,6 +8,7 @@ channels = { path = "../channels" }
 block-macros = { path = "../block-macros" }
 block_traits = { path = "../block_traits" }
 serialization = { path = "../serialization" }
+trade_types = { path = "../trade-types" }
 weave = { path = "../weave" }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"

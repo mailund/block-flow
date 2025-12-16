@@ -50,6 +50,7 @@ dependencies = [
  "serde",
  "serde_json",
  "serialization",
+ "trade_types",
  "weave",
 ]
 
@@ -261,6 +262,13 @@ dependencies = [
  "once_cell",
  "rustix",
  "windows-sys",
+]
+
+[[package]]
+name = "trade_types"
+version = "0.1.0"
+dependencies = [
+ "serde",
 ]
 
 [[package]]
