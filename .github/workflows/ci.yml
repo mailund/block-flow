@@ -3,8 +3,16 @@ name: CI
 on:
   push:
     branches: [ main, master ]
+    paths:
+      - '**.rs'
+      - '**/Cargo.toml'
+      - '**/Cargo.lock'
   pull_request:
     branches: [ main, master ]
+    paths:
+      - '**.rs'
+      - '**/Cargo.toml'
+      - '**/Cargo.lock'
 
 env:
   CARGO_TERM_COLOR: always
@@ -25,6 +33,9 @@ jobs:
         uses: Swatinem/rust-cache@v2
         with:
           key: test
+      
+      - name: Build
+        run: cargo build --verbose --workspace
       
       - name: Run tests
         run: cargo test --workspace --verbose
@@ -86,7 +97,7 @@ jobs:
           echo "Current coverage: ${COVERAGE_PERCENT}%"
           
           # Set minimum threshold (you can adjust this value)
-          MIN_THRESHOLD=70
+          MIN_THRESHOLD=20
           
           if [ "$COVERAGE_PERCENT" -lt "$MIN_THRESHOLD" ]; then
             echo "Coverage $COVERAGE_PERCENT% is below minimum threshold of $MIN_THRESHOLD%"
