@@ -70,6 +70,7 @@ pub fn output_impl(_attr: TokenStream, item: TokenStream) -> TokenStream {
         #input
 
         /// Keys for accessing registry values for #struct_name
+        #[derive(serde::Serialize, serde::Deserialize)]
         pub struct #keys_name {
             #(#key_fields,)*
         }
@@ -106,6 +107,8 @@ pub fn output_impl(_attr: TokenStream, item: TokenStream) -> TokenStream {
                 )*
             }
         }
+
+        impl serialization::SerializableStruct for #keys_name {}
 
         impl block_traits::BlockOutput for #struct_name {
             type Keys = #keys_name;

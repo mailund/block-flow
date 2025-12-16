@@ -17,5 +17,5 @@ pub use blocks::*;
 // Re-export registry functionality
 pub use channels::*;
 
-// Re-export macros
-pub use block_macros::*;
+// Re-export serialization functionality
+pub use serialization::*;

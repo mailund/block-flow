@@ -8,6 +8,8 @@
 /// ```rust
 /// use block_traits::*;
 /// use channels::*;
+/// use serde::{Serialize, Deserialize};
+/// use serialization::SerializableStruct;
 ///
 /// // Define a simple input type
 /// #[derive(Clone)]
@@ -16,7 +18,10 @@
 /// }
 ///
 /// // Implement the required Keys type (this would typically be auto-generated)
+/// #[derive(Serialize, Deserialize)]
 /// struct SimpleInputKeys;
+///
+/// impl SerializableStruct for SimpleInputKeys {}
 ///
 /// impl InputKeys<SimpleInput> for SimpleInputKeys {
 ///     type ReaderType = MockReader<SimpleInput>;
@@ -37,7 +42,7 @@
 /// }
 /// ```
 pub trait BlockInput: Sized {
-    type Keys: channels::InputKeys<Self>;
+    type Keys: channels::InputKeys<Self> + serialization::keys::SerializableStruct;
 }
 
 /// Trait for block output data types.
@@ -50,15 +55,20 @@ pub trait BlockInput: Sized {
 /// ```rust
 /// use block_traits::*;
 /// use channels::*;
+/// use serde::{Serialize, Deserialize};
+/// use serialization::SerializableStruct;
 ///
 /// // Define a simple output type
 /// #[derive(Clone)]
 /// struct SimpleOutput {
-///     result: f64,
+///     result: i32,
 /// }
 ///
 /// // Implement the required Keys type (this would typically be auto-generated)
+/// #[derive(Serialize, Deserialize)]
 /// struct SimpleOutputKeys;
+///
+/// impl SerializableStruct for SimpleOutputKeys {}
 ///
 /// impl OutputKeys<SimpleOutput> for SimpleOutputKeys {
 ///     type WriterType = MockWriter<SimpleOutput>;
@@ -88,7 +98,7 @@ pub trait BlockInput: Sized {
 /// }
 /// ```
 pub trait BlockOutput: Sized {
-    type Keys: channels::OutputKeys<Self>;
+    type Keys: channels::OutputKeys<Self> + serialization::keys::SerializableStruct;
 }
 
 /// Associated types for block specifications.
@@ -103,6 +113,8 @@ pub trait BlockOutput: Sized {
 /// ```rust
 /// use block_traits::*;
 /// use channels::*;
+/// use serde::{Serialize, Deserialize};
+/// use serialization::SerializableStruct;
 ///
 /// // Define wrapper types that implement the required traits
 /// #[derive(Clone)]
@@ -112,8 +124,12 @@ pub trait BlockOutput: Sized {
 /// struct CountOutput { count: i32 }
 ///
 /// // Mock implementations
+/// #[derive(Serialize, Deserialize)]
 /// struct NoInputKeys;
+/// #[derive(Serialize, Deserialize)]
 /// struct CountOutputKeys;
+/// impl SerializableStruct for NoInputKeys {}
+/// impl SerializableStruct for CountOutputKeys {}
 ///
 /// impl InputKeys<NoInput> for NoInputKeys {
 ///     type ReaderType = MockReader<NoInput>;
@@ -175,6 +191,8 @@ pub trait BlockSpecAssociatedTypes {
 /// ```rust
 /// use block_traits::*;
 /// use channels::*;
+/// use serde::{Serialize, Deserialize};
+/// use serialization::SerializableStruct;
 ///
 /// // Define wrapper types that implement the required traits
 /// #[derive(Clone)]
@@ -184,8 +202,12 @@ pub trait BlockSpecAssociatedTypes {
 /// struct IntOutput { result: i32 }
 ///
 /// // Mock implementations
+/// #[derive(Serialize, Deserialize)]
 /// struct IntInputKeys;
+/// #[derive(Serialize, Deserialize)]
 /// struct IntOutputKeys;
+/// impl SerializableStruct for IntInputKeys {}
+/// impl SerializableStruct for IntOutputKeys {}
 ///
 /// impl InputKeys<IntInput> for IntInputKeys {
 ///     type ReaderType = MockReader<IntInput>;
@@ -246,7 +268,145 @@ pub trait BlockSpecAssociatedTypes {
 /// }
 /// ```
 pub trait BlockSpec: BlockSpecAssociatedTypes {
+    /// Initialize the block's state.
+    ///
+    /// This method is called once when the block is first created to set up
+    /// its initial internal state. The state persists across multiple executions
+    /// and can be used to maintain data between calls to `execute`.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use block_traits::*;
+    /// use channels::*;
+    /// use serde::{Serialize, Deserialize};
+    /// use serialization::SerializableStruct;
+    ///
+    /// // Define proper input/output types
+    /// #[derive(Clone)]
+    /// struct NoInput;
+    /// #[derive(Clone)]
+    /// struct NoOutput;
+    /// #[derive(Serialize, Deserialize)]
+    /// struct NoInputKeys;
+    /// #[derive(Serialize, Deserialize)]
+    /// struct NoOutputKeys;
+    /// impl SerializableStruct for NoInputKeys {}
+    /// impl SerializableStruct for NoOutputKeys {}
+    ///
+    /// impl BlockInput for NoInput { type Keys = NoInputKeys; }
+    /// impl BlockOutput for NoOutput { type Keys = NoOutputKeys; }
+    /// impl InputKeys<NoInput> for NoInputKeys {
+    ///     type ReaderType = MockReader<NoInput>;
+    ///     fn reader(&self, _registry: &ChannelRegistry) -> Result<Self::ReaderType, RegistryError> {
+    ///         Ok(MockReader { data: NoInput })
+    ///     }
+    /// }
+    /// impl OutputKeys<NoOutput> for NoOutputKeys {
+    ///     type WriterType = MockWriter<NoOutput>;
+    ///     fn writer(&self, _registry: &ChannelRegistry) -> Result<Self::WriterType, RegistryError> {
+    ///         Ok(MockWriter { written: std::cell::RefCell::new(None) })
+    ///     }
+    ///     fn register(&self, _registry: &mut ChannelRegistry) {}
+    /// }
+    /// struct MockReader<T> { data: T }
+    /// impl<T: Clone> Reader<T> for MockReader<T> { fn read(&self) -> T { self.data.clone() } }
+    /// struct MockWriter<T> { written: std::cell::RefCell<Option<T>> }
+    /// impl<T: Clone> Writer<T> for MockWriter<T> { fn write(&self, data: &T) { *self.written.borrow_mut() = Some(data.clone()); } }
+    ///
+    /// struct CounterBlock;
+    ///
+    /// impl BlockSpecAssociatedTypes for CounterBlock {
+    ///     type Input = NoInput;
+    ///     type Output = NoOutput;
+    ///     type State = i32;
+    /// }
+    ///
+    /// impl BlockSpec for CounterBlock {
+    ///     fn init_state(&self) -> i32 {
+    ///         0  // Start counter at zero
+    ///     }
+    ///     # fn execute(&self, _ctx: &ExecutionContext, _input: NoInput, state: &i32) -> (NoOutput, i32) { (NoOutput, *state) }
+    /// }
+    /// ```
     fn init_state(&self) -> Self::State;
+
+    /// Execute the block's main logic.
+    ///
+    /// This method performs the core computation of the block, taking input data
+    /// and the current state, then returning output data and an updated state.
+    /// The method is pure and should not have side effects beyond returning values.
+    ///
+    /// # Parameters
+    ///
+    /// * `context` - Runtime execution context containing metadata like timestamps
+    /// * `input` - The input data for this execution cycle  
+    /// * `state` - The current internal state of the block
+    ///
+    /// # Returns
+    ///
+    /// A tuple containing:
+    /// * `Output` - The computed output data
+    /// * `State` - The updated state for the next execution
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use block_traits::*;
+    /// use channels::*;
+    /// use serde::{Serialize, Deserialize};
+    /// use serialization::SerializableStruct;
+    ///
+    /// // Define proper input/output types
+    /// #[derive(Clone)]
+    /// struct IntInput { value: i32 }
+    /// #[derive(Clone)]
+    /// struct IntOutput { result: i32 }
+    /// #[derive(Serialize, Deserialize)]
+    /// struct IntInputKeys;
+    /// #[derive(Serialize, Deserialize)]
+    /// struct IntOutputKeys;
+    /// impl SerializableStruct for IntInputKeys {}
+    /// impl SerializableStruct for IntOutputKeys {}
+    ///
+    /// impl BlockInput for IntInput { type Keys = IntInputKeys; }
+    /// impl BlockOutput for IntOutput { type Keys = IntOutputKeys; }
+    /// impl InputKeys<IntInput> for IntInputKeys {
+    ///     type ReaderType = MockReader<IntInput>;
+    ///     fn reader(&self, _registry: &ChannelRegistry) -> Result<Self::ReaderType, RegistryError> {
+    ///         Ok(MockReader { data: IntInput { value: 42 } })
+    ///     }
+    /// }
+    /// impl OutputKeys<IntOutput> for IntOutputKeys {
+    ///     type WriterType = MockWriter<IntOutput>;
+    ///     fn writer(&self, _registry: &ChannelRegistry) -> Result<Self::WriterType, RegistryError> {
+    ///         Ok(MockWriter { written: std::cell::RefCell::new(None) })
+    ///     }
+    ///     fn register(&self, _registry: &mut ChannelRegistry) {}
+    /// }
+    /// struct MockReader<T> { data: T }
+    /// impl<T: Clone> Reader<T> for MockReader<T> { fn read(&self) -> T { self.data.clone() } }
+    /// struct MockWriter<T> { written: std::cell::RefCell<Option<T>> }
+    /// impl<T: Clone> Writer<T> for MockWriter<T> { fn write(&self, data: &T) { *self.written.borrow_mut() = Some(data.clone()); } }
+    ///
+    /// struct AdderBlock;
+    ///
+    /// impl BlockSpecAssociatedTypes for AdderBlock {
+    ///     type Input = IntInput;
+    ///     type Output = IntOutput;
+    ///     type State = i32;
+    /// }
+    ///
+    /// impl BlockSpec for AdderBlock {
+    ///     # fn init_state(&self) -> i32 { 0 }
+    ///     
+    ///     fn execute(&self, _context: &ExecutionContext, input: IntInput, state: &i32) -> (IntOutput, i32) {
+    ///         let new_state = state + 1;  // Increment execution counter
+    ///         let output = IntOutput { result: input.value + *state }; // Add input to current state
+    ///         (output, new_state)
+    ///     }
+    /// }
+    /// ```
     fn execute(
         &self,
         context: &ExecutionContext,
@@ -399,10 +559,12 @@ mod tests {
         result: i32,
     }
 
+    #[derive(serde::Serialize, serde::Deserialize)]
     struct TestInputKeys {
         value: i32,
     }
 
+    #[derive(serde::Serialize, serde::Deserialize)]
     struct TestOutputKeys;
 
     // Mock reader/writer for testing
@@ -425,6 +587,9 @@ mod tests {
             *self.written.borrow_mut() = Some(data.clone());
         }
     }
+
+    impl serialization::SerializableStruct for TestInputKeys {}
+    impl serialization::SerializableStruct for TestOutputKeys {}
 
     impl InputKeys<TestInput> for TestInputKeys {
         type ReaderType = MockReader<TestInput>;

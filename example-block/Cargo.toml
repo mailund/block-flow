@@ -8,5 +8,7 @@ channels = { path = "../channels" }
 block-macros = { path = "../block-macros" }
 blocks = { path = "../blocks" }
 block_traits = { path = "../block_traits" }
+serialization = { path = "../serialization" }
+serde = { version = "1.0", features = ["derive"] }
 
 [dev-dependencies]

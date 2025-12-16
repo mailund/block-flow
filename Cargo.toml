@@ -1,5 +1,5 @@
 [workspace]
-members = ["channels", "example-block", "block-macros", "blocks"]
+members = ["channels", "example-block", "block-macros", "blocks", "serialization"]
 
 [package]
 name = "block-flow"
@@ -14,5 +14,6 @@ block_traits = { path = "block_traits" }
 blocks = { path = "blocks" }
 channels = { path = "channels" }
 block-macros = { path = "block-macros" }
+serialization = { path = "serialization" }
 
 [dev-dependencies]
