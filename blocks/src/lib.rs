@@ -3,7 +3,7 @@ use std::fs::File;
 use std::io::{self, Read};
 use std::path::Path;
 
-use block_macros::{block, init_params, input, output, state};
+use block_macros::*;
 use block_serialization::BlockSerializationSummary;
 use block_traits::{BlockSpec, ExecutionContext};
 

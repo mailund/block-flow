@@ -1,16 +1,13 @@
 use super::*;
 use intents::ZeroIntents;
 
-#[input]
-pub struct Input;
+// Default (empty struct) Input and State
+make_defaults!(input, state,);
 
 #[output]
 pub struct Output {
     pub is_after: bool,
 }
-
-#[state]
-pub struct State;
 
 #[init_params]
 pub struct InitParams {

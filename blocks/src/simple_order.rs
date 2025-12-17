@@ -2,16 +2,12 @@ use super::*;
 use intents::*;
 use trade_types::*;
 
+make_defaults!(state, output);
+
 #[input]
 pub struct Input {
     pub should_execute: bool,
 }
-
-#[output]
-pub struct Output;
-
-#[state]
-pub struct State;
 
 #[init_params]
 pub struct InitParams {

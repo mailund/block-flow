@@ -1,19 +1,12 @@
 use super::*;
 use intents::ZeroIntents;
 
+make_defaults!(output, state, init_params);
+
 #[input]
 pub struct Input {
     pub should_delete: bool,
 }
-
-#[output]
-pub struct Output;
-
-#[state]
-pub struct State;
-
-#[init_params]
-pub struct InitParams;
 
 #[block]
 pub struct DeleteBlock {
