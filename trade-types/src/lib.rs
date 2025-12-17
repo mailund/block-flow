@@ -23,18 +23,16 @@ impl Price {
 }
 
 pub struct Cents(pub u32);
-impl Into<Price> for Cents {
-    fn into(self) -> Price {
-        Price { cents: self.0 }
+impl From<Cents> for Price {
+    fn from(c: Cents) -> Self {
+        Price { cents: c.0 }
     }
 }
 
 pub struct Euros(pub u32);
-impl Into<Price> for Euros {
-    fn into(self) -> Price {
-        Price {
-            cents: self.0 * 100,
-        }
+impl From<Euros> for Price {
+    fn from(e: Euros) -> Self {
+        Price { cents: e.0 * 100 }
     }
 }
 
@@ -52,16 +50,16 @@ impl Quantity {
 }
 
 pub struct Kw(pub u32);
-impl Into<Quantity> for Kw {
-    fn into(self) -> Quantity {
-        Quantity { kw: self.0 }
+impl From<Kw> for Quantity {
+    fn from(k: Kw) -> Self {
+        Quantity { kw: k.0 }
     }
 }
 
 pub struct Mw(pub u32);
-impl Into<Quantity> for Mw {
-    fn into(self) -> Quantity {
-        Quantity { kw: self.0 * 1000 }
+impl From<Mw> for Quantity {
+    fn from(m: Mw) -> Self {
+        Quantity { kw: m.0 * 1_000 }
     }
 }
 

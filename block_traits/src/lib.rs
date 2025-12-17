@@ -273,7 +273,6 @@ pub struct ExecutionContext {
 ///         (output, State, ZeroIntents::new())
 ///     }
 /// }
-
 /// ```
 pub trait BlockSpec: BlockSpecAssociatedTypes {
     fn block_id(&self) -> u32;

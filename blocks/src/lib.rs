@@ -59,7 +59,6 @@ pub fn read_blocks_from_json_file<P: AsRef<Path>>(
 mod test {
     use super::*;
     use block_traits::BlockSpecAssociatedTypes;
-    use serde_json;
 
     #[test]
     fn test_block_type_serialization() {
