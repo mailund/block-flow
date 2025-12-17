@@ -36,6 +36,7 @@ dependencies = [
 name = "block_traits"
 version = "0.1.0"
 dependencies = [
+ "block-macros",
  "channels",
  "intents",
  "serde",

@@ -220,91 +220,60 @@ pub struct ExecutionContext {
 /// # Examples
 ///
 /// ```rust
-/// use block_traits::*;
-/// use channels::*;
-/// use serde::{Serialize, Deserialize};
-/// use serialization::structs::Serializable;
+/// use block_macros::{block, init_params, input, output, state};
+/// use block_traits::{BlockSpec, ExecutionContext};
+/// use intents::ZeroIntents;
 ///
-/// #[derive(Clone)]
-/// struct IntInput { value: i32 }
+/// #[input]
+/// pub struct Input;
 ///
-/// #[derive(Clone)]
-/// struct IntOutput { result: i32 }
-///
-/// #[derive(Serialize, Deserialize)]
-/// struct IntInputKeys;
-///
-/// #[derive(Serialize, Deserialize)]
-/// struct IntOutputKeys;
-///
-/// #[derive(Serialize, Deserialize)]
-/// struct DoublerInitParams;
-///
-/// impl Serializable for IntInputKeys {}
-/// impl Serializable for IntOutputKeys {}
-/// impl Serializable for DoublerInitParams {}
-///
-/// impl ChannelKeys for IntInputKeys {
-///     fn channel_names(&self) -> Vec<String> { vec![] }
-/// }
-/// impl ChannelKeys for IntOutputKeys {
-///     fn channel_names(&self) -> Vec<String> { vec![] }
+/// #[output]
+/// pub struct Output {
+///     pub is_after: bool,
 /// }
 ///
-/// // Mock reader/writer
-/// struct MockReader<T> { data: T }
-/// impl<T: Clone> Reader<T> for MockReader<T> {
-///     fn read(&self) -> T { self.data.clone() }
+/// #[state]
+/// pub struct State;
+///
+/// #[init_params]
+/// pub struct InitParams {
+///     pub time: u64,
 /// }
 ///
-/// struct MockWriter<T> { written: std::cell::RefCell<Option<T>> }
-/// impl<T: Clone> Writer<T> for MockWriter<T> {
-///     fn write(&self, data: &T) { *self.written.borrow_mut() = Some(data.clone()); }
+/// #[block]
+/// pub struct AfterBlock {
+///     pub block_id: u32,
+///     time: u64,
 /// }
 ///
-/// impl InputKeys<IntInput> for IntInputKeys {
-///     type ReaderType = MockReader<IntInput>;
-///     fn reader(&self, _registry: &ChannelRegistry) -> Result<Self::ReaderType, RegistryError> {
-///         Ok(MockReader { data: IntInput { value: 21 } })
-///     }
-/// }
-///
-/// impl OutputKeys<IntOutput> for IntOutputKeys {
-///     type WriterType = MockWriter<IntOutput>;
-///     fn writer(&self, _registry: &ChannelRegistry) -> Result<Self::WriterType, RegistryError> {
-///         Ok(MockWriter { written: std::cell::RefCell::new(None) })
-///     }
-///     fn register(&self, _registry: &mut ChannelRegistry) {}
-/// }
-///
-/// impl BlockInput for IntInput { type Keys = IntInputKeys; }
-/// impl BlockOutput for IntOutput { type Keys = IntOutputKeys; }
-///
-/// struct DoublerBlock;
-///
-/// impl BlockSpecAssociatedTypes for DoublerBlock {
-///     type Input = IntInput;
-///     type Output = IntOutput;
-///     type State = (); // No state needed
-///     type InitParameters = DoublerInitParams;
-///     type Intents = ::intents::ZeroIntents;
-/// }
-///
-/// impl BlockSpec for DoublerBlock {
+/// impl BlockSpec for AfterBlock {
 ///     fn block_id(&self) -> u32 {
-///         8765
+///         self.block_id
 ///     }
 ///
-///     fn new_from_init_params(_params: &DoublerInitParams) -> Self { DoublerBlock }
+///     fn new_from_init_params(params: &InitParams) -> Self {
+///         AfterBlock {
+///             block_id: 0,
+///             time: params.time,
+///         }
+///     }
 ///
-///     fn init_state(&self) -> Self::State { () }
+///     fn init_state(&self) -> State {
+///         State
+///     }
 ///
-///     fn execute(&self, _context: &ExecutionContext, input: Self::Input, _state: &Self::State)
-///         -> (Self::Output, Self::State, Self::Intents)
-///     {
-///         (IntOutput { result: input.value * 2 }, (), ::intents::ZeroIntents::new())
+///     fn execute(
+///         &self,
+///         context: &ExecutionContext,
+///         _input: Input,
+///         _state: &State,
+///     ) -> (Output, State, Self::Intents) {
+///         let is_after = context.time > self.time;
+///         let output = Output { is_after };
+///         (output, State, ZeroIntents::new())
 ///     }
 /// }
+
 /// ```
 pub trait BlockSpec: BlockSpecAssociatedTypes {
     fn block_id(&self) -> u32;
