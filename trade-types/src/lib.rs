@@ -1,6 +1,6 @@
-use serde::{Deserialize, Serialize};
+use serialization_macros::{serializable_enum, serializable_struct};
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[serializable_struct]
 pub struct Contract(String);
 
 impl Contract {
@@ -9,7 +9,7 @@ impl Contract {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[serializable_struct]
 pub struct Price {
     cents: u32,
 }
@@ -38,7 +38,7 @@ impl Into<Price> for Euros {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[serializable_struct]
 pub struct Quantity {
     kw: u32,
 }
@@ -65,7 +65,7 @@ impl Into<Quantity> for Mw {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[serializable_enum]
 pub enum Side {
     Buy,
     Sell,

@@ -9,7 +9,7 @@
 /// use block_traits::*;
 /// use channels::*;
 /// use serde::{Serialize, Deserialize};
-/// use serialization::structs::SerializableStruct;
+/// use serialization::structs::Serializable;
 ///
 /// // Define a simple input type
 /// #[derive(Clone)]
@@ -21,7 +21,7 @@
 /// #[derive(Serialize, Deserialize)]
 /// struct SimpleInputKeys;
 ///
-/// impl SerializableStruct for SimpleInputKeys {}
+/// impl Serializable for SimpleInputKeys {}
 ///
 /// impl ChannelKeys for SimpleInputKeys {
 ///     fn channel_names(&self) -> Vec<String> { vec![] }
@@ -46,7 +46,7 @@
 /// }
 /// ```
 pub trait BlockInput: Sized {
-    type Keys: ::channels::InputKeys<Self> + ::serialization::structs::SerializableStruct;
+    type Keys: ::channels::InputKeys<Self> + ::serialization::structs::Serializable;
 }
 
 /// Trait for block output data types.
@@ -60,7 +60,7 @@ pub trait BlockInput: Sized {
 /// use block_traits::*;
 /// use channels::*;
 /// use serde::{Serialize, Deserialize};
-/// use serialization::structs::SerializableStruct;
+/// use serialization::structs::Serializable;
 ///
 /// // Define a simple output type
 /// #[derive(Clone)]
@@ -72,7 +72,7 @@ pub trait BlockInput: Sized {
 /// #[derive(Serialize, Deserialize)]
 /// struct SimpleOutputKeys;
 ///
-/// impl SerializableStruct for SimpleOutputKeys {}
+/// impl Serializable for SimpleOutputKeys {}
 ///
 /// impl ChannelKeys for SimpleOutputKeys {
 ///     fn channel_names(&self) -> Vec<String> { vec![] }
@@ -106,7 +106,7 @@ pub trait BlockInput: Sized {
 /// }
 /// ```
 pub trait BlockOutput: Sized {
-    type Keys: ::channels::OutputKeys<Self> + ::serialization::structs::SerializableStruct;
+    type Keys: ::channels::OutputKeys<Self> + ::serialization::structs::Serializable;
 }
 
 /// Associated types for block specifications.
@@ -122,7 +122,7 @@ pub trait BlockOutput: Sized {
 /// use block_traits::*;
 /// use channels::*;
 /// use serde::{Serialize, Deserialize};
-/// use serialization::structs::SerializableStruct;
+/// use serialization::structs::Serializable;
 ///
 /// #[derive(Clone)]
 /// struct NoInput;
@@ -141,9 +141,9 @@ pub trait BlockOutput: Sized {
 ///     initial_count: i32,
 /// }
 ///
-/// impl SerializableStruct for NoInputKeys {}
-/// impl SerializableStruct for CountOutputKeys {}
-/// impl SerializableStruct for CounterInitParams {}
+/// impl Serializable for NoInputKeys {}
+/// impl Serializable for CountOutputKeys {}
+/// impl Serializable for CounterInitParams {}
 ///
 /// impl ChannelKeys for NoInputKeys {
 ///     fn channel_names(&self) -> Vec<String> { vec![] }
@@ -202,7 +202,7 @@ pub trait BlockSpecAssociatedTypes {
     type Input: BlockInput;
     type Output: BlockOutput;
     type State; // FIXME: Should be serializable at some point
-    type InitParameters: ::serialization::structs::SerializableStruct;
+    type InitParameters: ::serialization::structs::Serializable;
     type Intents: ::intents::BlockIntents;
 }
 
@@ -223,7 +223,7 @@ pub struct ExecutionContext {
 /// use block_traits::*;
 /// use channels::*;
 /// use serde::{Serialize, Deserialize};
-/// use serialization::structs::SerializableStruct;
+/// use serialization::structs::Serializable;
 ///
 /// #[derive(Clone)]
 /// struct IntInput { value: i32 }
@@ -240,9 +240,9 @@ pub struct ExecutionContext {
 /// #[derive(Serialize, Deserialize)]
 /// struct DoublerInitParams;
 ///
-/// impl SerializableStruct for IntInputKeys {}
-/// impl SerializableStruct for IntOutputKeys {}
-/// impl SerializableStruct for DoublerInitParams {}
+/// impl Serializable for IntInputKeys {}
+/// impl Serializable for IntOutputKeys {}
+/// impl Serializable for DoublerInitParams {}
 ///
 /// impl ChannelKeys for IntInputKeys {
 ///     fn channel_names(&self) -> Vec<String> { vec![] }
@@ -384,12 +384,12 @@ mod tests {
     #[derive(serde::Serialize, serde::Deserialize)]
     struct DoublerInitParams;
 
-    impl ::serialization::structs::SerializableStruct for DoublerInitParams {}
+    impl ::serialization::structs::Serializable for DoublerInitParams {}
 
     #[derive(serde::Serialize, serde::Deserialize)]
     struct AccumulatorInitParams;
 
-    impl ::serialization::structs::SerializableStruct for AccumulatorInitParams {}
+    impl ::serialization::structs::Serializable for AccumulatorInitParams {}
 
     // Test implementations for unit tests
     #[derive(Clone, Debug, PartialEq)]
@@ -431,8 +431,8 @@ mod tests {
         }
     }
 
-    impl ::serialization::structs::SerializableStruct for TestInputKeys {}
-    impl ::serialization::structs::SerializableStruct for TestOutputKeys {}
+    impl ::serialization::structs::Serializable for TestInputKeys {}
+    impl ::serialization::structs::Serializable for TestOutputKeys {}
 
     impl ChannelKeys for TestInputKeys {
         fn channel_names(&self) -> Vec<String> {

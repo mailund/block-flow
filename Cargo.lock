@@ -28,6 +28,7 @@ dependencies = [
  "proc-macro2",
  "quote",
  "serialization",
+ "serialization-macros",
  "syn",
 ]
 
@@ -53,6 +54,7 @@ dependencies = [
  "serde",
  "serde_json",
  "serialization",
+ "serialization-macros",
  "trade_types",
  "weave",
 ]
@@ -88,6 +90,7 @@ dependencies = [
  "intents",
  "serde",
  "serialization",
+ "serialization-macros",
  "weave",
 ]
 
@@ -280,6 +283,8 @@ name = "trade_types"
 version = "0.1.0"
 dependencies = [
  "serde",
+ "serialization",
+ "serialization-macros",
 ]
 
 [[package]]

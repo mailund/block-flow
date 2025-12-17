@@ -9,6 +9,7 @@ block-macros = { path = "../block-macros" }
 blocks = { path = "../blocks" }
 block_traits = { path = "../block_traits" }
 serialization = { path = "../serialization" }
+serialization-macros = { path = "../serialization-macros" }
 serde = { version = "1.0", features = ["derive"] }
 weave = { path = "../weave" }
 intents = { path = "../intents" }

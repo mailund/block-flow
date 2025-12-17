@@ -30,7 +30,7 @@ pub fn input_impl(_attr: TokenStream, item: TokenStream) -> TokenStream {
             #[derive(Clone, Debug)]
             #input
 
-            #[derive(serde::Serialize, serde::Deserialize, Clone, Debug, Default)]
+            #[::serialization_macros::serializable_struct]
             pub struct #keys_name {}
 
             pub struct #reader_name;
@@ -60,8 +60,6 @@ pub fn input_impl(_attr: TokenStream, item: TokenStream) -> TokenStream {
                     Ok(#reader_name)
                 }
             }
-
-            impl serialization::structs::SerializableStruct for #keys_name {}
 
             impl block_traits::BlockInput for #struct_name {
                 type Keys = #keys_name;
@@ -100,7 +98,7 @@ pub fn input_impl(_attr: TokenStream, item: TokenStream) -> TokenStream {
         #[derive(Clone, Debug)]
         #input
 
-        #[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
+        #[::serialization_macros::serializable_struct]
         pub struct #keys_name {
             #(#key_fields,)*
         }
@@ -136,8 +134,6 @@ pub fn input_impl(_attr: TokenStream, item: TokenStream) -> TokenStream {
                 Ok(#reader_name { #(#reader_assignments,)* })
             }
         }
-
-        impl serialization::structs::SerializableStruct for #keys_name {}
 
         impl block_traits::BlockInput for #struct_name {
             type Keys = #keys_name;
