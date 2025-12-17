@@ -1,0 +1,8 @@
+[package]
+name = "execution-plan"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+block_traits = { path = "../block_traits" }
+intents = { path = "../intents" }

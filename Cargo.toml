@@ -1,6 +1,11 @@
 [workspace]
 members = [
-    "channels", "example-block", "block-macros", "blocks", 
+    "channels", 
+    "example-block", 
+    "block-macros", 
+    "blocks", 
+    "block-serialization",
+    "execution-plan",
     "serialization",
     "serialization-macros",
     "weave",
@@ -18,10 +23,14 @@ path = "src/lib.rs"
 
 [dependencies]
 block_traits = { path = "block_traits" }
+block-macros = { path = "block-macros" }
+execution-plan = { path = "execution-plan" }
+block-serialization = { path = "block-serialization" }
 blocks = { path = "blocks" }
 channels = { path = "channels" }
+intents = { path = "intents" }
 serialization = { path = "serialization" }
-block-macros = { path = "block-macros" }
 serialization-macros = { path = "serialization-macros" }
+trade_types = { path = "trade-types" }
 
 [dev-dependencies]

@@ -1,3 +1,5 @@
+use channels::{Reader, Writer};
+use intents::{BlockIntents, Intent};
 use std::ops::Deref;
 
 /// Trait for block input data types.
@@ -207,7 +209,7 @@ pub struct EncapsulatedBlock<B: BlockSpec> {
     pub input_reader: <<B::Input as BlockInput>::Keys as channels::InputKeys<B::Input>>::ReaderType,
     pub output_writer:
         <<B::Output as BlockOutput>::Keys as channels::OutputKeys<B::Output>>::WriterType,
-    pub state: B::State,
+    pub state_cell: std::cell::RefCell<B::State>, // RefCell to allow interior mutability
 }
 
 impl<B: BlockSpec> EncapsulatedBlock<B> {
@@ -217,28 +219,38 @@ impl<B: BlockSpec> EncapsulatedBlock<B> {
         output_writer:
             <<B::Output as BlockOutput>::Keys as channels::OutputKeys<B::Output>>::WriterType,
     ) -> Self {
-        let state = block.init_state();
+        let init_state = block.init_state();
+        let state_cell = std::cell::RefCell::new(init_state);
         Self {
             block,
             input_reader,
             output_writer,
-            state,
+            state_cell,
         }
     }
 }
 
 pub trait TypeErasedBlock {
-    fn execute(&mut self, context: &ExecutionContext);
+    fn execute(&self, context: &ExecutionContext) -> Vec<Intent>;
 }
 
 impl<B: BlockSpec> TypeErasedBlock for EncapsulatedBlock<B> {
-    fn execute(&mut self, context: &ExecutionContext) {
-        use channels::{Reader, Writer};
+    fn execute(&self, context: &ExecutionContext) -> Vec<Intent> {
+        // Get the input for the execution from channels and the stored state.
         let input = self.input_reader.read();
-        let (output, new_state, _intents) = self.block.execute(context, input, &self.state);
-        // FIXME: ignoring intents for now
+        let old_state = self.state_cell.borrow();
+
+        // Execute the block logic.
+        let (output, new_state, intents) = self.block.execute(context, input, &old_state);
+
+        // Write values to channels and state
+        drop(old_state); // Explicitly drop borrow before mutable borrow
         self.output_writer.write(&output);
-        self.state = new_state;
+        *self.state_cell.borrow_mut() = new_state;
+
+        // Return the intents as a vector; this is also a type-erasure point
+        // since we now no longer care about the specific intent count.
+        intents.as_slice().to_vec()
     }
 }
 
@@ -252,8 +264,8 @@ impl Block {
         Self { block }
     }
 
-    pub fn execute(&mut self, context: &ExecutionContext) {
-        self.block.execute(context);
+    pub fn execute(&self, context: &ExecutionContext) -> Vec<Intent> {
+        self.block.execute(context).as_slice().to_vec()
     }
 }
 
@@ -461,7 +473,7 @@ mod tests {
         };
 
         let wrapped = EncapsulatedBlock::new(block, reader, writer);
-        assert_eq!(wrapped.state, 0); // Should be initialized
+        assert_eq!(*wrapped.state_cell.borrow(), 0); // Should be initialized
     }
 
     #[test]
@@ -474,7 +486,7 @@ mod tests {
             written: RefCell::new(None),
         };
 
-        let mut wrapped = EncapsulatedBlock::new(block, reader, writer);
+        let wrapped = EncapsulatedBlock::new(block, reader, writer);
         let context = ExecutionContext { time: 200 };
 
         wrapped.execute(&context);
@@ -485,7 +497,7 @@ mod tests {
         assert_eq!(written_data.as_ref().unwrap().result, 30); // 15 * 2
 
         // Check that state was updated
-        assert_eq!(wrapped.state, 1);
+        assert_eq!(*wrapped.state_cell.borrow(), 1);
     }
 
     #[test]
@@ -498,13 +510,13 @@ mod tests {
             written: RefCell::new(None),
         };
 
-        let mut wrapped = EncapsulatedBlock::new(block, reader, writer);
+        let wrapped = EncapsulatedBlock::new(block, reader, writer);
         let context = ExecutionContext { time: 300 };
 
         // Execute multiple times
         for expected_state in 1..=5 {
             wrapped.execute(&context);
-            assert_eq!(wrapped.state, expected_state);
+            assert_eq!(*wrapped.state_cell.borrow(), expected_state);
 
             let written_data = wrapped.output_writer.written.borrow();
             assert_eq!(written_data.as_ref().unwrap().result, 6); // 3 * 2

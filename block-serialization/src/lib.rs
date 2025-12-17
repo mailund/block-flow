@@ -39,7 +39,7 @@ impl<BSpec: BlockSpec + 'static> BlockNode for BlockSerializationSummary<BSpec> 
             block,
             input_reader,
             output_writer,
-            state,
+            state_cell: std::cell::RefCell::new(state),
         };
 
         Ok(Block::new(Box::new(encapsulated)))

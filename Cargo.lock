@@ -13,22 +13,23 @@ name = "block-flow"
 version = "0.1.0"
 dependencies = [
  "block-macros",
+ "block-serialization",
  "block_traits",
  "blocks",
  "channels",
+ "execution-plan",
+ "intents",
  "serialization",
  "serialization-macros",
+ "trade_types",
 ]
 
 [[package]]
 name = "block-macros"
 version = "0.1.0"
 dependencies = [
- "intents",
  "proc-macro2",
  "quote",
- "serialization",
- "serialization-macros",
  "syn",
 ]
 
@@ -106,6 +107,14 @@ dependencies = [
  "serialization",
  "serialization-macros",
  "weave",
+]
+
+[[package]]
+name = "execution-plan"
+version = "0.1.0"
+dependencies = [
+ "block_traits",
+ "intents",
 ]
 
 [[package]]
@@ -264,7 +273,6 @@ version = "0.1.0"
 dependencies = [
  "proc-macro2",
  "quote",
- "serialization",
  "syn",
 ]
 
