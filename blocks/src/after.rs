@@ -1,5 +1,4 @@
 use super::*;
-use intents::ZeroIntents;
 
 // Default (empty struct) Input and State
 make_defaults!(input, state,);
@@ -36,14 +35,9 @@ impl BlockSpec for AfterBlock {
         State
     }
 
-    fn execute(
-        &self,
-        context: &ExecutionContext,
-        _input: Input,
-        _state: &State,
-    ) -> (Output, State, Self::Intents) {
+    #[execute]
+    fn execute(&self, context: &ExecutionContext) -> Output {
         let is_after = context.time > self.time;
-        let output = Output { is_after };
-        (output, State, ZeroIntents::new())
+        Output { is_after }
     }
 }

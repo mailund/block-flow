@@ -1,5 +1,4 @@
 use super::*;
-use intents::ZeroIntents;
 
 make_defaults!(output, state, init_params);
 
@@ -26,19 +25,13 @@ impl BlockSpec for DeleteBlock {
         State
     }
 
-    fn execute(
-        &self,
-        _context: &ExecutionContext,
-        input: Input,
-        _state: &State,
-    ) -> (Output, State, Self::Intents) {
+    #[execute]
+    fn execute(&self, input: Input) {
         if input.should_delete {
             // In a real implementation, this would trigger deletion logic.
             println!("DeleteBlock: Deletion triggered.");
         } else {
             println!("DeleteBlock: No deletion.");
         }
-        let output = Output;
-        (output, State, ZeroIntents::new())
     }
 }

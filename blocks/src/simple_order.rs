@@ -60,12 +60,8 @@ impl BlockSpec for SimpleOrderBlock {
         State
     }
 
-    fn execute(
-        &self,
-        _context: &ExecutionContext,
-        input: Input,
-        _state: &State,
-    ) -> (Output, State, Self::Intents) {
-        (Output, State, self.intents(input.should_execute))
+    #[execute]
+    fn execute(&self, input: Input) -> Self::Intents {
+        self.intents(input.should_execute)
     }
 }
