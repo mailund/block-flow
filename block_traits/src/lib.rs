@@ -18,7 +18,7 @@
 /// }
 ///
 /// // Implement the required Keys type (this would typically be auto-generated)
-/// #[derive(Serialize, Deserialize)]
+/// #[derive(Serialize, Deserialize, Debug, Clone)]
 /// struct SimpleInputKeys;
 ///
 /// impl Serializable for SimpleInputKeys {}
@@ -69,7 +69,7 @@ pub trait BlockInput: Sized {
 /// }
 ///
 /// // Implement the required Keys type (this would typically be auto-generated)
-/// #[derive(Serialize, Deserialize)]
+/// #[derive(Serialize, Deserialize, Debug, Clone)]
 /// struct SimpleOutputKeys;
 ///
 /// impl Serializable for SimpleOutputKeys {}
@@ -109,95 +109,6 @@ pub trait BlockOutput: Sized {
     type Keys: ::channels::OutputKeys<Self> + ::serialization::structs::Serializable;
 }
 
-/// Associated types for block specifications.
-///
-/// This trait groups the three core types that define a block:
-/// - `Input`: The data the block consumes
-/// - `Output`: The data the block produces
-/// - `State`: The internal state the block maintains between executions
-///
-/// # Examples
-///
-/// ```rust
-/// use block_traits::*;
-/// use channels::*;
-/// use serde::{Serialize, Deserialize};
-/// use serialization::structs::Serializable;
-///
-/// #[derive(Clone)]
-/// struct NoInput;
-///
-/// #[derive(Clone)]
-/// struct CountOutput { count: i32 }
-///
-/// #[derive(Serialize, Deserialize)]
-/// struct NoInputKeys;
-///
-/// #[derive(Serialize, Deserialize)]
-/// struct CountOutputKeys;
-///
-/// #[derive(Serialize, Deserialize)]
-/// struct CounterInitParams {
-///     initial_count: i32,
-/// }
-///
-/// impl Serializable for NoInputKeys {}
-/// impl Serializable for CountOutputKeys {}
-/// impl Serializable for CounterInitParams {}
-///
-/// impl ChannelKeys for NoInputKeys {
-///     fn channel_names(&self) -> Vec<String> { vec![] }
-/// }
-///
-/// impl ChannelKeys for CountOutputKeys {
-///     fn channel_names(&self) -> Vec<String> { vec![] }
-/// }
-///
-/// // Mock reader/writer
-/// struct MockReader<T> { data: T }
-/// impl<T: Clone> Reader<T> for MockReader<T> {
-///     fn read(&self) -> T { self.data.clone() }
-/// }
-///
-/// struct MockWriter<T> { written: std::cell::RefCell<Option<T>> }
-/// impl<T: Clone> Writer<T> for MockWriter<T> {
-///     fn write(&self, data: &T) { *self.written.borrow_mut() = Some(data.clone()); }
-/// }
-///
-/// impl InputKeys<NoInput> for NoInputKeys {
-///     type ReaderType = MockReader<NoInput>;
-///     fn reader(&self, _registry: &ChannelRegistry) -> Result<Self::ReaderType, RegistryError> {
-///         Ok(MockReader { data: NoInput })
-///     }
-/// }
-///
-/// impl OutputKeys<CountOutput> for CountOutputKeys {
-///     type WriterType = MockWriter<CountOutput>;
-///     fn writer(&self, _registry: &ChannelRegistry) -> Result<Self::WriterType, RegistryError> {
-///         Ok(MockWriter { written: std::cell::RefCell::new(None) })
-///     }
-///     fn register(&self, _registry: &mut ChannelRegistry) {}
-/// }
-///
-/// impl BlockInput for NoInput {
-///     type Keys = NoInputKeys;
-/// }
-///
-/// impl BlockOutput for CountOutput {
-///     type Keys = CountOutputKeys;
-/// }
-///
-/// // Define associated types for a counter block
-/// struct CounterBlockSpec;
-///
-/// impl BlockSpecAssociatedTypes for CounterBlockSpec {
-///     type Input = NoInput;                 // No input needed
-///     type Output = CountOutput;            // Outputs a count
-///     type State = i32;                     // Internal counter state
-///     type InitParameters = CounterInitParams;
-///     type Intents = ::intents::ZeroIntents;
-/// }
-/// ```
 pub trait BlockSpecAssociatedTypes {
     type Input: BlockInput;
     type Output: BlockOutput;
@@ -370,12 +281,12 @@ mod tests {
         result: i32,
     }
 
-    #[derive(serde::Serialize, serde::Deserialize)]
+    #[derive(serde::Serialize, serde::Deserialize, Debug, Clone)]
     struct TestInputKeys {
         value: String,
     }
 
-    #[derive(serde::Serialize, serde::Deserialize)]
+    #[derive(serde::Serialize, serde::Deserialize, Debug, Clone)]
     struct TestOutputKeys;
 
     // Mock reader/writer for testing

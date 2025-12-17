@@ -33,6 +33,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "block-serialization"
+version = "0.1.0"
+dependencies = [
+ "block_traits",
+ "channels",
+ "serde",
+ "serde_json",
+ "serialization",
+ "serialization-macros",
+]
+
+[[package]]
 name = "block_traits"
 version = "0.1.0"
 dependencies = [
@@ -49,6 +61,7 @@ name = "blocks"
 version = "0.1.0"
 dependencies = [
  "block-macros",
+ "block-serialization",
  "block_traits",
  "channels",
  "intents",
@@ -57,7 +70,6 @@ dependencies = [
  "serialization",
  "serialization-macros",
  "trade_types",
- "weave",
 ]
 
 [[package]]
@@ -85,6 +97,7 @@ name = "example-block"
 version = "0.1.0"
 dependencies = [
  "block-macros",
+ "block-serialization",
  "block_traits",
  "blocks",
  "channels",
@@ -307,12 +320,15 @@ dependencies = [
 name = "weave"
 version = "0.1.0"
 dependencies = [
+ "block-serialization",
  "block_traits",
+ "blocks",
  "channels",
  "serde",
  "serde_json",
  "serialization",
  "serialization-macros",
+ "trade_types",
 ]
 
 [[package]]

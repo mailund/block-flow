@@ -1,79 +1,7 @@
+use block_serialization::BlockNode;
+use block_traits::Block;
+use channels::{ChannelRegistry, RegistryError};
 use std::collections::{HashMap, HashSet, VecDeque};
-
-use block_traits::{Block, BlockInput, BlockOutput, BlockSpec, EncapsulatedBlock};
-use channels::{ChannelKeys, ChannelRegistry, InputKeys, OutputKeys, RegistryError};
-use serialization_macros::Serializable;
-
-pub trait BlockNode {
-    fn input_channels(&self) -> Vec<String>;
-    fn output_channels(&self) -> Vec<String>;
-    fn weave(&self, channels: &mut ::channels::ChannelRegistry) -> Result<Block, RegistryError>;
-}
-
-#[derive(serde::Serialize, serde::Deserialize, Serializable)]
-pub struct BlockSerializationSummary<BSpec: BlockSpec> {
-    pub input_keys: <BSpec::Input as BlockInput>::Keys,
-    pub output_keys: <BSpec::Output as BlockOutput>::Keys,
-    pub init_params: BSpec::InitParameters,
-}
-
-impl<BSpec: BlockSpec + 'static> BlockNode for BlockSerializationSummary<BSpec> {
-    fn input_channels(&self) -> Vec<String> {
-        self.input_keys.channel_names()
-    }
-    fn output_channels(&self) -> Vec<String> {
-        self.output_keys.channel_names()
-    }
-
-    fn weave(&self, channels: &mut ::channels::ChannelRegistry) -> Result<Block, RegistryError> {
-        self.output_keys.register(channels);
-
-        let block = BSpec::new_from_init_params(&self.init_params);
-        let state = block.init_state();
-
-        let input_reader = self.input_keys.reader(channels)?;
-        let output_writer = self.output_keys.writer(channels)?;
-
-        let encapsulated = EncapsulatedBlock {
-            block,
-            input_reader,
-            output_writer,
-            state,
-        };
-
-        Ok(Block::new(Box::new(encapsulated)))
-    }
-}
-
-pub struct BlockSerialisation;
-
-impl BlockSerialisation {
-    pub fn new_node<B: BlockSpec>(
-        input_keys: <B::Input as BlockInput>::Keys,
-        output_keys: <B::Output as BlockOutput>::Keys,
-        init_params: B::InitParameters,
-    ) -> BlockSerializationSummary<B> {
-        BlockSerializationSummary {
-            input_keys,
-            output_keys,
-            init_params,
-        }
-    }
-
-    pub fn serialize_block<B: BlockSpec, S: ::serialization::StructSerializer>(
-        serializer: &S,
-        block: BlockSerializationSummary<B>,
-    ) -> ::serialization::Result<Vec<u8>> {
-        serializer.serialize(&block)
-    }
-
-    pub fn deserialize_block<B: BlockSpec, S: ::serialization::StructSerializer>(
-        serializer: &S,
-        data: &[u8],
-    ) -> Result<BlockSerializationSummary<B>, ::serialization::SerializationError> {
-        serializer.deserialize::<BlockSerializationSummary<B>>(data)
-    }
-}
 
 pub fn weave_nodes(
     nodes: Vec<Box<dyn BlockNode>>,
@@ -152,4 +80,43 @@ pub fn weave_nodes(
     }
 
     Ok(blocks)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use block_serialization::BlockSerializationSummary;
+    use blocks::{AfterBlock, SimpleOrderBlock};
+    use channels::ChannelRegistry;
+    use trade_types::Contract;
+
+    #[test]
+    fn weave_after_and_simple_order() {
+        let after_node = BlockSerializationSummary::<AfterBlock> {
+            input_keys: blocks::after::InputKeys {},
+            output_keys: blocks::after::OutputKeys {
+                is_after: "after_output".to_string(),
+            },
+            init_params: blocks::after::InitParams { time: 42 },
+        };
+        // SimpleOrderBlock expects InitParams { contract: Contract }
+        let order_node = BlockSerializationSummary::<SimpleOrderBlock> {
+            input_keys: blocks::simple_order::InputKeys {
+                should_execute: "after_output".to_string(),
+            },
+            output_keys: blocks::simple_order::OutputKeys {},
+            init_params: blocks::simple_order::InitParams {
+                contract: Contract::new("ABC-123"),
+            },
+        };
+        let mut registry = ChannelRegistry::default();
+        let nodes: Vec<Box<dyn BlockNode>> = vec![Box::new(after_node), Box::new(order_node)];
+        let result = weave_nodes(nodes, &mut registry);
+        assert!(
+            result.is_ok(),
+            "weave_nodes should succeed for AfterBlock -> SimpleOrderBlock"
+        );
+        let blocks = result.unwrap();
+        assert_eq!(blocks.len(), 2);
+    }
 }

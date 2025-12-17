@@ -4,14 +4,15 @@ use std::io::{self, Read};
 use std::path::Path;
 
 use block_macros::{block, init_params, input, output, state};
+use block_serialization::BlockSerializationSummary;
 use block_traits::{BlockSpec, ExecutionContext};
-use weave::BlockSerializationSummary;
 
-mod after;
+pub mod after;
+pub mod delete;
+pub mod simple_order;
+
 pub use after::AfterBlock;
-mod delete;
 pub use delete::DeleteBlock;
-mod simple_order;
 pub use simple_order::SimpleOrderBlock;
 
 #[derive(Serialize, Deserialize)]

@@ -52,7 +52,7 @@ pub trait Reader<T> {
 
 /// Trait for keys that work along channels. Used for mapping
 /// input/output keys to their channel names.
-pub trait ChannelKeys {
+pub trait ChannelKeys: Clone + std::fmt::Debug {
     fn channel_names(&self) -> Vec<String>;
 }
 

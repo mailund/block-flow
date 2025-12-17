@@ -74,9 +74,9 @@ pub mod adder_block {
 mod tests {
     use super::adder_block::*;
     use super::*;
+    use block_serialization::BlockNode;
     use block_traits::{BlockInput, BlockOutput};
     use channels::{ChannelRegistry, InputKeys, OutputKeys};
-    use weave::BlockNode;
 
     #[test]
     fn test_adder_block_pure_execution() {
@@ -162,7 +162,7 @@ mod tests {
             sum: "output_sum".to_string(),
         };
 
-        let mut wired = weave::BlockSerialisation::new_node::<AdderBlock>(
+        let mut wired = block_serialization::BlockSerialisation::new_node::<AdderBlock>(
             in_keys.clone(),
             out_keys.clone(),
             InitParams { offset: 100 },
@@ -199,7 +199,7 @@ mod tests {
             sum: "sum".to_string(),
         };
 
-        let mut wired = weave::BlockSerialisation::new_node::<AdderBlock>(
+        let mut wired = block_serialization::BlockSerialisation::new_node::<AdderBlock>(
             in_keys.clone(),
             out_keys.clone(),
             InitParams { offset: 0 },
@@ -270,7 +270,7 @@ mod tests {
         }
         "#;
 
-        let summary: weave::BlockSerializationSummary<adder_block::AdderBlock> =
+        let summary: block_serialization::BlockSerializationSummary<adder_block::AdderBlock> =
             serialization::read_struct_from_json(json.as_bytes()).unwrap();
 
         assert_eq!(summary.init_params.offset, 5);
