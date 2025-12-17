@@ -162,7 +162,7 @@ mod tests {
             sum: "output_sum".to_string(),
         };
 
-        let mut wired = block_serialization::BlockSerialisation::new_node::<AdderBlock>(
+        let wired = block_serialization::BlockSerialisation::new_node::<AdderBlock>(
             in_keys.clone(),
             out_keys.clone(),
             InitParams { offset: 100 },
@@ -199,7 +199,7 @@ mod tests {
             sum: "sum".to_string(),
         };
 
-        let mut wired = block_serialization::BlockSerialisation::new_node::<AdderBlock>(
+        let wired = block_serialization::BlockSerialisation::new_node::<AdderBlock>(
             in_keys.clone(),
             out_keys.clone(),
             InitParams { offset: 0 },

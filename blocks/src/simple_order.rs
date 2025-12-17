@@ -57,6 +57,7 @@ impl BlockSpec for SimpleOrderBlock {
         } else {
             Intent::no_intent(SlotId::new(self.block_id, 0))
         };
-        (Output, State, OneIntent::new([intent]))
+
+        (Output, State, Self::Intents::new([intent]))
     }
 }

@@ -1,6 +1,11 @@
 [workspace]
 members = [
-    "channels", "example-block", "block-macros", "blocks", 
+    "channels", 
+    "example-block", 
+    "block-macros", 
+    "blocks", 
+    "block-serialization",
+    "execution-plan",
     "serialization",
     "serialization-macros",
     "weave",
