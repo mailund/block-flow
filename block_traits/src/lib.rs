@@ -1,3 +1,5 @@
+use std::ops::Deref;
+
 /// Trait for block input data types.
 ///
 /// This trait defines the associated types needed for a block's input.
@@ -240,6 +242,8 @@ impl<B: BlockSpec> TypeErasedBlock for EncapsulatedBlock<B> {
     }
 }
 
+/// Type-erased block for execution in a weaved
+/// execution plan.
 pub struct Block {
     block: Box<dyn TypeErasedBlock>,
 }
@@ -250,6 +254,16 @@ impl Block {
 
     pub fn execute(&mut self, context: &ExecutionContext) {
         self.block.execute(context);
+    }
+}
+
+/// Topologically ordered blocks for execution in a weave.
+pub struct TopoOrderedBlocks(pub Vec<Block>);
+
+impl Deref for TopoOrderedBlocks {
+    type Target = Vec<Block>;
+    fn deref(&self) -> &Self::Target {
+        &self.0
     }
 }
 
