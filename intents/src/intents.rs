@@ -50,18 +50,6 @@ pub enum Intent {
     Place(PlaceIntent),
 }
 impl Intent {
-    pub fn no_intent(slot_id: SlotId) -> Self {
-        Intent::NoIntent(NoIntent::new(slot_id))
-    }
-    pub fn place_intent(
-        id: SlotId,
-        contract: Contract,
-        side: Side,
-        price: Price,
-        quantity: Quantity,
-    ) -> Self {
-        Intent::Place(PlaceIntent::new(id, contract, side, price, quantity))
-    }
     pub fn set_slot_id(&mut self, slot_index: u32) {
         match self {
             Intent::NoIntent(no_intent) => no_intent.set_slot_id(slot_index),
@@ -69,3 +57,21 @@ impl Intent {
         }
     }
 }
+
+pub trait IntentFactory {
+    fn no_intent(slot_id: SlotId) -> Intent {
+        Intent::NoIntent(NoIntent::new(slot_id))
+    }
+
+    fn place_intent(
+        slot_id: SlotId,
+        contract: Contract,
+        side: Side,
+        price: Price,
+        quantity: Quantity,
+    ) -> Intent {
+        Intent::Place(PlaceIntent::new(slot_id, contract, side, price, quantity))
+    }
+}
+
+impl IntentFactory for Intent {}

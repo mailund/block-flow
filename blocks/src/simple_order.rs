@@ -12,6 +12,7 @@ pub struct Input {
 #[init_params]
 pub struct InitParams {
     pub contract: Contract,
+    // FIXME: Put side, price, quantity here as well.
 }
 
 #[block(intents = OneIntent)]
