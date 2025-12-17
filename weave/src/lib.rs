@@ -2,7 +2,7 @@ use std::collections::{HashMap, HashSet, VecDeque};
 
 use block_traits::{Block, BlockInput, BlockOutput, BlockSpec, EncapsulatedBlock};
 use channels::{ChannelKeys, ChannelRegistry, InputKeys, OutputKeys, RegistryError};
-use serialization_macros::SerializableStruct;
+use serialization_macros::Serializable;
 
 pub trait BlockNode {
     fn input_channels(&self) -> Vec<String>;
@@ -10,7 +10,7 @@ pub trait BlockNode {
     fn weave(&self, channels: &mut ::channels::ChannelRegistry) -> Result<Block, RegistryError>;
 }
 
-#[derive(serde::Serialize, serde::Deserialize, SerializableStruct)]
+#[derive(serde::Serialize, serde::Deserialize, Serializable)]
 pub struct BlockSerializationSummary<BSpec: BlockSpec> {
     pub input_keys: <BSpec::Input as BlockInput>::Keys,
     pub output_keys: <BSpec::Output as BlockOutput>::Keys,

@@ -1,6 +1,5 @@
-use intents::ZeroIntents;
-
 use super::*;
+use intents::ZeroIntents;
 
 #[input]
 pub struct Input;

@@ -30,7 +30,7 @@ pub fn output_impl(_attr: TokenStream, item: TokenStream) -> TokenStream {
             #[derive(Clone, Debug)]
             #input
 
-            #[derive(serde::Serialize, serde::Deserialize, Clone, Debug, Default)]
+            #[::serialization_macros::serializable_struct]
             pub struct #keys_name {}
 
             pub struct #writer_name;
@@ -62,8 +62,6 @@ pub fn output_impl(_attr: TokenStream, item: TokenStream) -> TokenStream {
                     // no outputs to register
                 }
             }
-
-            impl serialization::structs::SerializableStruct for #keys_name {}
 
             impl block_traits::BlockOutput for #struct_name {
                 type Keys = #keys_name;
@@ -105,7 +103,7 @@ pub fn output_impl(_attr: TokenStream, item: TokenStream) -> TokenStream {
         #[derive(Clone, Debug)]
         #input
 
-        #[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
+        #[serialization_macros::serializable_struct]
         pub struct #keys_name {
             #(#key_fields,)*
         }
@@ -143,8 +141,6 @@ pub fn output_impl(_attr: TokenStream, item: TokenStream) -> TokenStream {
                 #( registry.ensure::<#field_types>(&self.#field_names); )*
             }
         }
-
-        impl serialization::structs::SerializableStruct for #keys_name {}
 
         impl block_traits::BlockOutput for #struct_name {
             type Keys = #keys_name;

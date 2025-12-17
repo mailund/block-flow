@@ -16,7 +16,7 @@ use crate::error::Result;
 ///
 /// ```rust
 /// use serde::{Deserialize, Serialize};
-/// use serialization::structs::SerializableStruct;
+/// use serialization::structs::Serializable;
 ///
 /// #[derive(Serialize, Deserialize)]
 /// struct MyConfig {
@@ -24,9 +24,9 @@ use crate::error::Result;
 ///     pub field_b: i32,
 /// }
 ///
-/// impl SerializableStruct for MyConfig {}
+/// impl Serializable for MyConfig {}
 /// ```
-pub trait SerializableStruct: Serialize + for<'de> Deserialize<'de> {}
+pub trait Serializable: Serialize + for<'de> Deserialize<'de> {}
 
 /// Trait for serializing structs
 ///
@@ -34,20 +34,16 @@ pub trait SerializableStruct: Serialize + for<'de> Deserialize<'de> {}
 /// to be used for struct serialization.
 pub trait StructSerializer {
     /// Serialize struct to bytes
-    fn serialize<S: SerializableStruct>(&self, data: &S) -> Result<Vec<u8>>;
+    fn serialize<S: Serializable>(&self, data: &S) -> Result<Vec<u8>>;
 
     /// Deserialize struct from bytes
-    fn deserialize<S: SerializableStruct>(&self, data: &[u8]) -> Result<S>;
+    fn deserialize<S: Serializable>(&self, data: &[u8]) -> Result<S>;
 
     /// Serialize struct to a writer
-    fn serialize_to_writer<S: SerializableStruct, W: Write>(
-        &self,
-        data: &S,
-        writer: W,
-    ) -> Result<()>;
+    fn serialize_to_writer<S: Serializable, W: Write>(&self, data: &S, writer: W) -> Result<()>;
 
     /// Deserialize struct from a reader
-    fn deserialize_from_reader<S: SerializableStruct, R: Read>(&self, reader: R) -> Result<S>;
+    fn deserialize_from_reader<S: Serializable, R: Read>(&self, reader: R) -> Result<S>;
 }
 
 /// JSON implementation of StructSerializer
@@ -57,7 +53,7 @@ pub trait StructSerializer {
 /// # Examples
 ///
 /// ```rust
-/// use serialization::structs::{JsonStructSerializer, StructSerializer, SerializableStruct};
+/// use serialization::structs::{JsonStructSerializer, StructSerializer, Serializable};
 /// use serde::{Deserialize, Serialize};
 ///
 /// #[derive(Serialize, Deserialize, PartialEq, Debug)]
@@ -66,7 +62,7 @@ pub trait StructSerializer {
 ///     pub field_b: i32,
 /// }
 ///
-/// impl SerializableStruct for TestData {}
+/// impl Serializable for TestData {}
 ///
 /// let serializer = JsonStructSerializer::new();
 /// let data = TestData {
@@ -94,28 +90,24 @@ impl Default for JsonStructSerializer {
 }
 
 impl StructSerializer for JsonStructSerializer {
-    fn serialize<S: SerializableStruct>(&self, data: &S) -> Result<Vec<u8>> {
+    fn serialize<S: Serializable>(&self, data: &S) -> Result<Vec<u8>> {
         crate::serializer::Serializer::to_json_pretty(data)
     }
 
-    fn deserialize<S: SerializableStruct>(&self, data: &[u8]) -> Result<S> {
+    fn deserialize<S: Serializable>(&self, data: &[u8]) -> Result<S> {
         crate::serializer::Serializer::from_json(data)
     }
 
-    fn serialize_to_writer<S: SerializableStruct, W: Write>(
-        &self,
-        data: &S,
-        writer: W,
-    ) -> Result<()> {
+    fn serialize_to_writer<S: Serializable, W: Write>(&self, data: &S, writer: W) -> Result<()> {
         crate::serializer::Serializer::to_json_pretty_writer(data, writer)
     }
 
-    fn deserialize_from_reader<S: SerializableStruct, R: Read>(&self, reader: R) -> Result<S> {
+    fn deserialize_from_reader<S: Serializable, R: Read>(&self, reader: R) -> Result<S> {
         crate::serializer::Serializer::from_json_reader(reader)
     }
 }
 
-pub fn read_struct_from_json<S: SerializableStruct>(data: &[u8]) -> Result<S> {
+pub fn read_struct_from_json<S: Serializable>(data: &[u8]) -> Result<S> {
     crate::serializer::Serializer::from_json(data)
 }
 
@@ -136,8 +128,8 @@ mod tests {
         pub value_y: i32,
     }
 
-    impl SerializableStruct for TestConfigA {}
-    impl SerializableStruct for TestConfigB {}
+    impl Serializable for TestConfigA {}
+    impl Serializable for TestConfigB {}
 
     fn create_test_config_a() -> TestConfigA {
         TestConfigA {

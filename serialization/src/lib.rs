@@ -14,4 +14,4 @@ pub mod structs;
 
 pub use error::{Result, SerializationError};
 pub use structs::read_struct_from_json;
-pub use structs::{JsonStructSerializer, SerializableStruct, StructSerializer};
+pub use structs::{JsonStructSerializer, Serializable, StructSerializer};

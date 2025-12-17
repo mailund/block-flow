@@ -8,6 +8,7 @@ channels = { path = "../channels" }
 block-macros = { path = "../block-macros" }
 block_traits = { path = "../block_traits" }
 serialization = { path = "../serialization" }
+serialization-macros = { path = "../serialization-macros" }
 trade_types = { path = "../trade-types" }
 intents = { path = "../intents" }
 weave = { path = "../weave" }
