@@ -20,6 +20,30 @@ pub struct SimpleOrderBlock {
     contract: Contract,
 }
 
+impl SimpleOrderBlock {
+    fn place_intent(&self) -> Intent {
+        Intent::place_intent(
+            SlotId::new(self.block_id, 0),
+            self.contract.clone(),
+            Side::Buy,
+            Cents(100).into(),
+            Kw(1).into(),
+        )
+    }
+
+    fn no_intent(&self) -> Intent {
+        Intent::no_intent(SlotId::new(self.block_id, 0))
+    }
+
+    fn intents(&self, execute: bool) -> OneIntent {
+        if execute {
+            OneIntent::new([self.place_intent()])
+        } else {
+            OneIntent::new([self.no_intent()])
+        }
+    }
+}
+
 impl BlockSpec for SimpleOrderBlock {
     fn block_id(&self) -> u32 {
         self.block_id
@@ -42,18 +66,6 @@ impl BlockSpec for SimpleOrderBlock {
         input: Input,
         _state: &State,
     ) -> (Output, State, Self::Intents) {
-        let intent = if input.should_execute {
-            Intent::place_intent(
-                SlotId::new(self.block_id, 0),
-                self.contract.clone(),
-                Side::Buy,
-                Cents(100).into(),
-                Kw(1).into(),
-            )
-        } else {
-            Intent::no_intent(SlotId::new(self.block_id, 0))
-        };
-
-        (Output, State, Self::Intents::new([intent]))
+        (Output, State, self.intents(input.should_execute))
     }
 }
