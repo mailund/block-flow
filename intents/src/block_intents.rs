@@ -1,5 +1,19 @@
 use super::*;
 
+// Pattern for sealing from other implementations.
+// see: https://rust-lang.github.io/api-guidelines/future-proofing.html
+mod sealed {
+    pub trait Sealed {}
+}
+
+pub trait BlockIntents: sealed::Sealed {
+    const N: usize;
+    fn len() -> usize {
+        Self::N
+    }
+    fn as_slice(&self) -> &[Intent];
+}
+
 /// Macro defining a set of BlockIntents implementations for
 /// fixed-size arrays of Intent. Call like:
 /// ```ignore
@@ -69,20 +83,6 @@ macro_rules! declare_intents {
             }
         }
     };
-}
-
-// Pattern for sealing from other implementations.
-// see: https://rust-lang.github.io/api-guidelines/future-proofing.html
-mod sealed {
-    pub trait Sealed {}
-}
-
-pub trait BlockIntents: sealed::Sealed {
-    const N: usize;
-    fn len() -> usize {
-        Self::N
-    }
-    fn as_slice(&self) -> &[Intent];
 }
 
 declare_intents!(ZeroIntents, 0);
