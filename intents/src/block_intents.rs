@@ -59,10 +59,14 @@ macro_rules! declare_intents {
 
         impl $name {
             pub fn new(intents: [Intent; $n]) -> Self {
+                let mut intents = intents;
+                intents.iter_mut().enumerate().for_each(|(i, intent)| {
+                    intent.set_slot_id(i as u32);
+                });
                 Self(intents)
             }
             pub fn from_array(intents: [Intent; $n]) -> Self {
-                Self(intents)
+                Self::new(intents)
             }
         }
 

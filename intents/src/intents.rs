@@ -9,6 +9,9 @@ impl NoIntent {
     pub fn new(slot_id: SlotId) -> Self {
         NoIntent { id: slot_id }
     }
+    pub fn set_slot_id(&mut self, slot_index: u32) {
+        self.id.set_slot_id(slot_index);
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -36,6 +39,9 @@ impl PlaceIntent {
             quantity,
         }
     }
+    pub fn set_slot_id(&mut self, slot_index: u32) {
+        self.id.set_slot_id(slot_index);
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -55,5 +61,11 @@ impl Intent {
         quantity: Quantity,
     ) -> Self {
         Intent::Place(PlaceIntent::new(id, contract, side, price, quantity))
+    }
+    pub fn set_slot_id(&mut self, slot_index: u32) {
+        match self {
+            Intent::NoIntent(no_intent) => no_intent.set_slot_id(slot_index),
+            Intent::Place(place_intent) => place_intent.set_slot_id(slot_index),
+        }
     }
 }

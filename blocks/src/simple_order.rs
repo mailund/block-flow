@@ -32,7 +32,7 @@ impl SimpleOrderBlock {
     }
 
     fn no_intent(&self) -> Intent {
-        Intent::no_intent(SlotId::new(self.block_id, 0))
+        Intent::no_intent(SlotId::new(self.block_id(), 0))
     }
 
     fn intents(&self, execute: bool) -> OneIntent {
