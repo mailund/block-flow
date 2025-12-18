@@ -1,5 +1,5 @@
 use super::{Block, BlockInput, BlockOutput, BlockSpec, EncapsulatedBlock};
-use channels::{ChannelKeys, InputKeys, OutputKeys, RegistryError};
+use ::channels::{ChannelKeys, InputKeys, OutputKeys, RegistryError};
 
 /// Blocks that have been deserialized and had their
 /// concrete types erased for execution in a weave.
@@ -11,7 +11,7 @@ pub trait BlockNode {
 
 /// Block that has been deserialized (or serialized)
 /// before we weave it and erase its concrete type.
-#[serialization_macros::serializable_struct]
+#[::serialization_macros::serializable_struct]
 pub struct BlockSerializationSummary<BSpec: BlockSpec> {
     pub input_keys: <BSpec::Input as BlockInput>::Keys,
     pub output_keys: <BSpec::Output as BlockOutput>::Keys,
