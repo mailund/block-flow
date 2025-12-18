@@ -1,5 +1,5 @@
 use block_traits::type_erasure::Block;
-pub use execution_context::ExecutionContext;
+use execution_context::ExecutionContext;
 use intents::SlotIntent;
 use weave_traits::TopoOrdered;
 
