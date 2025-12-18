@@ -82,10 +82,7 @@ mod tests {
     impl InputKeys<TestInput> for TestInputKeys {
         type ReaderType = MockReader<TestInput>;
 
-        fn reader(
-            &self,
-            _registry: &ChannelRegistry,
-        ) -> Result<Self::ReaderType, modname::RegistryError> {
+        fn reader(&self, _registry: &ChannelRegistry) -> Result<Self::ReaderType, RegistryError> {
             Ok(MockReader {
                 data: TestInput { value: 0 },
             })
@@ -101,10 +98,7 @@ mod tests {
     impl OutputKeys<TestOutput> for TestOutputKeys {
         type WriterType = MockWriter<TestOutput>;
 
-        fn writer(
-            &self,
-            _registry: &ChannelRegistry,
-        ) -> Result<Self::WriterType, modname::RegistryError> {
+        fn writer(&self, _registry: &ChannelRegistry) -> Result<Self::WriterType, RegistryError> {
             Ok(MockWriter {
                 written: RefCell::new(None),
             })

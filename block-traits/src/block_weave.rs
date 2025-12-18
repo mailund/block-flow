@@ -36,7 +36,7 @@ impl<BSpec: BlockSpec + 'static> WeaveNode<Block> for BlockSerializationPackage<
         self.output_keys.channel_names()
     }
 
-    fn weave(&self, channels: &mut ::channels::ChannelRegistry) -> Result<Block, modname::RegistryError> {
+    fn weave(&self, channels: &mut ::channels::ChannelRegistry) -> Result<Block, RegistryError> {
         self.output_keys.register(channels);
 
         let block = BSpec::new_from_init_params(&self.init_params);

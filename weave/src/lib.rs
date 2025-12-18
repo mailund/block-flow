@@ -1,4 +1,4 @@
-use channels::{modname::RegistryError, ChannelRegistry};
+use channels::{errors::RegistryError, ChannelRegistry};
 use std::collections::{HashMap, HashSet, VecDeque};
 use weave_traits::{TopoOrdered, WeaveNode};
 
@@ -37,7 +37,7 @@ pub fn weave_nodes<T>(
                 // Allow external channels already present in registry, otherwise error.
                 // If your registry uses a different API than `has`, change this.
                 if !registry.has(ch) {
-                    return Err(modname::RegistryError::MissingProducer(format!(
+                    return Err(RegistryError::MissingProducer(format!(
                         "Missing producer for input channel '{ch}' (node index {consumer})"
                     )));
                 }
@@ -69,7 +69,7 @@ pub fn weave_nodes<T>(
             .enumerate()
             .filter_map(|(i, &d)| (d > 0).then_some(i))
             .collect();
-        return Err(modname::RegistryError::CycleDetected(format!("{cyclic:?}")));
+        return Err(RegistryError::CycleDetected(format!("{cyclic:?}")));
     }
 
     // Weave in topo order

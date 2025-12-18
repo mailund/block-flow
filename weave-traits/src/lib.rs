@@ -1,4 +1,4 @@
-use channels::{ChannelRegistry, modname::RegistryError};
+use channels::{ChannelRegistry, RegistryError};
 use std::ops::Deref;
 
 /// Something that can be weaved into a node in a graph
