@@ -1,12 +1,11 @@
-use block_traits::serialization::WeaveBlockNode;
-use block_traits::TopoOrderedBlocks;
-use channels::{ChannelRegistry, RegistryError};
+use channels::{errors::RegistryError, ChannelRegistry};
 use std::collections::{HashMap, HashSet, VecDeque};
+use weave_traits::{TopoOrdered, WeaveNode};
 
-pub fn weave_nodes(
-    nodes: Vec<Box<dyn WeaveBlockNode>>,
+pub fn weave_nodes<T>(
+    nodes: Vec<Box<dyn WeaveNode<T>>>,
     registry: &mut ChannelRegistry,
-) -> Result<TopoOrderedBlocks, RegistryError> {
+) -> Result<TopoOrdered<T>, RegistryError> {
     // Index nodes
     let n = nodes.len();
 
@@ -79,20 +78,21 @@ pub fn weave_nodes(
         blocks.push(nodes[idx].weave(registry)?);
     }
 
-    Ok(TopoOrderedBlocks(blocks))
+    Ok(TopoOrdered(blocks))
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use block_traits::serialization::BlockSerializationSummary;
+    use block_traits::block_weave::BlockSerializationPackage;
+    use block_traits::type_erasure::Block;
     use blocks::{AfterBlock, SimpleOrderBlock};
     use channels::ChannelRegistry;
     use trade_types::Contract;
 
     #[test]
     fn weave_after_and_simple_order() {
-        let after_node = BlockSerializationSummary::<AfterBlock> {
+        let after_node = BlockSerializationPackage::<AfterBlock> {
             input_keys: blocks::after::InputKeys {},
             output_keys: blocks::after::OutputKeys {
                 is_after: "after_output".to_string(),
@@ -100,7 +100,7 @@ mod tests {
             init_params: blocks::after::InitParams { time: 42 },
         };
         // SimpleOrderBlock expects InitParams { contract: Contract }
-        let order_node = BlockSerializationSummary::<SimpleOrderBlock> {
+        let order_node = BlockSerializationPackage::<SimpleOrderBlock> {
             input_keys: blocks::simple_order::InputKeys {
                 should_execute: "after_output".to_string(),
             },
@@ -110,7 +110,8 @@ mod tests {
             },
         };
         let mut registry = ChannelRegistry::default();
-        let nodes: Vec<Box<dyn WeaveBlockNode>> = vec![Box::new(after_node), Box::new(order_node)];
+        let nodes: Vec<Box<dyn WeaveNode<Block>>> =
+            vec![Box::new(after_node), Box::new(order_node)];
         let result = weave_nodes(nodes, &mut registry);
         assert!(
             result.is_ok(),

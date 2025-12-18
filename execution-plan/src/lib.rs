@@ -1,5 +1,9 @@
-use block_traits::{ExecutionContext, TopoOrderedBlocks};
+use block_traits::type_erasure::Block;
+pub use execution_context::ExecutionContext;
 use intents::Intent;
+use weave_traits::TopoOrdered;
+
+pub type TopoOrderedBlocks = TopoOrdered<Block>;
 
 pub struct ExecutionPlan {
     blocks: TopoOrderedBlocks,

@@ -1,145 +1,10 @@
-use std::any::Any;
-use std::cell::RefCell;
-use std::collections::HashMap;
-use std::rc::Rc;
+pub mod channel_keys;
+pub mod errors;
+pub mod registry;
 
-/// Errors that can occur during registry operations
-#[derive(Debug, PartialEq)]
-pub enum RegistryError {
-    KeyNotFound(String),
-    CycleDetected(String),
-    DuplicateOutputKey(String),
-    MissingProducer(String),
-    TypeMismatch {
-        key: String,
-        expected: &'static str,
-        found: &'static str,
-    },
-}
-
-impl std::fmt::Display for RegistryError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            RegistryError::KeyNotFound(key) => write!(f, "Key '{}' not found in registry", key),
-            RegistryError::CycleDetected(details) => {
-                write!(f, "Cycle detected in registry: {}", details)
-            }
-            RegistryError::DuplicateOutputKey(key) => {
-                write!(f, "Duplicate output key '{key}' in registry")
-            }
-            RegistryError::MissingProducer(err) => {
-                write!(f, "Missing producer error: {err}")
-            }
-            RegistryError::TypeMismatch {
-                key,
-                expected,
-                found,
-            } => write!(
-                f,
-                "Type mismatch for key '{}': expected {}, found {}",
-                key, expected, found
-            ),
-        }
-    }
-}
-
-impl std::error::Error for RegistryError {}
-
-/// Trait for readers that can read values of type T
-pub trait Reader<T> {
-    fn read(&self) -> T;
-}
-
-/// Trait for keys that work along channels. Used for mapping
-/// input/output keys to their channel names.
-pub trait ChannelKeys: Clone + std::fmt::Debug {
-    fn channel_names(&self) -> Vec<String>;
-}
-
-/// Trait for keys that can create readers
-pub trait InputKeys<T>: ChannelKeys {
-    type ReaderType: Reader<T>;
-    fn reader(&self, registry: &ChannelRegistry) -> Result<Self::ReaderType, RegistryError>;
-}
-
-/// Trait for writers that can write values of type T
-pub trait Writer<T> {
-    fn write(&self, output: &T);
-}
-
-/// Trait for keys that can create writers
-pub trait OutputKeys<T>: ChannelKeys {
-    type WriterType: Writer<T>;
-    fn writer(&self, registry: &ChannelRegistry) -> Result<Self::WriterType, RegistryError>;
-    fn register(&self, registry: &mut ChannelRegistry);
-}
-
-/// The registry for storing typed values
-pub struct ChannelRegistry {
-    store: HashMap<String, Rc<dyn Any>>,
-}
-
-impl ChannelRegistry {
-    /// Create a new empty registry
-    pub fn new() -> Self {
-        Self {
-            store: HashMap::new(),
-        }
-    }
-
-    pub fn has(&self, key: impl Into<String>) -> bool {
-        let key = key.into();
-        self.store.contains_key(&key)
-    }
-
-    /// Put a value into the registry
-    pub fn put<T: 'static>(&mut self, key: impl Into<String>, value: T) {
-        let key = key.into();
-        self.store.insert(key, Rc::new(RefCell::new(value)));
-    }
-
-    /// Get a value from the registry
-    pub fn get<T: 'static>(&self, key: impl AsRef<str>) -> Result<Rc<RefCell<T>>, RegistryError> {
-        let key = key.as_ref();
-
-        match self.store.get(key) {
-            Some(value) => {
-                // The value is stored as Rc<dyn Any>, but actually contains Rc<RefCell<T>>
-                // We need to downcast the Rc itself
-                value
-                    .clone()
-                    .downcast::<RefCell<T>>()
-                    .map_err(|_| RegistryError::TypeMismatch {
-                        key: key.to_string(),
-                        expected: std::any::type_name::<T>(),
-                        found: "unknown",
-                    })
-            }
-            None => Err(RegistryError::KeyNotFound(key.to_string())),
-        }
-    }
-
-    /// Ensure a key exists in the registry, creating it with Default if it doesn't
-    pub fn ensure<T: Default + 'static>(&mut self, key: impl Into<String>) -> Rc<RefCell<T>> {
-        let key = key.into();
-
-        // Check if key already exists and try to get it
-        if let Ok(existing) = self.get::<T>(&key) {
-            return existing;
-        }
-
-        // Key doesn't exist or wrong type, create new entry
-        let value = Rc::new(RefCell::new(T::default()));
-        self.store.insert(key, value.clone());
-        value
-    }
-}
-
-impl Default for ChannelRegistry {
-    fn default() -> Self {
-        Self::new()
-    }
-}
+pub use channel_keys::*;
+pub use errors::*;
+pub use registry::*;
 
 #[cfg(test)]
 mod tests {
@@ -186,7 +51,7 @@ mod tests {
 
         let result = registry.get::<String>("number");
         match result {
-            Err(RegistryError::TypeMismatch { key, .. }) => {
+            Err(errors::RegistryError::TypeMismatch { key, .. }) => {
                 assert_eq!(key, "number");
             }
             _ => panic!("Expected TypeMismatch error"),

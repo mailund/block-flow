@@ -4,7 +4,7 @@ use std::io::{self, Read};
 use std::path::Path;
 
 use block_macros::*;
-use block_traits::serialization::BlockSerializationSummary;
+use block_traits::block_weave::BlockSerializationPackage;
 use block_traits::{BlockSpec, ExecutionContext};
 
 pub mod after;
@@ -20,9 +20,9 @@ pub use simple_order::SimpleOrderBlock;
 pub enum BlockType {
     // FIXME: Not super happy with having a global enum list like this,
     // but it will do for now.
-    After(BlockSerializationSummary<after::AfterBlock>),
-    Delete(BlockSerializationSummary<delete::DeleteBlock>),
-    SimpleOrder(BlockSerializationSummary<simple_order::SimpleOrderBlock>),
+    After(BlockSerializationPackage<after::AfterBlock>),
+    Delete(BlockSerializationPackage<delete::DeleteBlock>),
+    SimpleOrder(BlockSerializationPackage<simple_order::SimpleOrderBlock>),
 }
 
 #[derive(Debug)]
@@ -68,7 +68,7 @@ mod test {
         type OutKey =
             <<AfterBlock as BlockSpecAssociatedTypes>::Output as block_traits::BlockOutput>::Keys;
         type InitParams = <AfterBlock as BlockSpecAssociatedTypes>::InitParameters;
-        let block_summary = BlockSerializationSummary::<after::AfterBlock> {
+        let block_summary = BlockSerializationPackage::<after::AfterBlock> {
             input_keys: InKey {},
             output_keys: OutKey {
                 is_after: "output_is_after".to_string(),
