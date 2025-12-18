@@ -25,6 +25,7 @@ block-traits = { path = "block-traits" }
 block-macros = { path = "block-macros" }
 blocks = { path = "blocks" }
 channels = { path = "channels" }
+execution-context = { path = "execution-context" }
 execution-plan = { path = "execution-plan" }
 intents = { path = "intents" }
 serialization = { path = "serialization" }

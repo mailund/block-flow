@@ -16,6 +16,7 @@ dependencies = [
  "block-traits",
  "blocks",
  "channels",
+ "execution-context",
  "execution-plan",
  "intents",
  "serialization",
@@ -38,6 +39,7 @@ version = "0.1.0"
 dependencies = [
  "block-macros",
  "channels",
+ "execution-context",
  "intents",
  "serde",
  "serialization",
@@ -78,6 +80,10 @@ dependencies = [
  "libc",
  "windows-sys",
 ]
+
+[[package]]
+name = "execution-context"
+version = "0.1.0"
 
 [[package]]
 name = "execution-plan"
