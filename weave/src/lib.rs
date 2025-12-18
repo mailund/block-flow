@@ -1,10 +1,10 @@
-use block_traits::serialization::BlockNode;
+use block_traits::serialization::WeaveBlockNode;
 use block_traits::TopoOrderedBlocks;
 use channels::{ChannelRegistry, RegistryError};
 use std::collections::{HashMap, HashSet, VecDeque};
 
 pub fn weave_nodes(
-    nodes: Vec<Box<dyn BlockNode>>,
+    nodes: Vec<Box<dyn WeaveBlockNode>>,
     registry: &mut ChannelRegistry,
 ) -> Result<TopoOrderedBlocks, RegistryError> {
     // Index nodes
@@ -110,7 +110,7 @@ mod tests {
             },
         };
         let mut registry = ChannelRegistry::default();
-        let nodes: Vec<Box<dyn BlockNode>> = vec![Box::new(after_node), Box::new(order_node)];
+        let nodes: Vec<Box<dyn WeaveBlockNode>> = vec![Box::new(after_node), Box::new(order_node)];
         let result = weave_nodes(nodes, &mut registry);
         assert!(
             result.is_ok(),

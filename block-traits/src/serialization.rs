@@ -3,7 +3,9 @@ use channels::{ChannelKeys, InputKeys, OutputKeys, RegistryError};
 
 /// Blocks that have been deserialized and had their
 /// concrete types erased for execution in a weave.
-pub trait BlockNode {
+/// Once weaven in with the rest of an execution plan, we will
+/// get a `Block` that we can execute.
+pub trait WeaveBlockNode {
     fn input_channels(&self) -> Vec<String>;
     fn output_channels(&self) -> Vec<String>;
     fn weave(&self, channels: &mut ::channels::ChannelRegistry) -> Result<Block, RegistryError>;
@@ -18,7 +20,24 @@ pub struct BlockSerializationSummary<BSpec: BlockSpec> {
     pub init_params: BSpec::InitParameters,
 }
 
-impl<BSpec: BlockSpec + 'static> BlockNode for BlockSerializationSummary<BSpec> {
+impl<B: BlockSpec> BlockSerializationSummary<B> {
+    /// Construct a new serialization/deserialization summary
+    /// for a block of type <B> from its input/output keys and
+    /// init parameters.
+    pub fn new(
+        input_keys: <B::Input as BlockInput>::Keys,
+        output_keys: <B::Output as BlockOutput>::Keys,
+        init_params: B::InitParameters,
+    ) -> Self {
+        BlockSerializationSummary {
+            input_keys,
+            output_keys,
+            init_params,
+        }
+    }
+}
+
+impl<BSpec: BlockSpec + 'static> WeaveBlockNode for BlockSerializationSummary<BSpec> {
     fn input_channels(&self) -> Vec<String> {
         self.input_keys.channel_names()
     }
@@ -46,32 +65,16 @@ impl<BSpec: BlockSpec + 'static> BlockNode for BlockSerializationSummary<BSpec> 
     }
 }
 
-pub struct BlockSerialisation;
+pub fn serialize_block<B: BlockSpec, S: ::serialization::StructSerializer>(
+    serializer: &S,
+    block: BlockSerializationSummary<B>,
+) -> ::serialization::Result<Vec<u8>> {
+    serializer.serialize(&block)
+}
 
-impl BlockSerialisation {
-    pub fn new_node<B: BlockSpec>(
-        input_keys: <B::Input as BlockInput>::Keys,
-        output_keys: <B::Output as BlockOutput>::Keys,
-        init_params: B::InitParameters,
-    ) -> BlockSerializationSummary<B> {
-        BlockSerializationSummary {
-            input_keys,
-            output_keys,
-            init_params,
-        }
-    }
-
-    pub fn serialize_block<B: BlockSpec, S: ::serialization::StructSerializer>(
-        serializer: &S,
-        block: BlockSerializationSummary<B>,
-    ) -> ::serialization::Result<Vec<u8>> {
-        serializer.serialize(&block)
-    }
-
-    pub fn deserialize_block<B: BlockSpec, S: ::serialization::StructSerializer>(
-        serializer: &S,
-        data: &[u8],
-    ) -> Result<BlockSerializationSummary<B>, ::serialization::SerializationError> {
-        serializer.deserialize::<BlockSerializationSummary<B>>(data)
-    }
+pub fn deserialize_block<B: BlockSpec, S: ::serialization::StructSerializer>(
+    serializer: &S,
+    data: &[u8],
+) -> Result<BlockSerializationSummary<B>, ::serialization::SerializationError> {
+    serializer.deserialize::<BlockSerializationSummary<B>>(data)
 }
