@@ -5,6 +5,7 @@ edition = "2021"
 
 [dependencies]
 channels = { path = "../channels" }
+weave-traits = { path = "../weave-traits" }
 execution-context = { path = "../execution-context" }
 serde = { version = "1.0", features = ["derive"] }
 serialization = { path = "../serialization" }

@@ -1,169 +1,17 @@
 use channels::{Reader, Writer};
 use intents::Intent;
-use std::ops::Deref;
-
-pub use execution_context::ExecutionContext;
 
 pub mod associated_types;
-pub mod serialization;
+pub mod block_spec;
+pub mod block_weave;
+pub mod type_erasure;
+
+// Re-export for convience
+pub use execution_context::ExecutionContext;
 
 pub use associated_types::{BlockInput, BlockOutput, BlockSpecAssociatedTypes};
-pub use serialization::{BlockSerializationSummary, WeaveBlockNode};
-
-/// Main trait for defining block behavior.
-///
-/// This trait extends `BlockSpecAssociatedTypes` with the core execution logic.
-/// Blocks must implement `init_state` and `execute`, while the registry integration
-/// methods have default implementations.
-///
-/// # Examples
-///
-/// ```rust
-/// use block_macros::{block, init_params, input, output, state};
-/// use block_traits::{BlockSpec, ExecutionContext};
-/// use intents::ZeroIntents;
-///
-/// #[input]
-/// pub struct Input;
-///
-/// #[output]
-/// pub struct Output {
-///     pub is_after: bool,
-/// }
-///
-/// #[state]
-/// pub struct State;
-///
-/// #[init_params]
-/// pub struct InitParams {
-///     pub time: u64,
-/// }
-///
-/// #[block]
-/// pub struct AfterBlock {
-///     pub block_id: u32,
-///     time: u64,
-/// }
-///
-/// impl BlockSpec for AfterBlock {
-///     fn block_id(&self) -> u32 {
-///         self.block_id
-///     }
-///
-///     fn new_from_init_params(params: &InitParams) -> Self {
-///         AfterBlock {
-///             block_id: 0,
-///             time: params.time,
-///         }
-///     }
-///
-///     fn init_state(&self) -> State {
-///         State
-///     }
-///
-///     fn execute(
-///         &self,
-///         context: &ExecutionContext,
-///         _input: Input,
-///         _state: &State,
-///     ) -> (Output, State, Self::Intents) {
-///         let is_after = context.time > self.time;
-///         let output = Output { is_after };
-///         (output, State, ZeroIntents::new())
-///     }
-/// }
-/// ```
-pub trait BlockSpec: BlockSpecAssociatedTypes {
-    fn block_id(&self) -> u32;
-
-    fn init_state(&self) -> Self::State;
-
-    fn new_from_init_params(params: &Self::InitParameters) -> Self;
-
-    fn execute(
-        &self,
-        context: &ExecutionContext,
-        input: Self::Input,
-        state: &Self::State,
-    ) -> (Self::Output, Self::State, Self::Intents);
-}
-
-pub struct EncapsulatedBlock<B: BlockSpec> {
-    pub block: B,
-    pub input_reader: <<B::Input as BlockInput>::Keys as channels::InputKeys<B::Input>>::ReaderType,
-    pub output_writer:
-        <<B::Output as BlockOutput>::Keys as channels::OutputKeys<B::Output>>::WriterType,
-    pub state_cell: std::cell::RefCell<B::State>, // RefCell to allow interior mutability
-}
-
-impl<B: BlockSpec> EncapsulatedBlock<B> {
-    pub fn new(
-        block: B,
-        input_reader: <<B::Input as BlockInput>::Keys as channels::InputKeys<B::Input>>::ReaderType,
-        output_writer:
-            <<B::Output as BlockOutput>::Keys as channels::OutputKeys<B::Output>>::WriterType,
-    ) -> Self {
-        let init_state = block.init_state();
-        let state_cell = std::cell::RefCell::new(init_state);
-        Self {
-            block,
-            input_reader,
-            output_writer,
-            state_cell,
-        }
-    }
-}
-
-pub trait TypeErasedBlock {
-    fn execute(&self, context: &ExecutionContext) -> Vec<Intent>;
-}
-
-impl<B: BlockSpec> TypeErasedBlock for EncapsulatedBlock<B> {
-    fn execute(&self, context: &ExecutionContext) -> Vec<Intent> {
-        use ::intents::BlockIntents; // For the as_slice method
-
-        // Get the input for the execution from channels and the stored state.
-        let input = self.input_reader.read();
-        let old_state = self.state_cell.borrow();
-
-        // Execute the block logic.
-        let (output, new_state, intents) = self.block.execute(context, input, &old_state);
-
-        // Write values to channels and state
-        drop(old_state); // Explicitly drop borrow before mutable borrow
-        self.output_writer.write(&output);
-        *self.state_cell.borrow_mut() = new_state;
-
-        // Return the intents as a vector; this is also a type-erasure point
-        // since we now no longer care about the specific intent count.
-        intents.as_slice().to_vec()
-    }
-}
-
-/// Type-erased block for execution in a weaved
-/// execution plan.
-pub struct Block {
-    block: Box<dyn TypeErasedBlock>,
-}
-impl Block {
-    pub fn new(block: Box<dyn TypeErasedBlock>) -> Self {
-        Self { block }
-    }
-
-    pub fn execute(&self, context: &ExecutionContext) -> Vec<Intent> {
-        self.block.execute(context).as_slice().to_vec()
-    }
-}
-
-/// Topologically ordered blocks for execution in a weave.
-pub struct TopoOrderedBlocks(pub Vec<Block>);
-
-impl Deref for TopoOrderedBlocks {
-    type Target = Vec<Block>;
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
+pub use block_spec::BlockSpec;
+pub use type_erasure::Block;
 
 #[cfg(test)]
 mod tests {
@@ -234,7 +82,10 @@ mod tests {
     impl InputKeys<TestInput> for TestInputKeys {
         type ReaderType = MockReader<TestInput>;
 
-        fn reader(&self, _registry: &ChannelRegistry) -> Result<Self::ReaderType, RegistryError> {
+        fn reader(
+            &self,
+            _registry: &ChannelRegistry,
+        ) -> Result<Self::ReaderType, modname::RegistryError> {
             Ok(MockReader {
                 data: TestInput { value: 0 },
             })
@@ -250,7 +101,10 @@ mod tests {
     impl OutputKeys<TestOutput> for TestOutputKeys {
         type WriterType = MockWriter<TestOutput>;
 
-        fn writer(&self, _registry: &ChannelRegistry) -> Result<Self::WriterType, RegistryError> {
+        fn writer(
+            &self,
+            _registry: &ChannelRegistry,
+        ) -> Result<Self::WriterType, modname::RegistryError> {
             Ok(MockWriter {
                 written: RefCell::new(None),
             })
@@ -358,7 +212,7 @@ mod tests {
             written: RefCell::new(None),
         };
 
-        let wrapped = EncapsulatedBlock::new(block, reader, writer);
+        let wrapped = type_erasure::EncapsulatedBlock::new(block, reader, writer);
         assert_eq!(*wrapped.state_cell.borrow(), 0); // Should be initialized
     }
 
@@ -372,9 +226,10 @@ mod tests {
             written: RefCell::new(None),
         };
 
-        let wrapped = EncapsulatedBlock::new(block, reader, writer);
+        let wrapped = type_erasure::EncapsulatedBlock::new(block, reader, writer);
         let context = ExecutionContext { time: 200 };
 
+        use type_erasure::TypeErasedBlock; // Get trait in scope for execute.
         wrapped.execute(&context);
 
         // Check that output was written
@@ -396,7 +251,8 @@ mod tests {
             written: RefCell::new(None),
         };
 
-        let wrapped = EncapsulatedBlock::new(block, reader, writer);
+        use type_erasure::TypeErasedBlock; // Get trait in scope for execute.
+        let wrapped = type_erasure::EncapsulatedBlock::new(block, reader, writer);
         let context = ExecutionContext { time: 300 };
 
         // Execute multiple times

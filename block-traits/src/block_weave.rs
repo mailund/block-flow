@@ -1,26 +1,17 @@
-use super::{Block, BlockInput, BlockOutput, BlockSpec, EncapsulatedBlock};
+use super::{type_erasure::EncapsulatedBlock, Block, BlockInput, BlockOutput, BlockSpec};
 use channels::{ChannelKeys, InputKeys, OutputKeys, RegistryError};
-
-/// Blocks that have been deserialized and had their
-/// concrete types erased for execution in a weave.
-/// Once weaven in with the rest of an execution plan, we will
-/// get a `Block` that we can execute.
-pub trait WeaveBlockNode {
-    fn input_channels(&self) -> Vec<String>;
-    fn output_channels(&self) -> Vec<String>;
-    fn weave(&self, channels: &mut ::channels::ChannelRegistry) -> Result<Block, RegistryError>;
-}
+use weave_traits::WeaveNode;
 
 /// Block that has been deserialized (or serialized)
 /// before we weave it and erase its concrete type.
 #[serialization_macros::serializable_struct]
-pub struct BlockSerializationSummary<BSpec: BlockSpec> {
+pub struct BlockSerializationPackage<BSpec: BlockSpec> {
     pub input_keys: <BSpec::Input as BlockInput>::Keys,
     pub output_keys: <BSpec::Output as BlockOutput>::Keys,
     pub init_params: BSpec::InitParameters,
 }
 
-impl<B: BlockSpec> BlockSerializationSummary<B> {
+impl<B: BlockSpec> BlockSerializationPackage<B> {
     /// Construct a new serialization/deserialization summary
     /// for a block of type <B> from its input/output keys and
     /// init parameters.
@@ -29,7 +20,7 @@ impl<B: BlockSpec> BlockSerializationSummary<B> {
         output_keys: <B::Output as BlockOutput>::Keys,
         init_params: B::InitParameters,
     ) -> Self {
-        BlockSerializationSummary {
+        BlockSerializationPackage {
             input_keys,
             output_keys,
             init_params,
@@ -37,7 +28,7 @@ impl<B: BlockSpec> BlockSerializationSummary<B> {
     }
 }
 
-impl<BSpec: BlockSpec + 'static> WeaveBlockNode for BlockSerializationSummary<BSpec> {
+impl<BSpec: BlockSpec + 'static> WeaveNode<Block> for BlockSerializationPackage<BSpec> {
     fn input_channels(&self) -> Vec<String> {
         self.input_keys.channel_names()
     }
@@ -45,7 +36,7 @@ impl<BSpec: BlockSpec + 'static> WeaveBlockNode for BlockSerializationSummary<BS
         self.output_keys.channel_names()
     }
 
-    fn weave(&self, channels: &mut ::channels::ChannelRegistry) -> Result<Block, RegistryError> {
+    fn weave(&self, channels: &mut ::channels::ChannelRegistry) -> Result<Block, modname::RegistryError> {
         self.output_keys.register(channels);
 
         let block = BSpec::new_from_init_params(&self.init_params);
@@ -67,7 +58,7 @@ impl<BSpec: BlockSpec + 'static> WeaveBlockNode for BlockSerializationSummary<BS
 
 pub fn serialize_block<B: BlockSpec, S: ::serialization::StructSerializer>(
     serializer: &S,
-    block: BlockSerializationSummary<B>,
+    block: BlockSerializationPackage<B>,
 ) -> ::serialization::Result<Vec<u8>> {
     serializer.serialize(&block)
 }
@@ -75,6 +66,6 @@ pub fn serialize_block<B: BlockSpec, S: ::serialization::StructSerializer>(
 pub fn deserialize_block<B: BlockSpec, S: ::serialization::StructSerializer>(
     serializer: &S,
     data: &[u8],
-) -> Result<BlockSerializationSummary<B>, ::serialization::SerializationError> {
-    serializer.deserialize::<BlockSerializationSummary<B>>(data)
+) -> Result<BlockSerializationPackage<B>, ::serialization::SerializationError> {
+    serializer.deserialize::<BlockSerializationPackage<B>>(data)
 }
