@@ -11,7 +11,4 @@ impl SlotId {
             slot_index,
         }
     }
-    pub fn set_slot_id(&mut self, slot_index: u32) {
-        self.slot_index = slot_index;
-    }
 }

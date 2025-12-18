@@ -7,3 +7,13 @@ pub use block_intents::{
 };
 pub use intents::*;
 pub use slots::SlotId;
+
+pub struct SlotIntent {
+    pub slot_id: SlotId,
+    pub intent: Intent,
+}
+impl SlotIntent {
+    pub fn new(slot_id: SlotId, intent: Intent) -> Self {
+        SlotIntent { slot_id, intent }
+    }
+}

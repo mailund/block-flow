@@ -1,4 +1,5 @@
 use super::*;
+use intents::SlotIntent;
 
 pub struct EncapsulatedBlock<B: BlockSpec> {
     pub block: B,
@@ -27,11 +28,15 @@ impl<B: BlockSpec> EncapsulatedBlock<B> {
 }
 
 pub trait TypeErasedBlock {
-    fn execute(&self, context: &ExecutionContext) -> Vec<Intent>;
+    fn block_id(&self) -> u32;
+    fn execute(&self, context: &ExecutionContext) -> Vec<SlotIntent>;
 }
 
 impl<B: BlockSpec> TypeErasedBlock for EncapsulatedBlock<B> {
-    fn execute(&self, context: &ExecutionContext) -> Vec<Intent> {
+    fn block_id(&self) -> u32 {
+        self.block.block_id()
+    }
+    fn execute(&self, context: &ExecutionContext) -> Vec<SlotIntent> {
         use ::intents::BlockIntents; // For the as_slice method
 
         // Get the input for the execution from channels and the stored state.
@@ -46,9 +51,9 @@ impl<B: BlockSpec> TypeErasedBlock for EncapsulatedBlock<B> {
         self.output_writer.write(&output);
         *self.state_cell.borrow_mut() = new_state;
 
-        // Return the intents as a vector; this is also a type-erasure point
-        // since we now no longer care about the specific intent count.
-        intents.as_slice().to_vec()
+        // Return the intents as a vector of slot intents. This erases the type
+        // of the intents but preserves the information about which slots are affected.
+        intents.as_slot_intents(self.block.block_id())
     }
 }
 
@@ -63,7 +68,11 @@ impl Block {
         Self { block }
     }
 
-    pub fn execute(&self, context: &ExecutionContext) -> Vec<Intent> {
-        self.block.execute(context).as_slice().to_vec()
+    pub fn block_id(&self) -> u32 {
+        self.block.block_id()
+    }
+
+    pub fn execute(&self, context: &ExecutionContext) -> Vec<SlotIntent> {
+        self.block.execute(context)
     }
 }

@@ -1,6 +1,6 @@
 use block_traits::type_erasure::Block;
 pub use execution_context::ExecutionContext;
-use intents::Intent;
+use intents::SlotIntent;
 use weave_traits::TopoOrdered;
 
 pub type TopoOrderedBlocks = TopoOrdered<Block>;
@@ -18,7 +18,7 @@ impl ExecutionPlan {
         &self.blocks
     }
 
-    pub fn execute(&self, context: &ExecutionContext) -> Vec<Intent> {
+    pub fn execute(&self, context: &ExecutionContext) -> Vec<SlotIntent> {
         // Execute each block in topological order,
         // flattening the resulting intents into a single vector.
         self.blocks
