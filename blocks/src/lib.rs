@@ -1,4 +1,3 @@
-use serde::{Deserialize, Serialize};
 use std::fs::File;
 use std::io::{self, Read};
 use std::path::Path;
@@ -15,7 +14,7 @@ pub use after::AfterBlock;
 pub use delete::DeleteBlock;
 pub use simple_order::SimpleOrderBlock;
 
-#[derive(Serialize, Deserialize)]
+#[derive(serde::Serialize, serde::Deserialize)]
 #[serde(tag = "type", content = "data")]
 pub enum BlockType {
     // FIXME: Not super happy with having a global enum list like this,
@@ -23,6 +22,18 @@ pub enum BlockType {
     After(BlockSerializationPackage<after::AfterBlock>),
     Delete(BlockSerializationPackage<delete::DeleteBlock>),
     SimpleOrder(BlockSerializationPackage<simple_order::SimpleOrderBlock>),
+}
+
+impl BlockType {
+    pub fn as_weave_node(
+        &self,
+    ) -> Box<dyn ::weave_traits::WeaveNode<block_traits::type_erasure::Block>> {
+        match self {
+            BlockType::After(pkg) => Box::new(pkg.clone()),
+            BlockType::Delete(pkg) => Box::new(pkg.clone()),
+            BlockType::SimpleOrder(pkg) => Box::new(pkg.clone()),
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -43,11 +54,26 @@ impl From<serde_json::Error> for ReadBlocksError {
     }
 }
 
-pub fn read_blocks_from_json_str(json: &str) -> Result<Vec<BlockType>, serde_json::Error> {
+/// Reads blocks into a vector of BlockType from a JSON string.
+/// The enum preserves type information for each block.
+pub fn read_blocktypes_from_json_string(json: &str) -> Result<Vec<BlockType>, serde_json::Error> {
     serde_json::from_str::<Vec<BlockType>>(json)
 }
 
-pub fn read_blocks_from_json_file<P: AsRef<Path>>(
+/// Reads blocks into a vector of WeaveNode from a JSON string.
+/// The returned nodes are type-erased andcan be weaved into a graph.
+pub fn read_blocks_from_json_string(
+    json: &str,
+) -> Result<
+    Vec<Box<dyn ::weave_traits::WeaveNode<block_traits::type_erasure::Block>>>,
+    serde_json::Error,
+> {
+    let block_types = read_blocktypes_from_json_string(json)?;
+    let blocks = block_types.iter().map(|bt| bt.as_weave_node()).collect();
+    Ok(blocks)
+}
+
+pub fn read_blocktypes_from_json_file<P: AsRef<Path>>(
     path: P,
 ) -> Result<Vec<BlockType>, ReadBlocksError> {
     let mut file = File::open(path)?;
@@ -102,7 +128,7 @@ mod test {
     ]
     "#;
 
-        let blocks = read_blocks_from_json_str(json).unwrap();
+        let blocks = read_blocktypes_from_json_string(json).unwrap();
         assert_eq!(blocks.len(), 1);
 
         match &blocks[0] {
@@ -136,7 +162,7 @@ mod test {
     ]
     "#;
 
-        let blocks = read_blocks_from_json_str(json).unwrap();
+        let blocks = read_blocktypes_from_json_string(json).unwrap();
         assert_eq!(blocks.len(), 2);
 
         match &blocks[0] {
@@ -156,6 +182,33 @@ mod test {
     }
 
     #[test]
+    fn test_deserialize_multiple_blocks_to_wave_nodes() {
+        let json = r#"
+    [
+        {
+            "type": "After",
+            "data": {
+                "input_keys": {},
+                "output_keys": { "is_after": "is_after" },
+                "init_params": { "time": 1 }
+            }
+        },
+        {
+            "type": "Delete",
+            "data": {
+                "input_keys": { "should_delete": "is_after" },
+                "output_keys": {},
+                "init_params": null
+            }
+        }
+    ]
+    "#;
+
+        let blocks = read_blocks_from_json_string(json).unwrap();
+        assert_eq!(blocks.len(), 2);
+    }
+
+    #[test]
     fn test_deserialize_invalid_block_type_fails() {
         let json = r#"
     [
@@ -166,7 +219,7 @@ mod test {
     ]
     "#;
 
-        let result = read_blocks_from_json_str(json);
+        let result = read_blocktypes_from_json_string(json);
         assert!(result.is_err());
     }
 }

@@ -60,6 +60,7 @@ pub fn block_impl(attr: TokenStream, item: TokenStream) -> TokenStream {
         intents_type.unwrap_or_else(|| syn::parse_str("::intents::ZeroIntents").unwrap());
 
     let expanded = quote! {
+        #[derive(Clone, Debug)]
         #input
 
         impl ::block_traits::BlockSpecAssociatedTypes for #struct_name {
