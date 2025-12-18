@@ -29,6 +29,6 @@ execution-plan = { path = "execution-plan" }
 intents = { path = "intents" }
 serialization = { path = "serialization" }
 serialization-macros = { path = "serialization-macros" }
-trade_types = { path = "trade-types" }
+trade-types = { path = "trade-types" }
 
 [dev-dependencies]

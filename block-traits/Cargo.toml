@@ -11,4 +11,5 @@ serialization-macros = { path = "../serialization-macros" }
 intents = { path = "../intents" }
 
 [dev-dependencies]
+# Needed for ergonomic unit tests and doc tests
 block-macros = { path = "../block-macros" }

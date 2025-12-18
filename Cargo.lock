@@ -20,7 +20,7 @@ dependencies = [
  "intents",
  "serialization",
  "serialization-macros",
- "trade_types",
+ "trade-types",
 ]
 
 [[package]]
@@ -56,7 +56,7 @@ dependencies = [
  "serde_json",
  "serialization",
  "serialization-macros",
- "trade_types",
+ "trade-types",
 ]
 
 [[package]]
@@ -109,7 +109,7 @@ dependencies = [
 name = "intents"
 version = "0.1.0"
 dependencies = [
- "trade_types",
+ "trade-types",
 ]
 
 [[package]]
@@ -271,7 +271,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "trade_types"
+name = "trade-types"
 version = "0.1.0"
 dependencies = [
  "serde",
@@ -305,7 +305,7 @@ dependencies = [
  "serde_json",
  "serialization",
  "serialization-macros",
- "trade_types",
+ "trade-types",
 ]
 
 [[package]]

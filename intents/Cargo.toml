@@ -4,4 +4,4 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-trade_types = { path = "../trade-types" }
+trade-types = { path = "../trade-types" }
