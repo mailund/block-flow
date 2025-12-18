@@ -13,7 +13,7 @@ name = "block-flow"
 version = "0.1.0"
 dependencies = [
  "block-macros",
- "block_traits",
+ "block-traits",
  "blocks",
  "channels",
  "execution-plan",
@@ -33,7 +33,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "block_traits"
+name = "block-traits"
 version = "0.1.0"
 dependencies = [
  "block-macros",
@@ -49,7 +49,7 @@ name = "blocks"
 version = "0.1.0"
 dependencies = [
  "block-macros",
- "block_traits",
+ "block-traits",
  "channels",
  "intents",
  "serde",
@@ -83,7 +83,7 @@ dependencies = [
 name = "execution-plan"
 version = "0.1.0"
 dependencies = [
- "block_traits",
+ "block-traits",
  "intents",
 ]
 
@@ -298,7 +298,7 @@ dependencies = [
 name = "weave"
 version = "0.1.0"
 dependencies = [
- "block_traits",
+ "block-traits",
  "blocks",
  "channels",
  "serde",

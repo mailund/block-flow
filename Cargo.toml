@@ -1,6 +1,7 @@
 [workspace]
 members = [
     "block-macros", 
+    "block-traits",
     "blocks", 
     "channels", 
     "execution-plan",
@@ -20,7 +21,7 @@ edition = "2021"
 path = "src/lib.rs"
 
 [dependencies]
-block_traits = { path = "block_traits" }
+block-traits = { path = "block-traits" }
 block-macros = { path = "block-macros" }
 blocks = { path = "blocks" }
 channels = { path = "channels" }
