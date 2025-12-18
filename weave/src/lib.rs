@@ -1,4 +1,4 @@
-use block_serialization::BlockNode;
+use block_traits::serialization::BlockNode;
 use block_traits::TopoOrderedBlocks;
 use channels::{ChannelRegistry, RegistryError};
 use std::collections::{HashMap, HashSet, VecDeque};
@@ -85,7 +85,7 @@ pub fn weave_nodes(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use block_serialization::BlockSerializationSummary;
+    use block_traits::serialization::BlockSerializationSummary;
     use blocks::{AfterBlock, SimpleOrderBlock};
     use channels::ChannelRegistry;
     use trade_types::Contract;

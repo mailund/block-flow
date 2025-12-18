@@ -1,7 +1,6 @@
 [workspace]
 members = [
     "block-macros", 
-    "block-serialization",
     "blocks", 
     "channels", 
     "execution-plan",
@@ -23,10 +22,9 @@ path = "src/lib.rs"
 [dependencies]
 block_traits = { path = "block_traits" }
 block-macros = { path = "block-macros" }
-execution-plan = { path = "execution-plan" }
-block-serialization = { path = "block-serialization" }
 blocks = { path = "blocks" }
 channels = { path = "channels" }
+execution-plan = { path = "execution-plan" }
 intents = { path = "intents" }
 serialization = { path = "serialization" }
 serialization-macros = { path = "serialization-macros" }

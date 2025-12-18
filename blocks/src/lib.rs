@@ -4,7 +4,7 @@ use std::io::{self, Read};
 use std::path::Path;
 
 use block_macros::*;
-use block_serialization::BlockSerializationSummary;
+use block_traits::serialization::BlockSerializationSummary;
 use block_traits::{BlockSpec, ExecutionContext};
 
 pub mod after;
