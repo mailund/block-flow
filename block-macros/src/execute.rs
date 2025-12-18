@@ -187,7 +187,7 @@ pub fn execute_impl(_attr: TokenStream, item: TokenStream) -> TokenStream {
     };
 
     // Replace body with the adapted one.
-    f.block = Box::new(syn::parse_quote!({ #adapted }));
+    *f.block = syn::parse_quote!({ #adapted });
 
     quote!(#f).into()
 }
