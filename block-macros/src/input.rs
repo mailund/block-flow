@@ -41,27 +41,27 @@ pub fn input_impl(_attr: TokenStream, item: TokenStream) -> TokenStream {
                 }
             }
 
-            impl channels::Reader<#struct_name> for #reader_name {
+            impl ::channels::Reader<#struct_name> for #reader_name {
                 fn read(&self) -> #struct_name {
                     #reader_name::read(self)
                 }
             }
 
-            impl channels::ChannelKeys for #keys_name {
+            impl ::channels::ChannelKeys for #keys_name {
                 fn channel_names(&self) -> Vec<String> {
                     vec![]
                 }
             }
 
-            impl channels::InputKeys<#struct_name> for #keys_name {
+            impl ::channels::InputKeys<#struct_name> for #keys_name {
                 type ReaderType = #reader_name;
 
-                fn reader(&self, _registry: &channels::ChannelRegistry) -> Result<Self::ReaderType, channels::RegistryError> {
+                fn reader(&self, _registry: &::channels::ChannelRegistry) -> Result<Self::ReaderType, ::channels::RegistryError> {
                     Ok(#reader_name)
                 }
             }
 
-            impl block_traits::BlockInput for #struct_name {
+            impl ::block_traits::BlockInput for #struct_name {
                 type Keys = #keys_name;
             }
         };
@@ -115,27 +115,27 @@ pub fn input_impl(_attr: TokenStream, item: TokenStream) -> TokenStream {
             }
         }
 
-        impl channels::Reader<#struct_name> for #reader_name {
+        impl ::channels::Reader<#struct_name> for #reader_name {
             fn read(&self) -> #struct_name {
                 #reader_name::read(self)
             }
         }
 
-        impl channels::ChannelKeys for #keys_name {
+        impl ::channels::ChannelKeys for #keys_name {
             fn channel_names(&self) -> Vec<String> {
                 vec![ #(self.#field_idents.clone(),)* ]
             }
         }
 
-        impl channels::InputKeys<#struct_name> for #keys_name {
+        impl ::channels::InputKeys<#struct_name> for #keys_name {
             type ReaderType = #reader_name;
 
-            fn reader(&self, registry: &channels::ChannelRegistry) -> Result<Self::ReaderType, channels::RegistryError> {
+            fn reader(&self, registry: &::channels::ChannelRegistry) -> Result<Self::ReaderType, ::channels::RegistryError> {
                 Ok(#reader_name { #(#reader_assignments,)* })
             }
         }
 
-        impl block_traits::BlockInput for #struct_name {
+        impl ::block_traits::BlockInput for #struct_name {
             type Keys = #keys_name;
         }
     };

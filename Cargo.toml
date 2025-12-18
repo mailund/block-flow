@@ -1,16 +1,15 @@
 [workspace]
 members = [
-    "channels", 
-    "example-block", 
     "block-macros", 
-    "blocks", 
     "block-serialization",
+    "blocks", 
+    "channels", 
     "execution-plan",
-    "serialization",
-    "serialization-macros",
-    "weave",
-    "trade-types",
     "intents",
+    "serialization-macros",
+    "serialization",
+    "trade-types",
+    "weave",
 ]
 
 [package]

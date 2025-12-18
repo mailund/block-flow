@@ -94,22 +94,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "example-block"
-version = "0.1.0"
-dependencies = [
- "block-macros",
- "block-serialization",
- "block_traits",
- "blocks",
- "channels",
- "intents",
- "serde",
- "serialization",
- "serialization-macros",
- "weave",
-]
-
-[[package]]
 name = "execution-plan"
 version = "0.1.0"
 dependencies = [
