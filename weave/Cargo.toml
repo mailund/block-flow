@@ -5,7 +5,7 @@ edition = "2021"
 
 [dependencies]
 channels = { path = "../channels" }
-block_traits = { path = "../block_traits" }
+block-traits = { path = "../block-traits" }
 serialization = { path = "../serialization" }
 serialization-macros = { path = "../serialization-macros" }
 serde = { version = "1.0", features = ["derive"] }
