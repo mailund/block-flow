@@ -8,7 +8,7 @@ pub mod associated_types;
 pub mod serialization;
 
 pub use associated_types::{BlockInput, BlockOutput, BlockSpecAssociatedTypes};
-pub use serialization::{BlockNode, BlockSerialisation, BlockSerializationSummary};
+pub use serialization::{BlockSerializationSummary, WeaveBlockNode};
 
 /// Main trait for defining block behavior.
 ///
