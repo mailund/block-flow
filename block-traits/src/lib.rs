@@ -1,5 +1,4 @@
 use channels::{Reader, Writer};
-use intents::Intent;
 
 pub mod associated_types;
 pub mod block_spec;

@@ -24,7 +24,6 @@ pub struct SimpleOrderBlock {
 impl SimpleOrderBlock {
     fn place_intent(&self) -> Intent {
         Intent::place_intent(
-            SlotId::new(self.block_id, 0),
             self.contract.clone(),
             Side::Buy,
             Cents(100).into(),
@@ -33,7 +32,7 @@ impl SimpleOrderBlock {
     }
 
     fn no_intent(&self) -> Intent {
-        Intent::no_intent(SlotId::new(self.block_id(), 0))
+        Intent::no_intent()
     }
 
     fn intents(&self, execute: bool) -> OneIntent {

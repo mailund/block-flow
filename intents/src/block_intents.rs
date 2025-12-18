@@ -12,6 +12,13 @@ pub trait BlockIntents: sealed::Sealed {
         Self::N
     }
     fn as_slice(&self) -> &[Intent];
+    fn as_slot_intents(&self, block_id: u32) -> Vec<SlotIntent> {
+        self.as_slice()
+            .iter()
+            .enumerate()
+            .map(|(i, intent)| SlotIntent::new(SlotId::new(block_id, i as u32), intent.clone()))
+            .collect()
+    }
 }
 
 /// Macro defining a set of BlockIntents implementations for
@@ -59,10 +66,6 @@ macro_rules! declare_intents {
 
         impl $name {
             pub fn new(intents: [Intent; $n]) -> Self {
-                let mut intents = intents;
-                intents.iter_mut().enumerate().for_each(|(i, intent)| {
-                    intent.set_slot_id(i as u32);
-                });
                 Self(intents)
             }
             pub fn from_array(intents: [Intent; $n]) -> Self {
@@ -72,9 +75,7 @@ macro_rules! declare_intents {
 
         impl Default for $name {
             fn default() -> Self {
-                Self(std::array::from_fn(|i| {
-                    Intent::no_intent(SlotId::new(0, i as u32))
-                }))
+                Self(std::array::from_fn(|_| Intent::no_intent()))
             }
         }
 
