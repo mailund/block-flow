@@ -46,3 +46,97 @@ impl From<std::io::Error> for SerializationError {
 
 /// Result type alias for serialization operations
 pub type Result<T> = std::result::Result<T, SerializationError>;
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::error::Error as _;
+    use std::io;
+
+    #[test]
+    fn display_json_error_includes_prefix() {
+        // Create a real serde_json::Error by parsing invalid JSON
+        let err = serde_json::from_str::<serde_json::Value>("{ not valid json }").unwrap_err();
+        let se = SerializationError::Json(err);
+
+        let s = se.to_string();
+        assert!(s.starts_with("JSON error: "));
+    }
+
+    #[test]
+    fn display_io_error_includes_prefix() {
+        let io_err = io::Error::new(io::ErrorKind::Other, "boom");
+        let se = SerializationError::Io(io_err);
+
+        let s = se.to_string();
+        assert_eq!(s, "IO error: boom");
+    }
+
+    #[test]
+    fn display_custom_error_includes_prefix_and_message() {
+        let se = SerializationError::Custom("hello".to_string());
+        let s = se.to_string();
+        assert_eq!(s, "Serialization error: hello");
+    }
+
+    #[test]
+    fn source_for_json_error_is_some() {
+        let err = serde_json::from_str::<serde_json::Value>("{ not valid json }").unwrap_err();
+        let se = SerializationError::Json(err);
+
+        let src = se.source();
+        assert!(src.is_some());
+        assert!(src.unwrap().to_string().len() > 0);
+    }
+
+    #[test]
+    fn source_for_io_error_is_some() {
+        let io_err = io::Error::new(io::ErrorKind::Other, "boom");
+        let se = SerializationError::Io(io_err);
+
+        let src = se.source();
+        assert!(src.is_some());
+        assert_eq!(src.unwrap().to_string(), "boom");
+    }
+
+    #[test]
+    fn source_for_custom_error_is_none() {
+        let se = SerializationError::Custom("hello".to_string());
+        assert!(se.source().is_none());
+    }
+
+    #[test]
+    fn from_serde_json_error_converts_to_json_variant() {
+        let err = serde_json::from_str::<serde_json::Value>("{ not valid json }").unwrap_err();
+        let se: SerializationError = err.into();
+
+        match se {
+            SerializationError::Json(_) => {}
+            _ => panic!("expected SerializationError::Json"),
+        }
+    }
+
+    #[test]
+    fn from_io_error_converts_to_io_variant() {
+        let err = io::Error::new(io::ErrorKind::Other, "boom");
+        let se: SerializationError = err.into();
+
+        match se {
+            SerializationError::Io(e) => assert_eq!(e.to_string(), "boom"),
+            _ => panic!("expected SerializationError::Io"),
+        }
+    }
+
+    #[test]
+    fn result_type_alias_works() {
+        fn ok() -> Result<u32> {
+            Ok(7)
+        }
+        fn fail() -> Result<u32> {
+            Err(SerializationError::Custom("nope".to_string()))
+        }
+
+        assert_eq!(ok().unwrap(), 7);
+        assert_eq!(fail().unwrap_err().to_string(), "Serialization error: nope");
+    }
+}
