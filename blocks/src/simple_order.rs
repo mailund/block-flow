@@ -65,3 +65,120 @@ impl BlockSpec for SimpleOrderBlock {
         self.intents(input.should_execute)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn make_defaults_creates_unit_state_and_output() {
+        let _state = State;
+        let _out = Output;
+
+        let _state2: State = Default::default();
+        let _out2: Output = Default::default();
+
+        assert_eq!(core::mem::size_of::<State>(), 0);
+        assert_eq!(core::mem::size_of::<Output>(), 0);
+    }
+
+    #[test]
+    fn new_from_init_params_sets_block_id_default() {
+        let contract = Contract::new("TEST");
+        let params = InitParams { contract };
+
+        let block = SimpleOrderBlock::new_from_init_params(&params);
+
+        assert_eq!(block.block_id(), 0);
+    }
+
+    #[test]
+    fn init_state_returns_default_state() {
+        let block = SimpleOrderBlock {
+            block_id: 42,
+            contract: Contract::new("TEST"),
+        };
+
+        let state = block.init_state();
+        assert!(matches!(state, State));
+    }
+
+    #[test]
+    fn execute_with_should_execute_true_returns_place_intent() {
+        let contract = Contract::new("TEST");
+        let block = SimpleOrderBlock {
+            block_id: 1,
+            contract: contract.clone(),
+        };
+
+        let ctx = ExecutionContext { time: 0 }; // or ExecutionContext::default()
+        let state = State;
+
+        let (_out, _state_out, intents) = block.execute(
+            &ctx,
+            Input {
+                should_execute: true,
+            },
+            &state,
+        );
+
+        let intents_arr = intents.as_slice();
+        assert_eq!(intents_arr.len(), 1);
+
+        match &intents_arr[0] {
+            Intent::Place(place) => {
+                // Only check what is stable and observable
+                assert_eq!(&place.contract, &contract);
+            }
+            Intent::NoIntent(_) => {
+                panic!("Expected Place intent, got NoIntent");
+            }
+        }
+    }
+
+    #[test]
+    fn execute_with_should_execute_false_returns_no_intent() {
+        let block = SimpleOrderBlock {
+            block_id: 1,
+            contract: Contract::new("TEST"),
+        };
+
+        let ctx = ExecutionContext { time: 0 };
+        let state = State;
+
+        let (_out, _state_out, intents) = block.execute(
+            &ctx,
+            Input {
+                should_execute: false,
+            },
+            &state,
+        );
+
+        let intents_arr = intents.as_slice();
+        assert_eq!(intents_arr.len(), 1);
+
+        match &intents_arr[0] {
+            Intent::NoIntent(_) => {}
+            Intent::Place(_) => {
+                panic!("Expected NoIntent, got Place");
+            }
+        }
+    }
+
+    #[test]
+    fn intents_helper_matches_execute_behavior() {
+        let block = SimpleOrderBlock {
+            block_id: 1,
+            contract: Contract::new("TEST"),
+        };
+
+        let t = block.intents(true).as_slice().to_vec();
+        let f = block.intents(false).as_slice().to_vec();
+
+        assert_eq!(t.len(), 1);
+        assert_eq!(f.len(), 1);
+
+        assert!(matches!(t[0], Intent::Place(_)));
+        assert!(matches!(f[0], Intent::NoIntent(_)));
+    }
+}

@@ -1,3 +1,8 @@
+// Make ::block_traits work inside this crate (for proc-macro expansions).
+// so we have the macros available for testing.
+#[cfg(test)]
+extern crate self as block_traits;
+
 use channels::{Reader, Writer};
 
 pub mod associated_types;
@@ -160,6 +165,17 @@ mod tests {
     }
 
     #[test]
+    fn test_block_spec_block_id() {
+        let block = DoublerBlock;
+        assert_eq!(block.block_id(), 8765);
+    }
+
+    #[test]
+    fn test_block_spec_new_from_init_params() {
+        let _block = DoublerBlock::new_from_init_params(&DoublerInitParams);
+    }
+
+    #[test]
     fn test_block_spec_init_state() {
         let block = DoublerBlock;
         let state = block.init_state();
@@ -186,13 +202,43 @@ mod tests {
         let input = TestInput { value: 5 };
         let mut state = block.init_state();
 
-        // Execute multiple times to test state changes
         for expected_count in 1..=3 {
             let (output, new_state, _intents) = block.execute(&context, input.clone(), &state);
             assert_eq!(output.result, 10); // 5 * 2
             assert_eq!(new_state, expected_count);
             state = new_state;
         }
+    }
+
+    #[test]
+    fn test_channel_keys_and_reader_writer_traits_are_invoked() {
+        // This test explicitly invokes the trait-required methods that are easy to miss in coverage.
+        let keys_in = TestInputKeys {
+            value: "input_channel".to_string(),
+        };
+        let keys_out = TestOutputKeys;
+
+        // Prefer Default if the registry supports it, otherwise use new().
+        let mut registry: ChannelRegistry = Default::default();
+
+        // ChannelKeys::channel_names
+        let names = keys_in.channel_names();
+        assert_eq!(names, vec!["input_channel".to_string()]);
+        let out_names = keys_out.channel_names();
+        assert!(out_names.is_empty());
+
+        // OutputKeys::register (no-op mock, but we still invoke it)
+        keys_out.register(&mut registry);
+
+        // InputKeys::reader + Reader::read
+        let reader = keys_in.reader(&registry).unwrap();
+        let read_value = reader.read();
+        assert_eq!(read_value, TestInput { value: 0 });
+
+        // OutputKeys::writer + Writer::write
+        let writer = keys_out.writer(&registry).unwrap();
+        writer.write(&TestOutput { result: 123 });
+        assert_eq!(writer.written.borrow().as_ref().unwrap().result, 123);
     }
 
     #[test]
@@ -225,12 +271,10 @@ mod tests {
         use type_erasure::TypeErasedBlock; // Get trait in scope for execute.
         wrapped.execute(&context);
 
-        // Check that output was written
         let written_data = wrapped.output_writer.written.borrow();
         assert!(written_data.is_some());
         assert_eq!(written_data.as_ref().unwrap().result, 30); // 15 * 2
 
-        // Check that state was updated
         assert_eq!(*wrapped.state_cell.borrow(), 1);
     }
 
@@ -248,7 +292,6 @@ mod tests {
         let wrapped = type_erasure::EncapsulatedBlock::new(block, reader, writer);
         let context = ExecutionContext { time: 300 };
 
-        // Execute multiple times
         for expected_state in 1..=5 {
             wrapped.execute(&context);
             assert_eq!(*wrapped.state_cell.borrow(), expected_state);
@@ -295,12 +338,19 @@ mod tests {
     }
 
     #[test]
+    fn test_accumulator_block_block_id_and_new_from_init_params() {
+        let block = AccumulatorBlock;
+        assert_eq!(block.block_id(), 42);
+
+        let _block2 = AccumulatorBlock::new_from_init_params(&AccumulatorInitParams);
+    }
+
+    #[test]
     fn test_accumulator_block() {
         let block = AccumulatorBlock;
         let context = ExecutionContext { time: 400 };
         let mut state = block.init_state();
 
-        // Accumulate values: 5, 10, 3
         let inputs = vec![
             TestInput { value: 5 },
             TestInput { value: 10 },

@@ -6,7 +6,7 @@ pub struct EncapsulatedBlock<B: BlockSpec> {
     pub input_reader: <<B::Input as BlockInput>::Keys as channels::InputKeys<B::Input>>::ReaderType,
     pub output_writer:
         <<B::Output as BlockOutput>::Keys as channels::OutputKeys<B::Output>>::WriterType,
-    pub state_cell: std::cell::RefCell<B::State>, // RefCell to allow interior mutability
+    pub state_cell: std::cell::RefCell<B::State>,
 }
 
 impl<B: BlockSpec> EncapsulatedBlock<B> {
@@ -14,7 +14,7 @@ impl<B: BlockSpec> EncapsulatedBlock<B> {
         block: B,
         input_reader: <<B::Input as BlockInput>::Keys as channels::InputKeys<B::Input>>::ReaderType,
         output_writer:
-                <<B::Output as BlockOutput>::Keys as channels::OutputKeys<B::Output>>::WriterType,
+            <<B::Output as BlockOutput>::Keys as channels::OutputKeys<B::Output>>::WriterType,
     ) -> Self {
         let init_state = block.init_state();
         let state_cell = std::cell::RefCell::new(init_state);
@@ -36,29 +36,24 @@ impl<B: BlockSpec> TypeErasedBlock for EncapsulatedBlock<B> {
     fn block_id(&self) -> u32 {
         self.block.block_id()
     }
-    fn execute(&self, context: &ExecutionContext) -> Vec<SlotIntent> {
-        use ::intents::BlockIntents; // For the as_slice method
 
-        // Get the input for the execution from channels and the stored state.
+    fn execute(&self, context: &ExecutionContext) -> Vec<SlotIntent> {
+        use ::intents::BlockIntents;
+
         let input = self.input_reader.read();
         let old_state = self.state_cell.borrow();
 
-        // Execute the block logic.
         let (output, new_state, intents) = self.block.execute(context, input, &old_state);
 
-        // Write values to channels and state
-        drop(old_state); // Explicitly drop borrow before mutable borrow
+        drop(old_state);
         self.output_writer.write(&output);
         *self.state_cell.borrow_mut() = new_state;
 
-        // Return the intents as a vector of slot intents. This erases the type
-        // of the intents but preserves the information about which slots are affected.
         intents.as_slot_intents(self.block.block_id())
     }
 }
 
-/// Type-erased block for execution in a weaved
-/// execution plan.
+/// Type-erased block for execution in a weaved execution plan.
 pub struct Block {
     pub(crate) block: Box<dyn TypeErasedBlock>,
 }
@@ -74,5 +69,170 @@ impl Block {
 
     pub fn execute(&self, context: &ExecutionContext) -> Vec<SlotIntent> {
         self.block.execute(context)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::ExecutionContext;
+    use block_macros::*;
+    use channels::{InputKeys, OutputKeys};
+
+    // ---------------- Test Block ----------------
+    mod test_block {
+        use super::*;
+        make_defaults!(state, init_params);
+
+        #[input]
+        pub struct Input {
+            pub x: i32,
+        }
+
+        #[output]
+        pub struct Output {
+            pub y: i32,
+        }
+
+        #[block]
+        pub struct TestBlock {
+            pub block_id: u32,
+        }
+
+        impl BlockSpec for TestBlock {
+            fn block_id(&self) -> u32 {
+                self.block_id
+            }
+
+            fn new_from_init_params(_: &InitParams) -> Self {
+                TestBlock { block_id: 77 }
+            }
+
+            fn init_state(&self) -> State {
+                State
+            }
+
+            #[execute]
+            fn execute(&self, input: Input) -> Output {
+                Output { y: input.x * 2 }
+            }
+        }
+    }
+
+    use test_block::TestBlock;
+
+    fn input_keys(name: &str) -> test_block::InputKeys {
+        test_block::InputKeys {
+            x: name.to_string(),
+        }
+    }
+
+    fn output_keys(name: &str) -> test_block::OutputKeys {
+        test_block::OutputKeys {
+            y: name.to_string(),
+        }
+    }
+
+    // ---------------- Tests ----------------
+
+    #[test]
+    fn encapsulated_block_new_initializes_state() {
+        let block = TestBlock { block_id: 1 };
+        let mut registry = channels::ChannelRegistry::default();
+
+        let in_keys = input_keys("in");
+        let out_keys = output_keys("out");
+
+        // Output channels should be registered before creating a writer.
+        out_keys.register(&mut registry);
+        // Insert manual key manually as they don't support registration.
+        registry.put("in", 0i32);
+
+        let reader = in_keys.reader(&registry).unwrap();
+        let writer = out_keys.writer(&registry).unwrap();
+
+        let enc = EncapsulatedBlock::new(block, reader, writer);
+        let _ = enc.state_cell.borrow();
+    }
+
+    #[test]
+    fn type_erased_block_execute_writes_output_and_returns_intents() {
+        let block = TestBlock { block_id: 42 };
+        let mut registry = channels::ChannelRegistry::default();
+
+        // Put the input FIELD value (i32) into the channel used by InputKeys.x
+        registry.put("in", 10i32);
+
+        let in_keys = input_keys("in");
+        let out_keys = output_keys("out");
+        out_keys.register(&mut registry);
+
+        let reader = in_keys.reader(&registry).unwrap();
+        let writer = out_keys.writer(&registry).unwrap();
+
+        let enc = EncapsulatedBlock::new(block, reader, writer);
+        let ctx = ExecutionContext { time: 0 };
+
+        let intents = enc.execute(&ctx);
+        assert_eq!(enc.block_id(), 42);
+        assert!(intents.is_empty());
+
+        // Output channel stores the FIELD type (i32), not Output struct.
+        let cell = registry.get::<i32>("out").unwrap();
+        let out = cell.borrow();
+        assert_eq!(*out, 20);
+    }
+
+    #[test]
+    fn block_wrapper_delegates_correctly() {
+        let block = TestBlock { block_id: 99 };
+        let mut registry = channels::ChannelRegistry::default();
+
+        registry.put("in", 3i32);
+
+        let in_keys = input_keys("in");
+        let out_keys = output_keys("out");
+        out_keys.register(&mut registry);
+
+        let reader = in_keys.reader(&registry).unwrap();
+        let writer = out_keys.writer(&registry).unwrap();
+
+        let enc = EncapsulatedBlock::new(block, reader, writer);
+        let block = Block::new(Box::new(enc));
+
+        let ctx = ExecutionContext { time: 1 };
+
+        assert_eq!(block.block_id(), 99);
+
+        block.execute(&ctx);
+
+        let cell = registry.get::<i32>("out").unwrap();
+        let out = cell.borrow();
+        assert_eq!(*out, 6);
+    }
+
+    #[test]
+    fn state_is_updated_across_multiple_executes() {
+        let block = TestBlock { block_id: 5 };
+        let mut registry = channels::ChannelRegistry::default();
+
+        registry.put("in", 4i32);
+
+        let in_keys = input_keys("in");
+        let out_keys = output_keys("out");
+        out_keys.register(&mut registry);
+
+        let reader = in_keys.reader(&registry).unwrap();
+        let writer = out_keys.writer(&registry).unwrap();
+
+        let enc = EncapsulatedBlock::new(block, reader, writer);
+        let ctx = ExecutionContext { time: 0 };
+
+        enc.execute(&ctx);
+        enc.execute(&ctx);
+
+        let cell = registry.get::<i32>("out").unwrap();
+        let out = cell.borrow();
+        assert_eq!(*out, 8);
     }
 }

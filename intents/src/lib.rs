@@ -17,3 +17,24 @@ impl SlotIntent {
         SlotIntent { slot_id, intent }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use trade_types::*;
+
+    #[test]
+    fn test_slot_intents_have_block_id_and_slot_index() {
+        let slot_intent = super::SlotIntent::new(
+            super::SlotId::new(86, 42),
+            super::Intent::place_intent(
+                Contract::new("TEST"),
+                Side::Buy,
+                Cents(100).into(),
+                Kw(1).into(),
+            ),
+        );
+        assert_eq!(slot_intent.slot_id.block_id, 86);
+        assert_eq!(slot_intent.slot_id.slot_index, 42);
+    }
+}

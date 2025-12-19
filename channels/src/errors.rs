@@ -39,3 +39,57 @@ impl std::fmt::Display for RegistryError {
 }
 
 impl std::error::Error for RegistryError {}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn display_key_not_found() {
+        let err = RegistryError::KeyNotFound("missing".to_string());
+        assert_eq!(err.to_string(), "Key 'missing' not found in registry");
+    }
+
+    #[test]
+    fn display_cycle_detected() {
+        let err = RegistryError::CycleDetected("A -> B -> A".to_string());
+        assert_eq!(err.to_string(), "Cycle detected in registry: A -> B -> A");
+    }
+
+    #[test]
+    fn display_duplicate_output_key() {
+        let err = RegistryError::DuplicateOutputKey("out".to_string());
+        assert_eq!(err.to_string(), "Duplicate output key 'out' in registry");
+    }
+
+    #[test]
+    fn display_missing_producer() {
+        let err = RegistryError::MissingProducer("no producer for x".to_string());
+        assert_eq!(err.to_string(), "Missing producer error: no producer for x");
+    }
+
+    #[test]
+    fn display_type_mismatch() {
+        let err = RegistryError::TypeMismatch {
+            key: "k".to_string(),
+            expected: "i32",
+            found: "unknown",
+        };
+        assert_eq!(
+            err.to_string(),
+            "Type mismatch for key 'k': expected i32, found unknown"
+        );
+    }
+
+    #[test]
+    fn debug_and_partial_eq_are_sane() {
+        let a = RegistryError::KeyNotFound("x".to_string());
+        let b = RegistryError::KeyNotFound("x".to_string());
+        let c = RegistryError::KeyNotFound("y".to_string());
+        assert_eq!(a, b);
+        assert_ne!(a, c);
+
+        let dbg = format!("{:?}", RegistryError::CycleDetected("cycle".to_string()));
+        assert!(dbg.contains("CycleDetected"));
+    }
+}
