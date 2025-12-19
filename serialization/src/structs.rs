@@ -204,7 +204,7 @@ mod tests {
     #[test]
     fn test_default_constructor() {
         // Covers Default::default() and JsonStructSerializer::new()
-        let serializer = JsonStructSerializer::default();
+        let serializer = JsonStructSerializer;
         let config = create_test_config_a();
 
         let bytes = serializer.serialize(&config).unwrap();
@@ -242,10 +242,10 @@ mod tests {
 
     impl Write for AlwaysFailWriter {
         fn write(&mut self, _buf: &[u8]) -> io::Result<usize> {
-            Err(io::Error::new(io::ErrorKind::Other, "write failed"))
+            Err(io::Error::other("write failed"))
         }
         fn flush(&mut self) -> io::Result<()> {
-            Err(io::Error::new(io::ErrorKind::Other, "flush failed"))
+            Err(io::Error::other("flush failed"))
         }
     }
 
@@ -272,7 +272,7 @@ mod tests {
 
         impl Read for FailReader {
             fn read(&mut self, _buf: &mut [u8]) -> io::Result<usize> {
-                Err(io::Error::new(io::ErrorKind::Other, "read failed"))
+                Err(io::Error::other("read failed"))
             }
         }
 

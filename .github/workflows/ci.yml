@@ -4,13 +4,13 @@ on:
   push:
     branches: [ main, master ]
     paths:
-      - '**.rs'
+      - '**/*.rs'
       - '**/Cargo.toml'
       - '**/Cargo.lock'
   pull_request:
     branches: [ main, master ]
     paths:
-      - '**.rs'
+      - '**/*.rs'
       - '**/Cargo.toml'
       - '**/Cargo.lock'
 
@@ -25,18 +25,18 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
-      
+
       - name: Rust Cache
         uses: Swatinem/rust-cache@v2
         with:
           key: test
-      
+
       - name: Build
         run: cargo build --verbose --workspace
-      
+
       - name: Run tests
         run: cargo test --workspace --verbose
 
@@ -47,20 +47,20 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt, clippy
-      
+
       - name: Rust Cache
         uses: Swatinem/rust-cache@v2
         with:
           key: lint
-      
+
       - name: Check formatting
         run: cargo fmt --all -- --check
-      
+
       - name: Run clippy
         run: cargo clippy --workspace --all-targets --all-features -- -D warnings
 
@@ -72,7 +72,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Rust
+      - name: Install Rust (with LLVM tools)
         uses: dtolnay/rust-toolchain@stable
         with:
           components: llvm-tools-preview
@@ -87,43 +87,68 @@ jobs:
         with:
           tool: cargo-llvm-cov
 
-      - name: Generate coverage (cobertura + html)
+      - name: Generate coverage (collect once, then report)
         run: |
           set -euo pipefail
+
           rm -rf coverage
           mkdir -p coverage
 
-          # One collection pass for all workspace targets
+          # Clean any previous llvm-cov state (important in CI caches)
           cargo llvm-cov clean --workspace
+
+          # Collect coverage for the whole workspace, all targets, once
           cargo llvm-cov --workspace --all-targets --no-report
 
-          # Reports (note: report subcommand does NOT take --all-targets)
-          cargo llvm-cov report --cobertura --output-path coverage/cobertura.xml \
-            --ignore-filename-regex '([\\/]\.cargo[\\/]registry[\\/]|[\\/]target[\\/]|[\\/]rustc[\\/])'
+          # Cross-platform ignore regex (works with / and \ path separators)
+          IGNORE_REGEX='([\\/]\.cargo[\\/]registry[\\/]|[\\/]target[\\/]|[\\/]rustc[\\/])'
 
-          cargo llvm-cov report --html --output-dir coverage \
-            --ignore-filename-regex '([\\/]\.cargo[\\/]registry[\\/]|[\\/]target[\\/]|[\\/]rustc[\\/])'
+          # Report: Cobertura XML (for threshold parsing)
+          cargo llvm-cov report \
+            --cobertura \
+            --output-path coverage/cobertura.xml \
+            --ignore-filename-regex "${IGNORE_REGEX}"
+
+          # Report: HTML (note: output-dir is the base dir; report is written under <output-dir>/html)
+          cargo llvm-cov report \
+            --html \
+            --output-dir coverage \
+            --ignore-filename-regex "${IGNORE_REGEX}"
+
+          test -f coverage/cobertura.xml
+          test -f coverage/html/index.html
 
       - name: Check coverage threshold
         run: |
           set -euo pipefail
 
-          # Cobertura line-rate is a fraction in [0,1]
-          COVERAGE=$(grep -o 'line-rate="[0-9.]*"' coverage/cobertura.xml | head -1 | grep -o '[0-9.]*')
-          COVERAGE_PERCENT=$(python - << 'PY'
-          import os
-          cov=float(os.environ["COVERAGE"])
-          print(int(cov*100))
+          python - << 'PY'
+          import re
+          import sys
+          from pathlib import Path
+
+          xml_path = Path("coverage/cobertura.xml")
+          if not xml_path.exists():
+              print("ERROR: coverage/cobertura.xml not found", file=sys.stderr)
+              sys.exit(1)
+
+          xml = xml_path.read_text(encoding="utf-8", errors="replace")
+
+          m = re.search(r'line-rate="([0-9.]+)"', xml)
+          if not m:
+              print("ERROR: Could not find line-rate in cobertura.xml", file=sys.stderr)
+              sys.exit(1)
+
+          cov = float(m.group(1))
+          percent = int(cov * 100)
+
+          print(f"Current coverage: {percent}% (line-rate={cov})")
+
+          MIN_THRESHOLD = 80
+          if percent < MIN_THRESHOLD:
+              print(f"ERROR: Coverage {percent}% is below minimum threshold of {MIN_THRESHOLD}%")
+              sys.exit(1)
           PY
-          )
-
-          echo "Current coverage: ${COVERAGE_PERCENT}%"
-
-          MIN_THRESHOLD=80
-          if [ "$COVERAGE_PERCENT" -lt "$MIN_THRESHOLD" ]; then
-            echo "Coverage ${COVERAGE_PERCENT}% is below minimum threshold of ${MIN_THRESHOLD}%"
-            exit 1
-          fi
 
       - name: Upload coverage artifacts
         uses: actions/upload-artifact@v4
@@ -132,4 +157,3 @@ jobs:
           name: coverage-reports
           path: coverage/
           retention-days: 30
-          

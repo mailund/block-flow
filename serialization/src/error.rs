@@ -65,7 +65,7 @@ mod tests {
 
     #[test]
     fn display_io_error_includes_prefix() {
-        let io_err = io::Error::new(io::ErrorKind::Other, "boom");
+        let io_err = io::Error::other("boom");
         let se = SerializationError::Io(io_err);
 
         let s = se.to_string();
@@ -86,12 +86,12 @@ mod tests {
 
         let src = se.source();
         assert!(src.is_some());
-        assert!(src.unwrap().to_string().len() > 0);
+        assert!(!src.unwrap().to_string().is_empty());
     }
 
     #[test]
     fn source_for_io_error_is_some() {
-        let io_err = io::Error::new(io::ErrorKind::Other, "boom");
+        let io_err = io::Error::other("boom");
         let se = SerializationError::Io(io_err);
 
         let src = se.source();
@@ -118,7 +118,7 @@ mod tests {
 
     #[test]
     fn from_io_error_converts_to_io_variant() {
-        let err = io::Error::new(io::ErrorKind::Other, "boom");
+        let err = io::Error::other("boom");
         let se: SerializationError = err.into();
 
         match se {
