@@ -1,7 +1,7 @@
 use super::*;
 use intents::SlotIntent;
 
-pub struct EncapsulatedBlock<B: BlockSpec> {
+pub(super) struct EncapsulatedBlock<B: BlockSpec> {
     pub block: B,
     pub input_reader: <<B::Input as BlockInput>::Keys as channels::InputKeys<B::Input>>::ReaderType,
     pub output_writer:
@@ -27,7 +27,7 @@ impl<B: BlockSpec> EncapsulatedBlock<B> {
     }
 }
 
-pub trait TypeErasedBlock {
+trait TypeErasedBlock {
     fn block_id(&self) -> u32;
     fn execute(&self, context: &ExecutionContext) -> Vec<SlotIntent>;
 }
@@ -45,7 +45,7 @@ impl<B: BlockSpec> TypeErasedBlock for EncapsulatedBlock<B> {
 
         let (output, new_state, intents) = self.block.execute(context, input, &old_state);
 
-        drop(old_state);
+        drop(old_state); // Release borrow before mutable borrow
         self.output_writer.write(&output);
         *self.state_cell.borrow_mut() = new_state;
 
@@ -55,12 +55,20 @@ impl<B: BlockSpec> TypeErasedBlock for EncapsulatedBlock<B> {
 
 /// Type-erased block for execution in a weaved execution plan.
 pub struct Block {
-    pub(crate) block: Box<dyn TypeErasedBlock>,
+    block: Box<dyn TypeErasedBlock>,
 }
 
 impl Block {
-    pub fn new(block: Box<dyn TypeErasedBlock>) -> Self {
-        Self { block }
+    pub fn new<B: BlockSpec + 'static>(
+        block: B,
+        input_reader: <<B::Input as BlockInput>::Keys as channels::InputKeys<B::Input>>::ReaderType,
+        output_writer:
+            <<B::Output as BlockOutput>::Keys as channels::OutputKeys<B::Output>>::WriterType,
+    ) -> Self {
+        let encapsulated = EncapsulatedBlock::new(block, input_reader, output_writer);
+        Self {
+            block: Box::new(encapsulated),
+        }
     }
 
     pub fn block_id(&self) -> u32 {
@@ -197,8 +205,7 @@ mod tests {
         let reader = in_keys.reader(&registry).unwrap();
         let writer = out_keys.writer(&registry).unwrap();
 
-        let enc = EncapsulatedBlock::new(block, reader, writer);
-        let block = Block::new(Box::new(enc));
+        let block = Block::new(block, reader, writer);
 
         let ctx = ExecutionContext { time: 1 };
 
@@ -234,5 +241,52 @@ mod tests {
         let cell = registry.get::<i32>("out").unwrap();
         let out = cell.borrow();
         assert_eq!(*out, 8);
+    }
+
+    use super::test_types::*;
+    use std::cell::RefCell;
+
+    #[test]
+    fn test_wrapped_block_execute() {
+        let block = DoublerBlock;
+        let reader = MockReader {
+            data: TestInput { value: 15 },
+        };
+        let writer = MockWriter {
+            written: RefCell::new(None),
+        };
+
+        let wrapped = EncapsulatedBlock::new(block, reader, writer);
+        let context = ExecutionContext { time: 200 };
+
+        wrapped.execute(&context);
+
+        let written_data = wrapped.output_writer.written.borrow();
+        assert!(written_data.is_some());
+        assert_eq!(written_data.as_ref().unwrap().result, 30); // 15 * 2
+
+        assert_eq!(*wrapped.state_cell.borrow(), 1);
+    }
+
+    #[test]
+    fn test_multiple_wrapped_block_executions() {
+        let block = DoublerBlock;
+        let reader = MockReader {
+            data: TestInput { value: 3 },
+        };
+        let writer = MockWriter {
+            written: RefCell::new(None),
+        };
+
+        let wrapped = type_erasure::EncapsulatedBlock::new(block, reader, writer);
+        let context = ExecutionContext { time: 300 };
+
+        for expected_state in 1..=5 {
+            wrapped.execute(&context);
+            assert_eq!(*wrapped.state_cell.borrow(), expected_state);
+
+            let written_data = wrapped.output_writer.written.borrow();
+            assert_eq!(written_data.as_ref().unwrap().result, 6); // 3 * 2
+        }
     }
 }

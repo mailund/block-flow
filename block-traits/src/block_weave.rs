@@ -1,4 +1,4 @@
-use super::{type_erasure::EncapsulatedBlock, Block, BlockInput, BlockOutput, BlockSpec};
+use super::{Block, BlockInput, BlockOutput, BlockSpec};
 use channels::{ChannelKeys, InputKeys, OutputKeys, RegistryError};
 use weave_traits::WeaveNode;
 
@@ -40,19 +40,13 @@ impl<BSpec: BlockSpec + 'static> WeaveNode<Block> for BlockSerializationPackage<
         self.output_keys.register(channels);
 
         let block = BSpec::new_from_init_params(&self.init_params);
-        let state = block.init_state();
 
         let input_reader = self.input_keys.reader(channels)?;
         let output_writer = self.output_keys.writer(channels)?;
 
-        let encapsulated = EncapsulatedBlock {
-            block,
-            input_reader,
-            output_writer,
-            state_cell: std::cell::RefCell::new(state),
-        };
+        let encapsulated = Block::new(block, input_reader, output_writer);
 
-        Ok(Block::new(Box::new(encapsulated)))
+        Ok(encapsulated)
     }
 }
 
