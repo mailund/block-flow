@@ -73,7 +73,7 @@ pub fn execute_impl(_attr: TokenStream, item: TokenStream) -> TokenStream {
         inputs
     };
 
-    // NEW: Option<(...three tuple...)>
+    // Output is always Option<(Output, State, Intents)>
     f.sig.output = syn::parse_quote!(
         -> ::core::option::Option<(
             <Self as ::block_traits::BlockSpecAssociatedTypes>::Output,
@@ -91,6 +91,16 @@ pub fn execute_impl(_attr: TokenStream, item: TokenStream) -> TokenStream {
         ty: &Type,
     ) -> Result<proc_macro2::TokenStream, syn::Error> {
         let def = quote!(::core::default::Default::default());
+
+        // Explicit unit return behaves like "no return type"
+        if is_unit_type(ty) {
+            return Ok(quote! {
+                {
+                    let _: () = #value_expr;
+                    (#def, #def, #def)
+                }
+            });
+        }
 
         // Single-value returns (Output / State / Intents)
         if is_output(ty) {
@@ -172,13 +182,13 @@ pub fn execute_impl(_attr: TokenStream, item: TokenStream) -> TokenStream {
             } else {
                 Err(syn::Error::new(
                     tup.span(),
-                    "unsupported return type for #[execute]. Allowed: Output, State, Intents, (Output, State), (Output, Intents), (State, Intents), (Output, State, Intents)",
+                    "unsupported return type for #[execute]. Allowed: Output, State, Intents, (), (Output, State), (Output, Intents), (State, Intents), (Output, State, Intents)",
                 ))
             }
         } else {
             Err(syn::Error::new(
                 ty.span(),
-                "unsupported return type for #[execute]. Allowed: Output, State, Intents, (Output, State), (Output, Intents), (State, Intents), (Output, State, Intents)",
+                "unsupported return type for #[execute]. Allowed: Output, State, Intents, (), (Output, State), (Output, Intents), (State, Intents), (Output, State, Intents)",
             ))
         }
     }
@@ -196,16 +206,33 @@ pub fn execute_impl(_attr: TokenStream, item: TokenStream) -> TokenStream {
         ReturnType::Type(_, ty_box) => {
             let ty: &Type = ty_box.as_ref();
 
+            // Explicit unit return behaves like "no return type"
+            if is_unit_type(ty) {
+                quote! {
+                    (|| #original_block )();
+                    ::core::option::Option::Some((#def, #def, #def))
+                }
+            }
             // If user already returns Option<Inner>, map it.
-            if let Some(inner_ty) = option_inner_type(ty) {
-                match adapt_value_expr(quote!(val), inner_ty) {
-                    Ok(tuple_expr) => quote! {
+            else if let Some(inner_ty) = option_inner_type(ty) {
+                // Option<()> is allowed and maps to Some(defaults)
+                if is_unit_type(inner_ty) {
+                    quote! {
                         match (|| #original_block )() {
-                            ::core::option::Option::Some(val) => ::core::option::Option::Some(#tuple_expr),
+                            ::core::option::Option::Some(()) => ::core::option::Option::Some((#def, #def, #def)),
                             ::core::option::Option::None => ::core::option::Option::None,
                         }
-                    },
-                    Err(e) => return e.to_compile_error().into(),
+                    }
+                } else {
+                    match adapt_value_expr(quote!(val), inner_ty) {
+                        Ok(tuple_expr) => quote! {
+                            match (|| #original_block )() {
+                                ::core::option::Option::Some(val) => ::core::option::Option::Some(#tuple_expr),
+                                ::core::option::Option::None => ::core::option::Option::None,
+                            }
+                        },
+                        Err(e) => return e.to_compile_error().into(),
+                    }
                 }
             } else {
                 // Non-option: compute value, adapt to tuple, wrap Some(...)
@@ -256,6 +283,11 @@ fn is_state(ty: &Type) -> bool {
 
 fn is_intents(ty: &Type) -> bool {
     is_last_segment(ty, "Intents")
+}
+
+// Explicit unit type `()`
+fn is_unit_type(ty: &Type) -> bool {
+    matches!(ty, Type::Tuple(tup) if tup.elems.is_empty())
 }
 
 // If `ty` is `Option<T>`, return `Some(T)`.
