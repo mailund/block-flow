@@ -18,44 +18,44 @@ pub use block_spec::BlockSpec;
 pub use type_erasure::Block;
 
 #[cfg(test)]
-mod tests {
+mod test_types {
     use super::*;
     use channels::*;
     use std::cell::RefCell;
 
     // Test init parameter structs
     #[derive(serde::Serialize, serde::Deserialize)]
-    struct DoublerInitParams;
+    pub struct DoublerInitParams;
 
     impl ::serialization::structs::Serializable for DoublerInitParams {}
 
     #[derive(serde::Serialize, serde::Deserialize)]
-    struct AccumulatorInitParams;
+    pub struct AccumulatorInitParams;
 
     impl ::serialization::structs::Serializable for AccumulatorInitParams {}
 
     // Test implementations for unit tests
     #[derive(Clone, Debug, PartialEq)]
-    struct TestInput {
-        value: i32,
+    pub struct TestInput {
+        pub value: i32,
     }
 
     #[derive(Clone, Debug, PartialEq)]
-    struct TestOutput {
-        result: i32,
+    pub struct TestOutput {
+        pub result: i32,
     }
 
     #[derive(serde::Serialize, serde::Deserialize, Debug, Clone)]
-    struct TestInputKeys {
-        value: String,
+    pub struct TestInputKeys {
+        pub value: String,
     }
 
     #[derive(serde::Serialize, serde::Deserialize, Debug, Clone)]
-    struct TestOutputKeys;
+    pub struct TestOutputKeys;
 
     // Mock reader/writer for testing
-    struct MockReader<T> {
-        data: T,
+    pub struct MockReader<T> {
+        pub data: T,
     }
 
     impl<T: Clone> Reader<T> for MockReader<T> {
@@ -64,8 +64,8 @@ mod tests {
         }
     }
 
-    struct MockWriter<T> {
-        written: RefCell<Option<T>>,
+    pub struct MockWriter<T> {
+        pub written: RefCell<Option<T>>,
     }
 
     impl<T: Clone> Writer<T> for MockWriter<T> {
@@ -122,7 +122,7 @@ mod tests {
     }
 
     // Test block that doubles the input
-    struct DoublerBlock;
+    pub struct DoublerBlock;
 
     impl BlockSpecAssociatedTypes for DoublerBlock {
         type Input = TestInput;
@@ -157,6 +157,15 @@ mod tests {
             (output, state + 1, Self::Intents::new())
         }
     }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::test_types::*;
+    use super::*;
+    use crate::ExecutionContext;
+    use channels::*;
+    use std::cell::RefCell;
 
     #[test]
     fn test_execution_context() {
@@ -253,52 +262,6 @@ mod tests {
 
         let wrapped = type_erasure::EncapsulatedBlock::new(block, reader, writer);
         assert_eq!(*wrapped.state_cell.borrow(), 0); // Should be initialized
-    }
-
-    #[test]
-    fn test_wrapped_block_execute() {
-        let block = DoublerBlock;
-        let reader = MockReader {
-            data: TestInput { value: 15 },
-        };
-        let writer = MockWriter {
-            written: RefCell::new(None),
-        };
-
-        let wrapped = type_erasure::EncapsulatedBlock::new(block, reader, writer);
-        let context = ExecutionContext { time: 200 };
-
-        use type_erasure::TypeErasedBlock; // Get trait in scope for execute.
-        wrapped.execute(&context);
-
-        let written_data = wrapped.output_writer.written.borrow();
-        assert!(written_data.is_some());
-        assert_eq!(written_data.as_ref().unwrap().result, 30); // 15 * 2
-
-        assert_eq!(*wrapped.state_cell.borrow(), 1);
-    }
-
-    #[test]
-    fn test_multiple_wrapped_block_executions() {
-        let block = DoublerBlock;
-        let reader = MockReader {
-            data: TestInput { value: 3 },
-        };
-        let writer = MockWriter {
-            written: RefCell::new(None),
-        };
-
-        use type_erasure::TypeErasedBlock; // Get trait in scope for execute.
-        let wrapped = type_erasure::EncapsulatedBlock::new(block, reader, writer);
-        let context = ExecutionContext { time: 300 };
-
-        for expected_state in 1..=5 {
-            wrapped.execute(&context);
-            assert_eq!(*wrapped.state_cell.borrow(), expected_state);
-
-            let written_data = wrapped.output_writer.written.borrow();
-            assert_eq!(written_data.as_ref().unwrap().result, 6); // 3 * 2
-        }
     }
 
     // Test block with more complex state
