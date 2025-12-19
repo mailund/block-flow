@@ -97,7 +97,7 @@ jobs:
           echo "Current coverage: ${COVERAGE_PERCENT}%"
           
           # Set minimum threshold (you can adjust this value)
-          MIN_THRESHOLD=20
+          MIN_THRESHOLD=80
           
           if [ "$COVERAGE_PERCENT" -lt "$MIN_THRESHOLD" ]; then
             echo "Coverage $COVERAGE_PERCENT% is below minimum threshold of $MIN_THRESHOLD%"
