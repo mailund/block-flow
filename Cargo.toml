@@ -1,6 +1,7 @@
 [workspace]
 members = [
     "block-macros", 
+    "block-macros-test",
     "block-traits",
     "blocks", 
     "channels", 
@@ -36,3 +37,4 @@ weave-traits = { path = "weave-traits" }
 weave = { path = "weave" }
 
 [dev-dependencies]
+block-macros-test = { path = "block-macros-test" }

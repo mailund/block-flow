@@ -78,13 +78,15 @@ mod tests {
 
         // The #[execute] macro should adapt this "unit return" method to the full signature:
         // fn execute(&self, &ExecutionContext, Input, &State) -> (Output, State, Intents)
-        let (out, state_out, intents) = block.execute(
-            &ctx,
-            Input {
-                should_delete: false,
-            },
-            &state,
-        );
+        let (out, state_out, intents) = block
+            .execute(
+                &ctx,
+                Input {
+                    should_delete: false,
+                },
+                &state,
+            )
+            .unwrap();
 
         // We can't assert much about intents without knowing its concrete type,
         // but we can ensure the call works and defaults are returned.
@@ -99,13 +101,15 @@ mod tests {
         let ctx = ExecutionContext { time: 0 }; // adjust if needed
         let state = State;
 
-        let (out, state_out, intents) = block.execute(
-            &ctx,
-            Input {
-                should_delete: true,
-            },
-            &state,
-        );
+        let (out, state_out, intents) = block
+            .execute(
+                &ctx,
+                Input {
+                    should_delete: true,
+                },
+                &state,
+            )
+            .unwrap();
 
         let _ = intents;
         assert!(matches!(out, Output));

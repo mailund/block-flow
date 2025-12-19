@@ -82,7 +82,7 @@ mod tests {
         let context = ctx(9);
 
         // Call the *full* signature (what #[execute] generates).
-        let (out, state_out, _intents) = block.execute(&context, Input, &State);
+        let (out, state_out, _intents) = block.execute(&context, Input, &State).unwrap();
 
         assert!(!out.is_after);
         assert!(matches!(state_out, State)); // default-filled (unit)
@@ -95,7 +95,7 @@ mod tests {
 
         let context = ctx(11);
 
-        let (out, state_out, _intents) = block.execute(&context, Input, &State);
+        let (out, state_out, _intents) = block.execute(&context, Input, &State).unwrap();
 
         assert!(out.is_after);
         assert!(matches!(state_out, State));
@@ -108,7 +108,7 @@ mod tests {
 
         let context = ctx(10);
 
-        let (out, _state_out, _intents) = block.execute(&context, Input, &State);
+        let (out, _state_out, _intents) = block.execute(&context, Input, &State).unwrap();
 
         assert!(!out.is_after);
     }

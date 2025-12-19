@@ -114,13 +114,15 @@ mod tests {
         let ctx = ExecutionContext { time: 0 }; // or ExecutionContext::default()
         let state = State;
 
-        let (_out, _state_out, intents) = block.execute(
-            &ctx,
-            Input {
-                should_execute: true,
-            },
-            &state,
-        );
+        let (_out, _state_out, intents) = block
+            .execute(
+                &ctx,
+                Input {
+                    should_execute: true,
+                },
+                &state,
+            )
+            .unwrap();
 
         let intents_arr = intents.as_slice();
         assert_eq!(intents_arr.len(), 1);
@@ -146,13 +148,15 @@ mod tests {
         let ctx = ExecutionContext { time: 0 };
         let state = State;
 
-        let (_out, _state_out, intents) = block.execute(
-            &ctx,
-            Input {
-                should_execute: false,
-            },
-            &state,
-        );
+        let (_out, _state_out, intents) = block
+            .execute(
+                &ctx,
+                Input {
+                    should_execute: false,
+                },
+                &state,
+            )
+            .unwrap();
 
         let intents_arr = intents.as_slice();
         assert_eq!(intents_arr.len(), 1);

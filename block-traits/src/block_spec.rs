@@ -56,10 +56,10 @@ use super::*;
 ///         context: &ExecutionContext,
 ///         _input: Input,
 ///         _state: &State,
-///     ) -> (Output, State, Self::Intents) {
+///     ) -> Option<(Output, State, Self::Intents)> {
 ///         let is_after = context.time > self.time;
 ///         let output = Output { is_after };
-///         (output, State, ZeroIntents::new())
+///         Some((output, State, ZeroIntents::new()))
 ///     }
 /// }
 /// ```
@@ -75,5 +75,5 @@ pub trait BlockSpec: BlockSpecAssociatedTypes {
         context: &ExecutionContext,
         input: Self::Input,
         state: &Self::State,
-    ) -> (Self::Output, Self::State, Self::Intents);
+    ) -> Option<(Self::Output, Self::State, Self::Intents)>;
 }
