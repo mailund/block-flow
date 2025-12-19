@@ -1,13 +1,16 @@
 use proc_macro::TokenStream;
 use quote::quote;
-use syn::{parse_macro_input, spanned::Spanned, FnArg, ItemFn, PatType, ReturnType, Type};
+use syn::{
+    parse_macro_input, spanned::Spanned, AngleBracketedGenericArguments, FnArg, GenericArgument,
+    ItemFn, PatType, PathArguments, ReturnType, Type, TypePath,
+};
 
 pub fn execute_impl(_attr: TokenStream, item: TokenStream) -> TokenStream {
     let mut f = parse_macro_input!(item as ItemFn);
 
     // Save original pieces before rewriting.
     let original_output = f.sig.output.clone();
-    let original_block = (*f.block).clone();
+    let original_block = f.block.clone();
 
     // Require a receiver (&self / &mut self).
     let receiver = f.sig.inputs.iter().find_map(|a| match a {
@@ -70,124 +73,154 @@ pub fn execute_impl(_attr: TokenStream, item: TokenStream) -> TokenStream {
         inputs
     };
 
+    // NEW: Option<(...three tuple...)>
     f.sig.output = syn::parse_quote!(
-        -> (
+        -> ::core::option::Option<(
             <Self as ::block_traits::BlockSpecAssociatedTypes>::Output,
             <Self as ::block_traits::BlockSpecAssociatedTypes>::State,
             <Self as ::block_traits::BlockSpecAssociatedTypes>::Intents
-        )
+        )>
     );
 
-    // Helpers for defaults (fully-qualified).
     let def = quote!(::core::default::Default::default());
 
-    // Adapt the original return into the full 3-tuple.
-    let adapted = match original_output {
-        ReturnType::Default => {
-            // Allow "no return" as "all defaults" (optional; remove if you don't want this).
-            quote! {
-                (|| #original_block )();
-                (#def, #def, #def)
-            }
-        }
-        ReturnType::Type(_, ty_box) => {
-            let ty: &Type = ty_box.as_ref();
+    // Build an expression that produces a *non-option* 3-tuple from a value expression.
+    // `value_expr` is something like `(|| #original_block )()` OR a binding like `val`.
+    fn adapt_value_expr(
+        value_expr: proc_macro2::TokenStream,
+        ty: &Type,
+    ) -> Result<proc_macro2::TokenStream, syn::Error> {
+        let def = quote!(::core::default::Default::default());
 
-            // ---- Single-value returns (no intents) ----
-
-            // Output
-            if is_output(ty) {
-                quote! {
-                    let output: <Self as ::block_traits::BlockSpecAssociatedTypes>::Output =
-                        (|| #original_block )();
+        // Single-value returns (Output / State / Intents)
+        if is_output(ty) {
+            Ok(quote! {
+                {
+                    let output: <Self as ::block_traits::BlockSpecAssociatedTypes>::Output = #value_expr;
                     (output, #def, #def)
                 }
-            }
-            // State
-            else if is_state(ty) {
-                quote! {
-                    let state_out: <Self as ::block_traits::BlockSpecAssociatedTypes>::State =
-                        (|| #original_block )();
+            })
+        } else if is_state(ty) {
+            Ok(quote! {
+                {
+                    let state_out: <Self as ::block_traits::BlockSpecAssociatedTypes>::State = #value_expr;
                     (#def, state_out, #def)
                 }
-            }
-            // Intents
-            else if is_intents(ty) {
-                quote! {
-                    let intents: <Self as ::block_traits::BlockSpecAssociatedTypes>::Intents =
-                        (|| #original_block )();
+            })
+        } else if is_intents(ty) {
+            Ok(quote! {
+                {
+                    let intents: <Self as ::block_traits::BlockSpecAssociatedTypes>::Intents = #value_expr;
                     (#def, #def, intents)
                 }
-            }
-            // ---- Tuple returns ----
-            else if let Type::Tuple(tup) = ty {
-                let elems: Vec<&Type> = tup.elems.iter().collect();
+            })
+        } else if let Type::Tuple(tup) = ty {
+            let elems: Vec<&Type> = tup.elems.iter().collect();
 
-                // (Output, State)   (no intents)
-                if elems.len() == 2 && is_output(elems[0]) && is_state(elems[1]) {
-                    quote! {
+            // (Output, State)
+            if elems.len() == 2 && is_output(elems[0]) && is_state(elems[1]) {
+                Ok(quote! {
+                    {
                         let (output, state_out): (
                             <Self as ::block_traits::BlockSpecAssociatedTypes>::Output,
                             <Self as ::block_traits::BlockSpecAssociatedTypes>::State
-                        ) = (|| #original_block )();
+                        ) = #value_expr;
                         (output, state_out, #def)
                     }
-                }
-                // (Output, Intents)
-                else if elems.len() == 2 && is_output(elems[0]) && is_intents(elems[1]) {
-                    quote! {
+                })
+            }
+            // (Output, Intents)
+            else if elems.len() == 2 && is_output(elems[0]) && is_intents(elems[1]) {
+                Ok(quote! {
+                    {
                         let (output, intents): (
                             <Self as ::block_traits::BlockSpecAssociatedTypes>::Output,
                             <Self as ::block_traits::BlockSpecAssociatedTypes>::Intents
-                        ) = (|| #original_block )();
+                        ) = #value_expr;
                         (output, #def, intents)
                     }
-                }
-                // (State, Intents)
-                else if elems.len() == 2 && is_state(elems[0]) && is_intents(elems[1]) {
-                    quote! {
+                })
+            }
+            // (State, Intents)
+            else if elems.len() == 2 && is_state(elems[0]) && is_intents(elems[1]) {
+                Ok(quote! {
+                    {
                         let (state_out, intents): (
                             <Self as ::block_traits::BlockSpecAssociatedTypes>::State,
                             <Self as ::block_traits::BlockSpecAssociatedTypes>::Intents
-                        ) = (|| #original_block )();
+                        ) = #value_expr;
                         (#def, state_out, intents)
                     }
-                }
-                // (Output, State, Intents)
-                else if elems.len() == 3
-                    && is_output(elems[0])
-                    && is_state(elems[1])
-                    && is_intents(elems[2])
-                {
-                    quote! {
+                })
+            }
+            // (Output, State, Intents)
+            else if elems.len() == 3
+                && is_output(elems[0])
+                && is_state(elems[1])
+                && is_intents(elems[2])
+            {
+                Ok(quote! {
+                    {
                         let (output, state_out, intents): (
                             <Self as ::block_traits::BlockSpecAssociatedTypes>::Output,
                             <Self as ::block_traits::BlockSpecAssociatedTypes>::State,
                             <Self as ::block_traits::BlockSpecAssociatedTypes>::Intents
-                        ) = (|| #original_block )();
+                        ) = #value_expr;
                         (output, state_out, intents)
                     }
-                } else {
-                    return syn::Error::new(
-                        tup.span(),
-                        "unsupported return type for #[execute]. Allowed: Output, State, Intents, (Output, State), (Output, Intents), (State, Intents), (Output, State, Intents)",
-                    )
-                    .to_compile_error()
-                    .into();
+                })
+            } else {
+                Err(syn::Error::new(
+                    tup.span(),
+                    "unsupported return type for #[execute]. Allowed: Output, State, Intents, (Output, State), (Output, Intents), (State, Intents), (Output, State, Intents)",
+                ))
+            }
+        } else {
+            Err(syn::Error::new(
+                ty.span(),
+                "unsupported return type for #[execute]. Allowed: Output, State, Intents, (Output, State), (Output, Intents), (State, Intents), (Output, State, Intents)",
+            ))
+        }
+    }
+
+    // Produce final body returning Option<tuple3>.
+    let adapted: proc_macro2::TokenStream = match original_output {
+        ReturnType::Default => {
+            // No explicit return => run body, then Some(defaults)
+            quote! {
+                (|| #original_block )();
+                ::core::option::Option::Some((#def, #def, #def))
+            }
+        }
+
+        ReturnType::Type(_, ty_box) => {
+            let ty: &Type = ty_box.as_ref();
+
+            // If user already returns Option<Inner>, map it.
+            if let Some(inner_ty) = option_inner_type(ty) {
+                match adapt_value_expr(quote!(val), inner_ty) {
+                    Ok(tuple_expr) => quote! {
+                        match (|| #original_block )() {
+                            ::core::option::Option::Some(val) => ::core::option::Option::Some(#tuple_expr),
+                            ::core::option::Option::None => ::core::option::Option::None,
+                        }
+                    },
+                    Err(e) => return e.to_compile_error().into(),
                 }
             } else {
-                return syn::Error::new(
-                    ty.span(),
-                    "unsupported return type for #[execute]. Allowed: Output, State, Intents, (Output, State), (Output, Intents), (State, Intents), (Output, State, Intents)",
-                )
-                .to_compile_error()
-                .into();
+                // Non-option: compute value, adapt to tuple, wrap Some(...)
+                match adapt_value_expr(quote!((|| #original_block )()), ty) {
+                    Ok(tuple_expr) => quote! {
+                        ::core::option::Option::Some(#tuple_expr)
+                    },
+                    Err(e) => return e.to_compile_error().into(),
+                }
             }
         }
     };
 
     // Replace body with the adapted one.
-    *f.block = syn::parse_quote!({ #adapted });
+    f.block = syn::parse_quote!({ #adapted });
 
     quote!(#f).into()
 }
@@ -223,4 +256,26 @@ fn is_state(ty: &Type) -> bool {
 
 fn is_intents(ty: &Type) -> bool {
     is_last_segment(ty, "Intents")
+}
+
+// If `ty` is `Option<T>`, return `Some(T)`.
+fn option_inner_type(ty: &Type) -> Option<&Type> {
+    let Type::Path(TypePath { qself: None, path }) = ty else {
+        return None;
+    };
+    let seg = path.segments.last()?;
+    if seg.ident != "Option" {
+        return None;
+    }
+    let PathArguments::AngleBracketed(AngleBracketedGenericArguments { args, .. }) = &seg.arguments
+    else {
+        return None;
+    };
+    if args.len() != 1 {
+        return None;
+    }
+    match args.first()? {
+        GenericArgument::Type(t) => Some(t),
+        _ => None,
+    }
 }

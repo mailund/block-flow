@@ -150,11 +150,11 @@ mod test_types {
             _context: &ExecutionContext,
             input: Self::Input,
             state: &Self::State,
-        ) -> (Self::Output, Self::State, Self::Intents) {
+        ) -> Option<(Self::Output, Self::State, Self::Intents)> {
             let output = TestOutput {
                 result: input.value * 2,
             };
-            (output, state + 1, Self::Intents::new())
+            Some((output, state + 1, Self::Intents::new()))
         }
     }
 }
@@ -198,7 +198,7 @@ mod tests {
         let input = TestInput { value: 21 };
         let state = 0;
 
-        let (output, new_state, _intents) = block.execute(&context, input, &state);
+        let (output, new_state, _intents) = block.execute(&context, input, &state).unwrap();
 
         assert_eq!(output.result, 42);
         assert_eq!(new_state, 1);
@@ -212,7 +212,8 @@ mod tests {
         let mut state = block.init_state();
 
         for expected_count in 1..=3 {
-            let (output, new_state, _intents) = block.execute(&context, input.clone(), &state);
+            let (output, new_state, _intents) =
+                block.execute(&context, input.clone(), &state).unwrap();
             assert_eq!(output.result, 10); // 5 * 2
             assert_eq!(new_state, expected_count);
             state = new_state;
@@ -293,10 +294,10 @@ mod tests {
             _context: &ExecutionContext,
             input: Self::Input,
             state: &Self::State,
-        ) -> (Self::Output, Self::State, Self::Intents) {
+        ) -> Option<(Self::Output, Self::State, Self::Intents)> {
             let new_state = state + input.value;
             let output = TestOutput { result: new_state };
-            (output, new_state, Self::Intents::new())
+            Some((output, new_state, Self::Intents::new()))
         }
     }
 
@@ -323,7 +324,7 @@ mod tests {
         let expected_results = vec![5, 15, 18];
 
         for (input, expected) in inputs.into_iter().zip(expected_results) {
-            let (output, new_state, _intents) = block.execute(&context, input, &state);
+            let (output, new_state, _intents) = block.execute(&context, input, &state).unwrap();
             assert_eq!(output.result, expected);
             assert_eq!(new_state, expected);
             state = new_state;

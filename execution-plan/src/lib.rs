@@ -18,12 +18,18 @@ impl ExecutionPlan {
         &self.blocks
     }
 
-    pub fn execute(&self, context: &ExecutionContext) -> Vec<SlotIntent> {
+    /// Collects and returns all SlotIntents produced by executing the blocks in the plan.
+    /// If any block fails to execute (returns None), the entire execution returns None.
+    pub fn execute(&self, context: &ExecutionContext) -> Option<Vec<SlotIntent>> {
         // Execute each block in topological order,
         // flattening the resulting intents into a single vector.
         self.blocks
             .iter()
-            .flat_map(|block| block.execute(context))
-            .collect()
+            // Get the optional output for each block
+            .map(|block| block.execute(context))
+            // Short-circuit if any block returned None
+            .collect::<Option<Vec<Vec<SlotIntent>>>>()
+            // Flatten the Vec<Vec<SlotIntent>> into Vec<SlotIntent>
+            .map(|v| v.into_iter().flatten().collect())
     }
 }

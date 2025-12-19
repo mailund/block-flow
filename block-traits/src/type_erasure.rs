@@ -29,7 +29,7 @@ impl<B: BlockSpec> EncapsulatedBlock<B> {
 
 trait TypeErasedBlock {
     fn block_id(&self) -> u32;
-    fn execute(&self, context: &ExecutionContext) -> Vec<SlotIntent>;
+    fn execute(&self, context: &ExecutionContext) -> Option<Vec<SlotIntent>>;
 }
 
 impl<B: BlockSpec> TypeErasedBlock for EncapsulatedBlock<B> {
@@ -37,19 +37,20 @@ impl<B: BlockSpec> TypeErasedBlock for EncapsulatedBlock<B> {
         self.block.block_id()
     }
 
-    fn execute(&self, context: &ExecutionContext) -> Vec<SlotIntent> {
+    fn execute(&self, context: &ExecutionContext) -> Option<Vec<SlotIntent>> {
         use ::intents::BlockIntents;
 
         let input = self.input_reader.read();
         let old_state = self.state_cell.borrow();
 
-        let (output, new_state, intents) = self.block.execute(context, input, &old_state);
+        let (output, new_state, intents) = self.block.execute(context, input, &old_state)?;
 
         drop(old_state); // Release borrow before mutable borrow
         self.output_writer.write(&output);
         *self.state_cell.borrow_mut() = new_state;
 
-        intents.as_slot_intents(self.block.block_id())
+        let slot_intents = intents.as_slot_intents(self.block.block_id());
+        Some(slot_intents)
     }
 }
 
@@ -75,7 +76,7 @@ impl Block {
         self.block.block_id()
     }
 
-    pub fn execute(&self, context: &ExecutionContext) -> Vec<SlotIntent> {
+    pub fn execute(&self, context: &ExecutionContext) -> Option<Vec<SlotIntent>> {
         self.block.execute(context)
     }
 }
@@ -181,7 +182,7 @@ mod tests {
         let enc = EncapsulatedBlock::new(block, reader, writer);
         let ctx = ExecutionContext { time: 0 };
 
-        let intents = enc.execute(&ctx);
+        let intents = enc.execute(&ctx).unwrap();
         assert_eq!(enc.block_id(), 42);
         assert!(intents.is_empty());
 

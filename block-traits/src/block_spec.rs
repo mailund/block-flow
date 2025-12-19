@@ -75,5 +75,5 @@ pub trait BlockSpec: BlockSpecAssociatedTypes {
         context: &ExecutionContext,
         input: Self::Input,
         state: &Self::State,
-    ) -> (Self::Output, Self::State, Self::Intents);
+    ) -> Option<(Self::Output, Self::State, Self::Intents)>;
 }
