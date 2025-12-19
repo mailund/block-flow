@@ -1,3 +1,8 @@
+// Make ::block_traits work inside this crate (for proc-macro expansions).
+// so we have the macros available for testing.
+#[cfg(test)]
+extern crate self as block_traits;
+
 use channels::{Reader, Writer};
 
 pub mod associated_types;
