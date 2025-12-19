@@ -71,63 +71,59 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
-      
+        with:
+          components: llvm-tools-preview
+
       - name: Rust Cache
         uses: Swatinem/rust-cache@v2
         with:
           key: coverage
-      
-      - name: Install tarpaulin
+
+      - name: Install cargo-llvm-cov
         uses: taiki-e/install-action@v2
         with:
-          tool: cargo-tarpaulin
-      
-      - name: Generate coverage
-        run: cargo tarpaulin --workspace --verbose --timeout 300 --out xml --output-dir coverage
+          tool: cargo-llvm-cov
+
+      - name: Generate coverage (cobertura + html)
+        run: |
+          set -euo pipefail
+          rm -rf coverage
+          mkdir -p coverage
+
+          # One collection pass for all workspace targets
+          cargo llvm-cov clean --workspace
+          cargo llvm-cov --workspace --all-targets --no-report
+
+          # Reports (note: report subcommand does NOT take --all-targets)
+          cargo llvm-cov report --cobertura --output-path coverage/cobertura.xml \
+            --ignore-filename-regex '([\\/]\.cargo[\\/]registry[\\/]|[\\/]target[\\/]|[\\/]rustc[\\/])'
+
+          cargo llvm-cov report --html --output-dir coverage \
+            --ignore-filename-regex '([\\/]\.cargo[\\/]registry[\\/]|[\\/]target[\\/]|[\\/]rustc[\\/])'
 
       - name: Check coverage threshold
         run: |
-          # Extract coverage percentage from XML report
+          set -euo pipefail
+
+          # Cobertura line-rate is a fraction in [0,1]
           COVERAGE=$(grep -o 'line-rate="[0-9.]*"' coverage/cobertura.xml | head -1 | grep -o '[0-9.]*')
-          COVERAGE_PERCENT=$(echo "$COVERAGE * 100" | bc -l | cut -d. -f1)
-          
+          COVERAGE_PERCENT=$(python - << 'PY'
+          import os
+          cov=float(os.environ["COVERAGE"])
+          print(int(cov*100))
+          PY
+          )
+
           echo "Current coverage: ${COVERAGE_PERCENT}%"
-          
-          # Set minimum threshold (you can adjust this value)
+
           MIN_THRESHOLD=80
-          
           if [ "$COVERAGE_PERCENT" -lt "$MIN_THRESHOLD" ]; then
-            echo "Coverage $COVERAGE_PERCENT% is below minimum threshold of $MIN_THRESHOLD%"
+            echo "Coverage ${COVERAGE_PERCENT}% is below minimum threshold of ${MIN_THRESHOLD}%"
             exit 1
-          else
-            echo "Coverage $COVERAGE_PERCENT% meets minimum threshold of $MIN_THRESHOLD%"
           fi
-          
-          # Check for coverage drop if we have a baseline
-          if [ -f coverage/baseline.txt ]; then
-            BASELINE=$(cat coverage/baseline.txt)
-            BASELINE_PERCENT=$(echo "$BASELINE * 100" | bc -l | cut -d. -f1)
-            DIFF=$(echo "$COVERAGE_PERCENT - $BASELINE_PERCENT" | bc -l)
-            
-            echo "Baseline coverage: ${BASELINE_PERCENT}%"
-            echo "Coverage change: ${DIFF}%"
-            
-            # Fail if coverage dropped by more than 10%
-            if (( $(echo "$DIFF < -10" | bc -l) )); then
-              echo "Coverage dropped by more than 10% (from ${BASELINE_PERCENT}% to ${COVERAGE_PERCENT}%)"
-              exit 1
-            else
-              echo "Coverage change is within acceptable range"
-            fi
-          else
-            echo "No baseline coverage found, setting current coverage as baseline"
-          fi
-          
-          # Store current coverage as baseline for next run
-          echo "$COVERAGE" > coverage/baseline.txt
 
       - name: Upload coverage artifacts
         uses: actions/upload-artifact@v4
@@ -136,3 +132,4 @@ jobs:
           name: coverage-reports
           path: coverage/
           retention-days: 30
+          
