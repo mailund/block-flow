@@ -70,6 +70,17 @@ pub trait BlockSpec: BlockSpecAssociatedTypes {
     /// Initialize the block's state.
     fn init_state(&self) -> Self::State;
 
+    /// Return the contracts used by this block.
+    ///
+    /// This vector must be constant after block creation as it is
+    /// used by the actor system to trigger execution,
+    /// but since the contracts will not be known at compile time
+    /// they must be provided by the block implementation.
+    /// FIXME: Figure out a safer way to do this.
+    fn contract_deps(&self) -> Vec<::trade_types::Contract> {
+        Vec::new()
+    }
+
     /// Create a new block instance from initialization parameters.
     fn new_from_init_params(params: &Self::InitParameters) -> Self;
 
@@ -94,4 +105,11 @@ pub trait BlockSpec: BlockSpecAssociatedTypes {
         input: Self::Input,
         state: &Self::State,
     ) -> Option<(Self::Output, Self::State, Self::Intents)>;
+}
+
+/// Forwards contract_deps to BlockSpec implementations.
+impl<T: BlockSpec> ContractDeps for T {
+    fn contract_deps(&self) -> Vec<::trade_types::Contract> {
+        <T as BlockSpec>::contract_deps(self)
+    }
 }

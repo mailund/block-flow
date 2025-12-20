@@ -109,10 +109,17 @@ pub trait BlockOutput: Sized {
     type Keys: ::channels::OutputKeys<Self> + ::serialization::structs::Serializable;
 }
 
+/// Trait for retrieving contract dependencies of a block.
+pub trait ContractDeps {
+    fn contract_deps(&self) -> Vec<::trade_types::Contract> {
+        Vec::new()
+    }
+}
+
 pub trait BlockSpecAssociatedTypes {
     type Input: BlockInput;
     type Output: BlockOutput;
     type State: ::serialization::structs::Serializable;
-    type InitParameters: ::serialization::structs::Serializable;
+    type InitParameters: ContractDeps + ::serialization::structs::Serializable;
     type Intents: ::intents::BlockIntents;
 }

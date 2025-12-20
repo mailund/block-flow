@@ -14,7 +14,7 @@ pub mod type_erasure;
 // Re-export for convience
 pub use execution_context::ExecutionContext;
 
-pub use associated_types::{BlockInput, BlockOutput, BlockSpecAssociatedTypes};
+pub use associated_types::{BlockInput, BlockOutput, BlockSpecAssociatedTypes, ContractDeps};
 pub use block_spec::BlockSpec;
 
 pub trait BlockTrait {
@@ -56,11 +56,13 @@ mod test_types {
     // Test init parameter structs
     #[derive(serde::Serialize, serde::Deserialize)]
     pub struct DoublerInitParams;
+    impl ContractDeps for DoublerInitParams {}
 
     impl ::serialization::structs::Serializable for DoublerInitParams {}
 
     #[derive(serde::Serialize, serde::Deserialize)]
     pub struct AccumulatorInitParams;
+    impl ContractDeps for AccumulatorInitParams {}
 
     impl ::serialization::structs::Serializable for AccumulatorInitParams {}
 

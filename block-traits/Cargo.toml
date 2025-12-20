@@ -11,6 +11,7 @@ serde = { version = "1.0", features = ["derive"] }
 serialization = { path = "../serialization" }
 serialization-macros = { path = "../serialization-macros" }
 intents = { path = "../intents" }
+trade-types = { path = "../trade-types" }
 
 [dev-dependencies]
 # Needed for ergonomic unit tests and doc tests

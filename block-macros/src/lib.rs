@@ -32,9 +32,21 @@ pub fn block(attr: TokenStream, item: TokenStream) -> TokenStream {
     block::block_impl(attr, item)
 }
 
+// Add a derive that will allow #[no_contract_deps] on fields.
+#[proc_macro_derive(InitParamsMarker, attributes(no_contract_deps))]
+pub fn init_params_marker_derive(item: TokenStream) -> TokenStream {
+    init_params::init_params_impl(item)
+}
+
 #[proc_macro_attribute]
-pub fn init_params(attr: TokenStream, item: TokenStream) -> TokenStream {
-    init_params::init_params_impl(attr, item)
+pub fn init_params(_attr: TokenStream, item: TokenStream) -> TokenStream {
+    let item = syn::parse::<syn::DeriveInput>(item).unwrap();
+    let expanded = quote::quote! {
+        #[::serialization_macros::serializable_struct]
+        #[derive(::block_macros::InitParamsMarker)]
+        #item
+    };
+    expanded.into()
 }
 
 /// make_defaults!(input, output, init_params, state)
