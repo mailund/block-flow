@@ -1,10 +1,16 @@
 use block_traits::{Block, BlockTrait};
+use execution_context::ExecutionContext;
 use std::collections::HashMap;
 use std::rc::Rc;
 use trade_types::Contract;
 
 /// This is a mock of outbound orders
+#[derive(Debug)]
 pub struct Order;
+
+/// Mock delta
+#[derive(Debug)]
+pub struct Delta(pub Contract);
 
 /// A mock actor.
 pub struct Actor {
@@ -33,6 +39,7 @@ impl Actor {
 }
 
 pub struct ActorController {
+    time: u64, // mock time
     id_to_actors: HashMap<u32, Rc<Actor>>,
     contracts_to_actors: HashMap<Contract, Vec<Rc<Actor>>>,
 }
@@ -40,6 +47,7 @@ pub struct ActorController {
 impl ActorController {
     pub fn new() -> Self {
         Self {
+            time: 0,
             id_to_actors: HashMap::new(),
             contracts_to_actors: HashMap::new(),
         }
@@ -57,6 +65,16 @@ impl ActorController {
         }
     }
 
+    pub fn get_actor_by_id(&self, id: u32) -> Option<Rc<Actor>> {
+        self.id_to_actors.get(&id).cloned()
+    }
+
+    pub fn remove_actor_by_id(&mut self, id: u32) {
+        if let Some(actor) = self.id_to_actors.remove(&id) {
+            self.remove_actor_rc(&actor);
+        }
+    }
+
     fn remove_actor_rc(&mut self, actor: &Rc<Actor>) {
         for contract in actor.contracts() {
             if let Some(actors) = self.contracts_to_actors.get_mut(&contract) {
@@ -69,14 +87,38 @@ impl ActorController {
         self.id_to_actors.remove(&actor.block.block_id());
     }
 
-    pub fn get_actor_by_id(&self, id: u32) -> Option<Rc<Actor>> {
-        self.id_to_actors.get(&id).cloned()
+    fn emit_order(&self, order: Order) {
+        // mock emit order
+        println!("Emitting order: {:?}", order);
     }
 
-    pub fn remove_actor_by_id(&mut self, id: u32) {
-        if let Some(actor) = self.id_to_actors.remove(&id) {
+    pub fn tick_delta(&mut self, Delta(contract): &Delta) {
+        let ctx = ExecutionContext { time: self.time };
+
+        let mut orders = vec![];
+        let mut failed = vec![];
+
+        // Tick all actors dependent on this contract
+        if let Some(actors) = self.contracts_to_actors.get(contract) {
+            for actor in actors {
+                match actor.tick(&ctx) {
+                    Some(mut actor_orders) => orders.append(&mut actor_orders),
+                    None => failed.push(actor.clone()),
+                }
+            }
+        }
+
+        // Emit orders
+        for order in orders {
+            self.emit_order(order);
+        }
+
+        // Remove failed actors
+        for actor in failed {
             self.remove_actor_rc(&actor);
         }
+
+        self.time += 1;
     }
 }
 
