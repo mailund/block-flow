@@ -1,8 +1,8 @@
 use proc_macro::TokenStream;
 
 mod block;
+mod contract_deps;
 mod execute;
-mod init_params;
 mod input;
 mod make_defaults;
 mod output;
@@ -32,10 +32,13 @@ pub fn block(attr: TokenStream, item: TokenStream) -> TokenStream {
     block::block_impl(attr, item)
 }
 
-// Add a derive that will allow #[no_contract_deps] on fields.
-#[proc_macro_derive(InitParamsMarker, attributes(no_contract_deps))]
-pub fn init_params_marker_derive(item: TokenStream) -> TokenStream {
-    init_params::init_params_impl(item)
+/// Make a derive macro for ContractDeps.
+/// Will generate an implementation that returns all fields
+/// of type Contract. Using the attribute #[no_contract_deps] on a field
+/// will skip that field.
+#[proc_macro_derive(ContractDeps, attributes(no_contract_deps))]
+pub fn contract_deps_derive(item: TokenStream) -> TokenStream {
+    contract_deps::contract_deps_impl(item)
 }
 
 #[proc_macro_attribute]
@@ -43,7 +46,7 @@ pub fn init_params(_attr: TokenStream, item: TokenStream) -> TokenStream {
     let item = syn::parse::<syn::DeriveInput>(item).unwrap();
     let expanded = quote::quote! {
         #[::serialization_macros::serializable_struct]
-        #[derive(::block_macros::InitParamsMarker)]
+        #[derive(::block_macros::ContractDeps)]
         #item
     };
     expanded.into()
