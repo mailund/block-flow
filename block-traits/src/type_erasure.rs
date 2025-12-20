@@ -27,12 +27,7 @@ impl<B: BlockSpec> EncapsulatedBlock<B> {
     }
 }
 
-trait TypeErasedBlock {
-    fn block_id(&self) -> u32;
-    fn execute(&self, context: &ExecutionContext) -> Option<Vec<SlotIntent>>;
-}
-
-impl<B: BlockSpec> TypeErasedBlock for EncapsulatedBlock<B> {
+impl<B: BlockSpec> BlockTrait for EncapsulatedBlock<B> {
     fn block_id(&self) -> u32 {
         self.block.block_id()
     }
@@ -54,11 +49,6 @@ impl<B: BlockSpec> TypeErasedBlock for EncapsulatedBlock<B> {
     }
 }
 
-/// Type-erased block for execution in a weaved execution plan.
-pub struct Block {
-    block: Box<dyn TypeErasedBlock>,
-}
-
 impl Block {
     pub fn new<B: BlockSpec + 'static>(
         block: B,
@@ -70,14 +60,6 @@ impl Block {
         Self {
             block: Box::new(encapsulated),
         }
-    }
-
-    pub fn block_id(&self) -> u32 {
-        self.block.block_id()
-    }
-
-    pub fn execute(&self, context: &ExecutionContext) -> Option<Vec<SlotIntent>> {
-        self.block.execute(context)
     }
 }
 

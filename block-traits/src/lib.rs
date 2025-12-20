@@ -4,6 +4,7 @@
 extern crate self as block_traits;
 
 use channels::{Reader, Writer};
+use intents::SlotIntent;
 
 pub mod associated_types;
 pub mod block_spec;
@@ -15,7 +16,36 @@ pub use execution_context::ExecutionContext;
 
 pub use associated_types::{BlockInput, BlockOutput, BlockSpecAssociatedTypes};
 pub use block_spec::BlockSpec;
-pub use type_erasure::Block;
+
+pub trait BlockTrait {
+    fn block_id(&self) -> u32;
+    fn execute(&self, context: &ExecutionContext) -> Option<Vec<SlotIntent>>;
+}
+
+/// Type-erased block for execution in a weaved execution plan.
+pub struct Block {
+    block: Box<dyn BlockTrait>,
+}
+
+impl BlockTrait for Block {
+    fn block_id(&self) -> u32 {
+        self.block.block_id()
+    }
+
+    fn execute(&self, context: &ExecutionContext) -> Option<Vec<SlotIntent>> {
+        self.block.execute(context)
+    }
+}
+
+impl Block {
+    pub fn block_id(&self) -> u32 {
+        self.block.block_id()
+    }
+
+    pub fn execute(&self, context: &ExecutionContext) -> Option<Vec<SlotIntent>> {
+        self.block.execute(context)
+    }
+}
 
 #[cfg(test)]
 mod test_types {

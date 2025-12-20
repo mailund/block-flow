@@ -85,7 +85,7 @@ pub fn weave_nodes<T>(
 mod tests {
     use super::*;
     use block_traits::block_weave::BlockSerializationPackage;
-    use block_traits::type_erasure::Block;
+    use block_traits::Block;
     use blocks::{AfterBlock, SimpleOrderBlock};
     use channels::ChannelRegistry;
     use trade_types::Contract;
