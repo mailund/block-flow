@@ -29,6 +29,14 @@ impl BlockTrait for ExecutionPlan {
         self.block_id
     }
 
+    fn contract_deps(&self) -> Vec<::trade_types::Contract> {
+        let mut deps = Vec::new();
+        for block in self.blocks.iter() {
+            deps.extend(block.contract_deps());
+        }
+        deps
+    }
+
     // Collects and returns all SlotIntents produced by executing the blocks in the plan.
     // If any block fails to execute (returns None), the entire execution returns None.
     fn execute(&self, context: &ExecutionContext) -> Option<Vec<SlotIntent>> {

@@ -32,6 +32,10 @@ impl<B: BlockSpec> BlockTrait for EncapsulatedBlock<B> {
         self.block.block_id()
     }
 
+    fn contract_deps(&self) -> Vec<::trade_types::Contract> {
+        self.block.contract_deps()
+    }
+
     fn execute(&self, context: &ExecutionContext) -> Option<Vec<SlotIntent>> {
         use ::intents::BlockIntents;
 

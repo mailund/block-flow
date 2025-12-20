@@ -19,6 +19,7 @@ pub use block_spec::BlockSpec;
 
 pub trait BlockTrait {
     fn block_id(&self) -> u32;
+    fn contract_deps(&self) -> Vec<::trade_types::Contract>;
     fn execute(&self, context: &ExecutionContext) -> Option<Vec<SlotIntent>>;
 }
 
@@ -32,17 +33,11 @@ impl BlockTrait for Block {
         self.block.block_id()
     }
 
+    fn contract_deps(&self) -> Vec<::trade_types::Contract> {
+        self.block.contract_deps()
+    }
+
     fn execute(&self, context: &ExecutionContext) -> Option<Vec<SlotIntent>> {
-        self.block.execute(context)
-    }
-}
-
-impl Block {
-    pub fn block_id(&self) -> u32 {
-        self.block.block_id()
-    }
-
-    pub fn execute(&self, context: &ExecutionContext) -> Option<Vec<SlotIntent>> {
         self.block.execute(context)
     }
 }

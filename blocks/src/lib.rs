@@ -81,7 +81,7 @@ pub fn read_blocktypes_from_json_file<P: AsRef<Path>>(
 #[cfg(test)]
 mod test {
     use super::*;
-    use block_traits::BlockSpecAssociatedTypes;
+    use block_traits::*;
     use std::fs;
     use std::io;
     use std::path::PathBuf;

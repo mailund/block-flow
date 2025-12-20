@@ -1,0 +1,18 @@
+[package]
+name = "actor"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+execution-context = { path = "../execution-context" }
+block-traits = { path = "../block-traits" }
+intents = { path = "../intents" }
+trade-types = { path = "../trade-types" }
+
+[dev-dependencies]
+block-macros = { path = "../block-macros" }
+serialization-macros = { path = "../serialization-macros" }
+serialization = { path = "../serialization" }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+channels = { path = "../channels" }

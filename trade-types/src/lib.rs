@@ -1,7 +1,7 @@
 use serialization_macros::{serializable_enum, serializable_struct};
 
 #[serializable_struct]
-#[derive(PartialEq, Eq)]
+#[derive(PartialEq, Eq, Hash)]
 pub struct Contract(String);
 
 impl Contract {
