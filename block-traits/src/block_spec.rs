@@ -64,12 +64,30 @@ use super::*;
 /// }
 /// ```
 pub trait BlockSpec: BlockSpecAssociatedTypes {
+    /// Return the ID of the block. Must be unique within an algorithm.
     fn block_id(&self) -> u32;
 
+    /// Initialize the block's state.
     fn init_state(&self) -> Self::State;
 
+    /// Create a new block instance from initialization parameters.
     fn new_from_init_params(params: &Self::InitParameters) -> Self;
 
+    /// Execute the block's logic.
+    ///
+    /// When the block is type-erased into a `Block` the
+    /// input and output will be handled by reading and writing to channels
+    /// and the state will be managed by the wrapper.
+    ///
+    /// ```ignore
+    ///
+    ///   RefCell                              |                        ^
+    ///                                        v                        |
+    ///   execute: (ExecutionContext, Input, State) -> Option<(Output, State, Intents)>
+    ///                                 ^                        |
+    ///   Channels                      |                        v                        
+    ///
+    /// ```
     fn execute(
         &self,
         context: &ExecutionContext,
