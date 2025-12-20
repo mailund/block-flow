@@ -24,7 +24,6 @@ dependencies = [
  "serialization-macros",
  "trade-types",
  "weave",
- "weave-traits",
 ]
 
 [[package]]
@@ -63,7 +62,7 @@ dependencies = [
  "serialization",
  "serialization-macros",
  "trade-types",
- "weave-traits",
+ "weave",
 ]
 
 [[package]]
@@ -79,7 +78,7 @@ dependencies = [
  "serialization",
  "serialization-macros",
  "trade-types",
- "weave-traits",
+ "weave",
 ]
 
 [[package]]
@@ -113,7 +112,7 @@ dependencies = [
  "block-traits",
  "execution-context",
  "intents",
- "weave-traits",
+ "weave",
 ]
 
 [[package]]
@@ -327,6 +326,13 @@ dependencies = [
 name = "weave"
 version = "0.1.0"
 dependencies = [
+ "channels",
+]
+
+[[package]]
+name = "weave-test"
+version = "0.1.0"
+dependencies = [
  "block-traits",
  "blocks",
  "channels",
@@ -335,14 +341,7 @@ dependencies = [
  "serialization",
  "serialization-macros",
  "trade-types",
- "weave-traits",
-]
-
-[[package]]
-name = "weave-traits"
-version = "0.1.0"
-dependencies = [
- "channels",
+ "weave",
 ]
 
 [[package]]

@@ -11,7 +11,7 @@ members = [
     "serialization",
     "trade-types",
     "weave",
-    "weave-traits",
+    "weave-test",
 ]
 
 [package]
@@ -33,7 +33,6 @@ intents = { path = "intents" }
 serialization = { path = "serialization" }
 serialization-macros = { path = "serialization-macros" }
 trade-types = { path = "trade-types" }
-weave-traits = { path = "weave-traits" }
 weave = { path = "weave" }
 
 [dev-dependencies]

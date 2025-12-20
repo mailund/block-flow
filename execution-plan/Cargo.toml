@@ -7,4 +7,4 @@ edition = "2021"
 execution-context = { path = "../execution-context" }
 block-traits = { path = "../block-traits" }
 intents = { path = "../intents" }
-weave-traits = { path = "../weave-traits" }
+weave = { path = "../weave" }
