@@ -1,6 +1,6 @@
 use super::{Block, BlockInput, BlockOutput, BlockSpec};
 use channels::{ChannelKeys, InputKeys, OutputKeys, RegistryError};
-use weave_traits::WeaveNode;
+use weave::WeaveNode;
 
 /// Block that has been deserialized (or serialized)
 /// before we weave it and erase its concrete type.

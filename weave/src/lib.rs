@@ -1,123 +1,22 @@
-use channels::{errors::RegistryError, ChannelRegistry};
-use std::collections::{HashMap, HashSet, VecDeque};
-use weave_traits::{TopoOrdered, WeaveNode};
+use channels::{ChannelRegistry, RegistryError};
+use std::ops::Deref;
 
-pub fn weave_nodes<T>(
-    nodes: Vec<Box<dyn WeaveNode<T>>>,
-    registry: &mut ChannelRegistry,
-) -> Result<TopoOrdered<T>, RegistryError> {
-    // Index nodes
-    let n = nodes.len();
+mod weave;
+pub use weave::*;
 
-    // Collect inputs/outputs once (avoid recomputing, and keep ownership of Strings)
-    let inputs: Vec<Vec<String>> = nodes.iter().map(|n| n.input_channels()).collect();
-    let outputs: Vec<Vec<String>> = nodes.iter().map(|n| n.output_channels()).collect();
-
-    // Map each output channel -> producer node index (error if duplicates)
-    let mut producer_of: HashMap<String, usize> = HashMap::new();
-    for (i, outs) in outputs.iter().enumerate() {
-        for ch in outs {
-            if producer_of.insert(ch.clone(), i).is_some() {
-                return Err(RegistryError::DuplicateOutputKey(format!("'{ch}'")));
-            }
-        }
-    }
-
-    // Build graph edges producer -> consumer and indegrees
-    let mut edges: Vec<HashSet<usize>> = vec![HashSet::new(); n];
-    let mut indegree: Vec<usize> = vec![0; n];
-
-    for (consumer, ins) in inputs.iter().enumerate() {
-        for ch in ins {
-            if let Some(&producer) = producer_of.get(ch) {
-                if producer != consumer && edges[producer].insert(consumer) {
-                    indegree[consumer] += 1;
-                }
-            } else {
-                // Allow external channels already present in registry, otherwise error.
-                // If your registry uses a different API than `has`, change this.
-                if !registry.has(ch) {
-                    return Err(RegistryError::MissingProducer(format!(
-                        "Missing producer for input channel '{ch}' (node index {consumer})"
-                    )));
-                }
-            }
-        }
-    }
-
-    // Kahn topological sort
-    let mut q: VecDeque<usize> = indegree
-        .iter()
-        .enumerate()
-        .filter_map(|(i, &d)| (d == 0).then_some(i))
-        .collect();
-
-    let mut topo: Vec<usize> = Vec::with_capacity(n);
-    while let Some(u) = q.pop_front() {
-        topo.push(u);
-        for &v in edges[u].iter() {
-            indegree[v] -= 1;
-            if indegree[v] == 0 {
-                q.push_back(v);
-            }
-        }
-    }
-
-    if topo.len() != n {
-        let cyclic: Vec<usize> = indegree
-            .iter()
-            .enumerate()
-            .filter_map(|(i, &d)| (d > 0).then_some(i))
-            .collect();
-        return Err(RegistryError::CycleDetected(format!("{cyclic:?}")));
-    }
-
-    // Weave in topo order
-    let mut blocks = Vec::with_capacity(n);
-    for idx in topo {
-        blocks.push(nodes[idx].weave(registry)?);
-    }
-
-    Ok(TopoOrdered(blocks))
+/// Something that can be weaved into a node in a graph
+/// with edges connected through channels.
+pub trait WeaveNode<T> {
+    fn input_channels(&self) -> Vec<String>;
+    fn output_channels(&self) -> Vec<String>;
+    fn weave(&self, channels: &mut ChannelRegistry) -> Result<T, RegistryError>;
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use block_traits::block_weave::BlockSerializationPackage;
-    use block_traits::Block;
-    use blocks::{AfterBlock, SimpleOrderBlock};
-    use channels::ChannelRegistry;
-    use trade_types::Contract;
-
-    #[test]
-    fn weave_after_and_simple_order() {
-        let after_node = BlockSerializationPackage::<AfterBlock> {
-            input_keys: blocks::after::InputKeys {},
-            output_keys: blocks::after::OutputKeys {
-                is_after: "after_output".to_string(),
-            },
-            init_params: blocks::after::InitParams { time: 42 },
-        };
-        // SimpleOrderBlock expects InitParams { contract: Contract }
-        let order_node = BlockSerializationPackage::<SimpleOrderBlock> {
-            input_keys: blocks::simple_order::InputKeys {
-                should_execute: "after_output".to_string(),
-            },
-            output_keys: blocks::simple_order::OutputKeys {},
-            init_params: blocks::simple_order::InitParams {
-                contract: Contract::new("ABC-123"),
-            },
-        };
-        let mut registry = ChannelRegistry::default();
-        let nodes: Vec<Box<dyn WeaveNode<Block>>> =
-            vec![Box::new(after_node), Box::new(order_node)];
-        let result = weave_nodes(nodes, &mut registry);
-        assert!(
-            result.is_ok(),
-            "weave_nodes should succeed for AfterBlock -> SimpleOrderBlock"
-        );
-        let blocks = result.unwrap();
-        assert_eq!(blocks.len(), 2);
+/// Topologically ordered items for execution in a weave.
+pub struct TopoOrdered<T>(pub Vec<T>);
+impl<T> Deref for TopoOrdered<T> {
+    type Target = Vec<T>;
+    fn deref(&self) -> &Self::Target {
+        &self.0
     }
 }
