@@ -92,6 +92,9 @@ impl ActorController {
         println!("Emitting order: {:?}", order);
     }
 
+    /// Tick all actors that listen to this contract.
+    /// This is a mock implementation of how the actor controller
+    /// would react to ticks coming in on the inbound queue.
     pub fn tick_delta(&mut self, Delta(contract): &Delta) {
         let ctx = ExecutionContext { time: self.time };
 
