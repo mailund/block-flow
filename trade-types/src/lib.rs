@@ -11,6 +11,7 @@ impl Contract {
 }
 
 #[serializable_struct]
+#[derive(PartialEq, Eq)]
 pub struct Price {
     cents: u32,
 }
@@ -38,6 +39,7 @@ impl From<Euros> for Price {
 }
 
 #[serializable_struct]
+#[derive(PartialEq, Eq)]
 pub struct Quantity {
     kw: u32,
 }
