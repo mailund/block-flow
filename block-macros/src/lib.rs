@@ -19,8 +19,12 @@ pub fn output(attr: TokenStream, item: TokenStream) -> TokenStream {
 
 #[proc_macro_attribute]
 pub fn state(_attr: TokenStream, item: TokenStream) -> TokenStream {
-    // Just a marker for now - return input unchanged
-    item
+    let item = syn::parse::<syn::DeriveInput>(item).unwrap();
+    let expanded = quote::quote! {
+        #[::serialization_macros::serializable_struct]
+        #item
+    };
+    expanded.into()
 }
 
 #[proc_macro_attribute]

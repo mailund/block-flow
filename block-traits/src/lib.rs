@@ -75,6 +75,12 @@ mod test_types {
         pub result: i32,
     }
 
+    #[::block_macros::state]
+    #[derive(PartialEq)]
+    pub struct TestState {
+        pub acc: i32,
+    }
+
     #[derive(serde::Serialize, serde::Deserialize, Debug, Clone)]
     pub struct TestInputKeys {
         pub value: String,
@@ -157,7 +163,7 @@ mod test_types {
     impl BlockSpecAssociatedTypes for DoublerBlock {
         type Input = TestInput;
         type Output = TestOutput;
-        type State = i32; // Execution counter
+        type State = TestState;
         type InitParameters = DoublerInitParams;
         type Intents = ::intents::ZeroIntents;
     }
@@ -172,7 +178,7 @@ mod test_types {
         }
 
         fn init_state(&self) -> Self::State {
-            0
+            TestState { acc: 0 }
         }
 
         fn execute(
@@ -184,7 +190,11 @@ mod test_types {
             let output = TestOutput {
                 result: input.value * 2,
             };
-            Some((output, state + 1, Self::Intents::new()))
+            Some((
+                output,
+                TestState { acc: state.acc + 1 },
+                Self::Intents::new(),
+            ))
         }
     }
 }
@@ -218,7 +228,7 @@ mod tests {
     fn test_block_spec_init_state() {
         let block = DoublerBlock;
         let state = block.init_state();
-        assert_eq!(state, 0);
+        assert_eq!(state, TestState { acc: 0 });
     }
 
     #[test]
@@ -226,12 +236,12 @@ mod tests {
         let block = DoublerBlock;
         let context = ExecutionContext { time: 100 };
         let input = TestInput { value: 21 };
-        let state = 0;
+        let state = TestState { acc: 0 };
 
         let (output, new_state, _intents) = block.execute(&context, input, &state).unwrap();
 
         assert_eq!(output.result, 42);
-        assert_eq!(new_state, 1);
+        assert_eq!(new_state, TestState { acc: 1 });
     }
 
     #[test]
@@ -245,7 +255,12 @@ mod tests {
             let (output, new_state, _intents) =
                 block.execute(&context, input.clone(), &state).unwrap();
             assert_eq!(output.result, 10); // 5 * 2
-            assert_eq!(new_state, expected_count);
+            assert_eq!(
+                new_state,
+                TestState {
+                    acc: expected_count
+                }
+            );
             state = new_state;
         }
     }
@@ -292,7 +307,7 @@ mod tests {
         };
 
         let wrapped = type_erasure::EncapsulatedBlock::new(block, reader, writer);
-        assert_eq!(*wrapped.state_cell.borrow(), 0); // Should be initialized
+        assert_eq!(*wrapped.state_cell.borrow(), TestState { acc: 0 }); // Should be initialized
     }
 
     // Test block with more complex state
@@ -301,7 +316,7 @@ mod tests {
     impl BlockSpecAssociatedTypes for AccumulatorBlock {
         type Input = TestInput;
         type Output = TestOutput;
-        type State = i32; // Accumulates input values
+        type State = TestState;
         type InitParameters = AccumulatorInitParams;
         type Intents = ::intents::ZeroIntents;
     }
@@ -316,7 +331,7 @@ mod tests {
         }
 
         fn init_state(&self) -> Self::State {
-            0
+            TestState { acc: 0 }
         }
 
         fn execute(
@@ -325,8 +340,12 @@ mod tests {
             input: Self::Input,
             state: &Self::State,
         ) -> Option<(Self::Output, Self::State, Self::Intents)> {
-            let new_state = state + input.value;
-            let output = TestOutput { result: new_state };
+            let new_state = TestState {
+                acc: state.acc + input.value,
+            };
+            let output = TestOutput {
+                result: new_state.acc,
+            };
             Some((output, new_state, Self::Intents::new()))
         }
     }
@@ -356,7 +375,7 @@ mod tests {
         for (input, expected) in inputs.into_iter().zip(expected_results) {
             let (output, new_state, _intents) = block.execute(&context, input, &state).unwrap();
             assert_eq!(output.result, expected);
-            assert_eq!(new_state, expected);
+            assert_eq!(new_state, TestState { acc: expected });
             state = new_state;
         }
     }

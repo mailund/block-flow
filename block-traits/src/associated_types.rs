@@ -112,7 +112,7 @@ pub trait BlockOutput: Sized {
 pub trait BlockSpecAssociatedTypes {
     type Input: BlockInput;
     type Output: BlockOutput;
-    type State; // FIXME: Should be serializable at some point
+    type State: ::serialization::structs::Serializable;
     type InitParameters: ::serialization::structs::Serializable;
     type Intents: ::intents::BlockIntents;
 }
