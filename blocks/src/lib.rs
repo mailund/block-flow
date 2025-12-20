@@ -25,9 +25,7 @@ pub enum BlockType {
 }
 
 impl BlockType {
-    pub fn as_weave_node(
-        &self,
-    ) -> Box<dyn ::weave_traits::WeaveNode<block_traits::type_erasure::Block>> {
+    pub fn as_weave_node(&self) -> Box<dyn ::weave_traits::WeaveNode<block_traits::Block>> {
         match self {
             BlockType::After(pkg) => Box::new(pkg.clone()),
             BlockType::Delete(pkg) => Box::new(pkg.clone()),
@@ -64,10 +62,7 @@ pub fn read_blocktypes_from_json_string(json: &str) -> Result<Vec<BlockType>, se
 /// The returned nodes are type-erased andcan be weaved into a graph.
 pub fn read_blocks_from_json_string(
     json: &str,
-) -> Result<
-    Vec<Box<dyn ::weave_traits::WeaveNode<block_traits::type_erasure::Block>>>,
-    serde_json::Error,
-> {
+) -> Result<Vec<Box<dyn ::weave_traits::WeaveNode<block_traits::Block>>>, serde_json::Error> {
     let block_types = read_blocktypes_from_json_string(json)?;
     let blocks = block_types.iter().map(|bt| bt.as_weave_node()).collect();
     Ok(blocks)
