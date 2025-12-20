@@ -15,23 +15,41 @@ pub use delete::DeleteBlock;
 pub use simple_order::SimpleOrderBlock;
 use weave::WeaveNode;
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone)]
-#[serde(tag = "type", content = "data")]
-pub enum BlockType {
-    // FIXME: Not super happy with having a global enum list like this,
-    // but it will do for now.
-    After(BlockSerializationPackage<after::AfterBlock>),
-    Delete(BlockSerializationPackage<delete::DeleteBlock>),
-    SimpleOrder(BlockSerializationPackage<simple_order::SimpleOrderBlock>),
+macro_rules! define_block_type {
+    ( $( $variant:ident => $block_ty:path ),+ $(,)? ) => {
+        #[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
+        #[serde(tag = "type", content = "data")]
+        pub enum BlockType {
+            $(
+                $variant(
+                    BlockSerializationPackage<$block_ty>
+                ),
+            )+
+        }
+    };
 }
+
+macro_rules! match_weave_node {
+    ($value:expr, $($variant:ident),+ $(,)?) => {
+        match $value {
+            $(
+                BlockType::$variant(pkg) => Box::new(pkg.clone()),
+            )+
+        }
+    };
+}
+
+// FIXME: Not super happy with having a global enum list like this,
+// but it will do for now.
+define_block_type!(
+    After => after::AfterBlock,
+    Delete => delete::DeleteBlock,
+    SimpleOrder => simple_order::SimpleOrderBlock,
+);
 
 impl BlockType {
     pub fn as_weave_node(&self) -> Box<dyn WeaveNode<block_traits::Block>> {
-        match self {
-            BlockType::After(pkg) => Box::new(pkg.clone()),
-            BlockType::Delete(pkg) => Box::new(pkg.clone()),
-            BlockType::SimpleOrder(pkg) => Box::new(pkg.clone()),
-        }
+        match_weave_node!(self, After, Delete, SimpleOrder)
     }
 }
 
