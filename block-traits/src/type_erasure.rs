@@ -248,7 +248,7 @@ mod tests {
         assert!(written_data.is_some());
         assert_eq!(written_data.as_ref().unwrap().result, 30); // 15 * 2
 
-        assert_eq!(*wrapped.state_cell.borrow(), 1);
+        assert_eq!(*wrapped.state_cell.borrow(), TestState { acc: 1 });
     }
 
     #[test]
@@ -266,7 +266,12 @@ mod tests {
 
         for expected_state in 1..=5 {
             wrapped.execute(&context);
-            assert_eq!(*wrapped.state_cell.borrow(), expected_state);
+            assert_eq!(
+                *wrapped.state_cell.borrow(),
+                TestState {
+                    acc: expected_state
+                }
+            );
 
             let written_data = wrapped.output_writer.written.borrow();
             assert_eq!(written_data.as_ref().unwrap().result, 6); // 3 * 2
