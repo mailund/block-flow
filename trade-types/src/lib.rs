@@ -14,12 +14,12 @@ pub enum Side {
     Buy,
     Sell,
 }
-pub struct Orderbook;
+pub struct OrderBook;
 
-impl Orderbook {
-    pub fn top_of_side(&self, _side: Side) -> Option<f64> {
+impl OrderBook {
+    pub fn top_of_side(&self, _side: Side) -> Option<Price> {
         // Dummy implementation
-        Some(100.0)
+        Some(Price::from(Cents(100)))
     }
 }
 
@@ -83,7 +83,7 @@ mod tests {
 
     #[test]
     fn orderbook_top_of_side_returns_some_for_both_sides() {
-        let ob = Orderbook;
+        let ob = OrderBook;
 
         let buy = ob.top_of_side(Side::Buy);
         let sell = ob.top_of_side(Side::Sell);
@@ -91,7 +91,7 @@ mod tests {
         assert!(buy.is_some());
         assert!(sell.is_some());
 
-        assert_eq!(buy.unwrap(), 100.0);
-        assert_eq!(sell.unwrap(), 100.0);
+        assert_eq!(buy.unwrap(), Price::from(Cents(100)));
+        assert_eq!(sell.unwrap(), Price::from(Cents(100)));
     }
 }

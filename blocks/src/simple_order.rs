@@ -13,22 +13,27 @@ pub struct Input {
 #[init_params]
 pub struct InitParams {
     pub contract: Contract,
-    // FIXME: Put side, price, quantity here as well.
+    pub side: Side,
+    pub price: Price,
+    pub quantity: Quantity,
 }
 
 #[block(intents = OneIntent)]
 pub struct SimpleOrderBlock {
     pub block_id: u32,
     contract: Contract,
+    side: Side,
+    price: Price,
+    quantity: Quantity,
 }
 
 impl SimpleOrderBlock {
     fn place_intent(&self) -> Intent {
         Intent::place_intent(
             self.contract.clone(),
-            Side::Buy,
-            Cents(100).into(),
-            Kw(1).into(),
+            self.side.clone(),
+            self.price.clone(),
+            self.quantity.clone(),
         )
     }
 
@@ -50,10 +55,20 @@ impl BlockSpec for SimpleOrderBlock {
         self.block_id
     }
 
-    fn new_from_init_params(params: &InitParams) -> Self {
+    fn new_from_init_params(
+        InitParams {
+            contract,
+            side,
+            price,
+            quantity,
+        }: &InitParams,
+    ) -> Self {
         SimpleOrderBlock {
             block_id: 0,
-            contract: params.contract.clone(),
+            contract: contract.clone(),
+            side: side.clone(),
+            price: price.clone(),
+            quantity: quantity.clone(),
         }
     }
 
@@ -83,10 +98,39 @@ mod tests {
         assert_eq!(core::mem::size_of::<Output>(), 0);
     }
 
+    fn test_params() -> (Contract, Side, Price, Quantity, InitParams) {
+        let contract = Contract::new("TEST");
+        let side = Side::Buy;
+        let price = Price::from(Cents(12345));
+        let quantity = Quantity::from(Kw(1000));
+
+        let params = InitParams {
+            contract: contract.clone(),
+            side: side.clone(),
+            price: price.clone(),
+            quantity: quantity.clone(),
+        };
+
+        (contract, side, price, quantity, params)
+    }
+
+    fn test_block() -> (Contract, Side, Price, Quantity, SimpleOrderBlock) {
+        let (contract, side, price, quantity, _params) = test_params();
+
+        let block = SimpleOrderBlock {
+            block_id: 1,
+            contract: contract.clone(),
+            side: side.clone(),
+            price: price.clone(),
+            quantity: quantity.clone(),
+        };
+
+        (contract, side, price, quantity, block)
+    }
+
     #[test]
     fn new_from_init_params_sets_block_id_default() {
-        let contract = Contract::new("TEST");
-        let params = InitParams { contract };
+        let (_contract, _side, _price, _quantity, params) = test_params();
 
         let block = SimpleOrderBlock::new_from_init_params(&params);
 
@@ -95,9 +139,14 @@ mod tests {
 
     #[test]
     fn init_state_returns_default_state() {
+        let (contract, side, price, quantity, _params) = test_params();
+
         let block = SimpleOrderBlock {
             block_id: 42,
-            contract: Contract::new("TEST"),
+            contract,
+            side,
+            price,
+            quantity,
         };
 
         let state = block.init_state();
@@ -106,13 +155,9 @@ mod tests {
 
     #[test]
     fn execute_with_should_execute_true_returns_place_intent() {
-        let contract = Contract::new("TEST");
-        let block = SimpleOrderBlock {
-            block_id: 1,
-            contract: contract.clone(),
-        };
+        let (contract, side, price, quantity, block) = test_block();
 
-        let ctx = ExecutionContext { time: 0 }; // or ExecutionContext::default()
+        let ctx = ExecutionContext { time: 0 };
         let state = State;
 
         let (_out, _state_out, intents) = block
@@ -130,8 +175,10 @@ mod tests {
 
         match &intents_arr[0] {
             Intent::Place(place) => {
-                // Only check what is stable and observable
                 assert_eq!(&place.contract, &contract);
+                assert_eq!(&place.side, &side);
+                assert_eq!(&place.price, &price);
+                assert_eq!(&place.quantity, &quantity);
             }
             Intent::NoIntent(_) => {
                 panic!("Expected Place intent, got NoIntent");
@@ -141,10 +188,7 @@ mod tests {
 
     #[test]
     fn execute_with_should_execute_false_returns_no_intent() {
-        let block = SimpleOrderBlock {
-            block_id: 1,
-            contract: Contract::new("TEST"),
-        };
+        let (_contract, _side, _price, _quantity, block) = test_block();
 
         let ctx = ExecutionContext { time: 0 };
         let state = State;
@@ -172,10 +216,7 @@ mod tests {
 
     #[test]
     fn intents_helper_matches_execute_behavior() {
-        let block = SimpleOrderBlock {
-            block_id: 1,
-            contract: Contract::new("TEST"),
-        };
+        let (_contract, _side, _price, _quantity, block) = test_block();
 
         let t = block.intents(true).as_slice().to_vec();
         let f = block.intents(false).as_slice().to_vec();
