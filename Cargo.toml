@@ -1,5 +1,6 @@
 [workspace]
 members = [
+    "actor",
     "block-macros", 
     "block-macros-test",
     "block-traits",
@@ -23,6 +24,7 @@ edition = "2021"
 path = "src/lib.rs"
 
 [dependencies]
+actor = { path = "actor" }
 block-traits = { path = "block-traits" }
 block-macros = { path = "block-macros" }
 blocks = { path = "blocks" }
