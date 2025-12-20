@@ -63,23 +63,12 @@ use super::*;
 ///     }
 /// }
 /// ```
-pub trait BlockSpec: BlockSpecAssociatedTypes {
+pub trait BlockSpec: BlockSpecAssociatedTypes + ContractDeps {
     /// Return the ID of the block. Must be unique within an algorithm.
     fn block_id(&self) -> u32;
 
     /// Initialize the block's state.
     fn init_state(&self) -> Self::State;
-
-    /// Return the contracts used by this block.
-    ///
-    /// This vector must be constant after block creation as it is
-    /// used by the actor system to trigger execution,
-    /// but since the contracts will not be known at compile time
-    /// they must be provided by the block implementation.
-    /// FIXME: Figure out a safer way to do this.
-    fn contract_deps(&self) -> Vec<::trade_types::Contract> {
-        Vec::new()
-    }
 
     /// Create a new block instance from initialization parameters.
     fn new_from_init_params(params: &Self::InitParameters) -> Self;
@@ -107,9 +96,22 @@ pub trait BlockSpec: BlockSpecAssociatedTypes {
     ) -> Option<(Self::Output, Self::State, Self::Intents)>;
 }
 
-/// Forwards contract_deps to BlockSpec implementations.
-impl<T: BlockSpec> ContractDeps for T {
+/// Default ContractDeps implementation for blocks without contract dependencies.
+///
+/// This should really only be used for testing purposes, but if you need a
+/// a block to implement ContractDeps without any dependencies, you can use this marker.
+/// You will need to implement the EmptyContractDepsTag for your block
+/// ```ignore
+/// impl ::block_traits::block_spec::EmptyContractDepsTag for YourBlock {}
+/// ```
+/// and then you get the ContractDeps for free.
+pub trait EmptyContractDepsTag {}
+impl<T> ContractDeps for T
+where
+    T: BlockSpec,
+    T: EmptyContractDepsTag,
+{
     fn contract_deps(&self) -> Vec<::trade_types::Contract> {
-        <T as BlockSpec>::contract_deps(self)
+        Vec::new()
     }
 }

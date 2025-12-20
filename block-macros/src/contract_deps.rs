@@ -3,7 +3,7 @@ use proc_macro2::TokenStream as TokenStream2;
 use quote::quote;
 use syn::{spanned::Spanned, Data, DeriveInput, Fields, GenericArgument, PathArguments, Type};
 
-pub fn init_params_impl(item: TokenStream) -> TokenStream {
+pub fn contract_deps_impl(item: TokenStream) -> TokenStream {
     let input = syn::parse_macro_input!(item as DeriveInput);
     let name = input.ident.clone();
     let generics = input.generics.clone();

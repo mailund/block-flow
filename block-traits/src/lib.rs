@@ -169,6 +169,7 @@ mod test_types {
         type InitParameters = DoublerInitParams;
         type Intents = ::intents::ZeroIntents;
     }
+    impl ::block_traits::block_spec::EmptyContractDepsTag for DoublerBlock {}
 
     impl BlockSpec for DoublerBlock {
         fn block_id(&self) -> u32 {
@@ -322,6 +323,7 @@ mod tests {
         type InitParameters = AccumulatorInitParams;
         type Intents = ::intents::ZeroIntents;
     }
+    impl ::block_traits::block_spec::EmptyContractDepsTag for AccumulatorBlock {}
 
     impl BlockSpec for AccumulatorBlock {
         fn block_id(&self) -> u32 {
