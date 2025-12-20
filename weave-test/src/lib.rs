@@ -24,6 +24,9 @@ mod tests {
             output_keys: blocks::simple_order::OutputKeys {},
             init_params: blocks::simple_order::InitParams {
                 contract: Contract::new("ABC-123"),
+                side: trade_types::Side::Buy,
+                price: trade_types::Price::from(trade_types::Cents(100)),
+                quantity: trade_types::Quantity::from(trade_types::Kw(1)),
             },
         };
         let mut registry = ChannelRegistry::default();

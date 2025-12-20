@@ -121,6 +121,9 @@ dependencies = [
 [[package]]
 name = "execution-context"
 version = "0.1.0"
+dependencies = [
+ "trade-types",
+]
 
 [[package]]
 name = "execution-plan"

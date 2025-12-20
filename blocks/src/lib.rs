@@ -9,10 +9,13 @@ use block_traits::{BlockSpec, ExecutionContext};
 pub mod after;
 pub mod delete;
 pub mod simple_order;
+pub mod sniper;
 
 pub use after::AfterBlock;
 pub use delete::DeleteBlock;
 pub use simple_order::SimpleOrderBlock;
+pub use sniper::SniperBlock;
+
 use weave::WeaveNode;
 
 macro_rules! define_block_type {
@@ -163,6 +166,9 @@ mod test {
             output_keys: SimpleOutKey {},
             init_params: SimpleInit {
                 contract: contract.clone(),
+                side: trade_types::Side::Buy,
+                price: trade_types::Price::from(trade_types::Cents(100)),
+                quantity: trade_types::Quantity::from(trade_types::Kw(1)),
             },
         };
 
@@ -292,7 +298,12 @@ mod test {
                 "data": {
                     "input_keys": { "should_execute": "should_execute" },
                     "output_keys": {},
-                    "init_params": { "contract": "TEST" }
+                    "init_params": {
+                        "contract": "TEST",
+                        "side": "Buy",
+                        "price": { "cents": 100 },
+                        "quantity": { "kw": 10 }
+                    }
                 }
             }
         ]

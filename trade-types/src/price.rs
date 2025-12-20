@@ -1,7 +1,7 @@
 use super::*;
 
 #[serializable_struct]
-#[derive(PartialEq, Eq)]
+#[derive(PartialEq, Eq, PartialOrd, Ord)]
 pub struct Price {
     cents: u32,
 }
