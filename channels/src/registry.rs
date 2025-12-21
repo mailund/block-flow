@@ -52,19 +52,24 @@ impl ChannelRegistry {
         }
     }
 
-    /// Ensure a key exists in the registry, creating it with Default if it doesn't
-    pub fn ensure<T: Default + 'static>(&mut self, key: impl Into<String>) -> Rc<RefCell<T>> {
+    /// Ensure a key exists in the registry, creating it with Default if it doesn't.
+    /// Returns the Rc<RefCell<T>> for the key. If the key exists but has the wrong type,
+    /// an error is returned.
+    pub fn ensure<T: Default + 'static>(
+        &mut self,
+        key: impl Into<String>,
+    ) -> Result<Rc<RefCell<T>>, errors::RegistryError> {
         let key = key.into();
 
         // Check if key already exists and try to get it
         if let Ok(existing) = self.get::<T>(&key) {
-            return existing;
+            return Ok(existing);
         }
 
         // Key doesn't exist or wrong type, create new entry
         let value = Rc::new(RefCell::new(T::default()));
         self.store.insert(key, value.clone());
-        value
+        Ok(value)
     }
 }
 

@@ -139,7 +139,8 @@ mod tests {
         let out_keys = output_keys("out");
 
         // Output channels should be registered before creating a writer.
-        out_keys.register(&mut registry);
+        assert!(out_keys.register(&mut registry).is_ok());
+
         // Insert manual key manually as they don't support registration.
         registry.put("in", 0i32);
 
@@ -160,7 +161,8 @@ mod tests {
 
         let in_keys = input_keys("in");
         let out_keys = output_keys("out");
-        out_keys.register(&mut registry);
+
+        assert!(out_keys.register(&mut registry).is_ok());
 
         let reader = in_keys.reader(&registry).unwrap();
         let writer = out_keys.writer(&registry).unwrap();
@@ -187,7 +189,8 @@ mod tests {
 
         let in_keys = input_keys("in");
         let out_keys = output_keys("out");
-        out_keys.register(&mut registry);
+
+        assert!(out_keys.register(&mut registry).is_ok());
 
         let reader = in_keys.reader(&registry).unwrap();
         let writer = out_keys.writer(&registry).unwrap();
@@ -214,7 +217,8 @@ mod tests {
 
         let in_keys = input_keys("in");
         let out_keys = output_keys("out");
-        out_keys.register(&mut registry);
+
+        assert!(out_keys.register(&mut registry).is_ok());
 
         let reader = in_keys.reader(&registry).unwrap();
         let writer = out_keys.writer(&registry).unwrap();

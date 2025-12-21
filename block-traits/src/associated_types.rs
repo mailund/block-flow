@@ -96,8 +96,9 @@ pub trait BlockInput: Sized {
 ///         Ok(MockWriter { written: std::cell::RefCell::new(None) })
 ///     }
 ///
-///     fn register(&self, _registry: &mut ChannelRegistry) {
+///     fn register(&self, _registry: &mut ChannelRegistry) -> Result<(), RegistryError> {
 ///         // Registration logic would go here
+///        Ok(())
 ///     }
 /// }
 ///

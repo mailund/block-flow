@@ -58,8 +58,9 @@ pub fn output_impl(_attr: TokenStream, item: TokenStream) -> TokenStream {
                     Ok(#writer_name)
                 }
 
-                fn register(&self, _registry: &mut channels::ChannelRegistry) {
+                fn register(&self, _registry: &mut channels::ChannelRegistry) -> Result<(), channels::RegistryError> {
                     // no outputs to register
+                    Ok(())
                 }
             }
 
@@ -137,8 +138,9 @@ pub fn output_impl(_attr: TokenStream, item: TokenStream) -> TokenStream {
                 Ok(#writer_name { #(#writer_assignments,)* })
             }
 
-            fn register(&self, registry: &mut channels::ChannelRegistry) {
-                #( registry.ensure::<#field_types>(&self.#field_names); )*
+            fn register(&self, registry: &mut channels::ChannelRegistry) -> Result<(), channels::RegistryError> {
+                #( registry.ensure::<#field_types>(&self.#field_names)?; )*
+                Ok(())
             }
         }
 

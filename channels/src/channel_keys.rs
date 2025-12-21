@@ -29,5 +29,5 @@ pub trait OutputKeys<T>: ChannelKeys {
     type WriterType: Writer<T>;
     fn writer(&self, registry: &ChannelRegistry)
         -> Result<Self::WriterType, errors::RegistryError>;
-    fn register(&self, registry: &mut ChannelRegistry);
+    fn register(&self, registry: &mut ChannelRegistry) -> Result<(), errors::RegistryError>;
 }
