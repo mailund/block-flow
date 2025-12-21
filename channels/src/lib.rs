@@ -63,7 +63,7 @@ mod tests {
         let mut registry = ChannelRegistry::new();
 
         let value = registry.ensure::<i32>("new_key");
-        assert_eq!(*value.borrow(), 0); // Default for i32
+        assert_eq!(*value.unwrap().borrow(), 0); // Default for i32
 
         // Should be able to get it back
         let retrieved = registry.get::<i32>("new_key").unwrap();
@@ -76,7 +76,7 @@ mod tests {
 
         registry.put("existing", 42i32);
 
-        let value = registry.ensure::<i32>("existing");
+        let value = registry.ensure::<i32>("existing").unwrap();
         assert_eq!(*value.borrow(), 42); // Should get existing value
 
         // Modify through ensure reference
@@ -96,7 +96,7 @@ mod tests {
             value: i32,
         }
 
-        let custom = registry.ensure::<CustomStruct>("custom");
+        let custom = registry.ensure::<CustomStruct>("custom").unwrap();
         assert_eq!(*custom.borrow(), CustomStruct { value: 0 });
     }
 

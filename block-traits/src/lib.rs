@@ -141,8 +141,9 @@ mod test_types {
             })
         }
 
-        fn register(&self, _registry: &mut ChannelRegistry) {
+        fn register(&self, _registry: &mut ChannelRegistry) -> Result<(), RegistryError> {
             // Mock implementation
+            Ok(())
         }
     }
 
@@ -281,7 +282,7 @@ mod tests {
         assert!(out_names.is_empty());
 
         // OutputKeys::register (no-op mock, but we still invoke it)
-        keys_out.register(&mut registry);
+        assert!(keys_out.register(&mut registry).is_ok());
 
         // InputKeys::reader + Reader::read
         let reader = keys_in.reader(&registry).unwrap();
