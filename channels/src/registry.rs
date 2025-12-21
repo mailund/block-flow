@@ -66,7 +66,16 @@ impl ChannelRegistry {
             return Ok(existing);
         }
 
-        // Key doesn't exist or wrong type, create new entry
+        if self.store.contains_key(&key) {
+            // Key exists but type mismatch
+            return Err(errors::RegistryError::TypeMismatch {
+                key,
+                expected: std::any::type_name::<T>(),
+                found: "Unexpected Type",
+            });
+        }
+
+        // Key doesn't exist create new entry
         let value = Rc::new(RefCell::new(T::default()));
         self.store.insert(key, value.clone());
         Ok(value)
