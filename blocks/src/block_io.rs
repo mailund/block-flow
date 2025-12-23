@@ -2,12 +2,12 @@ use super::*;
 
 #[derive(Debug)]
 pub enum ReadBlocksError {
-    Io(block_io::Error),
+    Io(io::Error),
     Json(serde_json::Error),
 }
 
-impl From<block_io::Error> for ReadBlocksError {
-    fn from(e: block_io::Error) -> Self {
+impl From<io::Error> for ReadBlocksError {
+    fn from(e: io::Error) -> Self {
         Self::Io(e)
     }
 }
