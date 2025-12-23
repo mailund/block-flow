@@ -7,11 +7,13 @@ use block_traits::block_weave::BlockSerializationPackage;
 use block_traits::{BlockSpec, ExecutionContext};
 
 pub mod after;
+pub mod block_io;
 pub mod delete;
 pub mod simple_order;
 pub mod sniper;
 
 pub use after::AfterBlock;
+pub use block_io::*;
 pub use delete::DeleteBlock;
 pub use simple_order::SimpleOrderBlock;
 pub use sniper::SniperBlock;
@@ -24,80 +26,27 @@ macro_rules! define_block_type {
         #[serde(tag = "type", content = "data")]
         pub enum BlockType {
             $(
-                $variant(
-                    BlockSerializationPackage<$block_ty>
-                ),
+                $variant(BlockSerializationPackage<$block_ty>),
             )+
+        }
+
+        impl BlockType {
+            fn as_weave_block(&self) -> Box<dyn WeaveNode<block_traits::Block>> {
+                match self {
+                    $(
+                        BlockType::$variant(pkg) => Box::new(pkg.clone()),
+                    )+
+                }
+            }
         }
     };
 }
 
-macro_rules! match_weave_node {
-    ($value:expr, $($variant:ident),+ $(,)?) => {
-        match $value {
-            $(
-                BlockType::$variant(pkg) => Box::new(pkg.clone()),
-            )+
-        }
-    };
-}
-
-// FIXME: Not super happy with having a global enum list like this,
-// but it will do for now.
 define_block_type!(
     After => after::AfterBlock,
     Delete => delete::DeleteBlock,
     SimpleOrder => simple_order::SimpleOrderBlock,
 );
-
-impl BlockType {
-    pub fn as_weave_node(&self) -> Box<dyn WeaveNode<block_traits::Block>> {
-        match_weave_node!(self, After, Delete, SimpleOrder)
-    }
-}
-
-#[derive(Debug)]
-pub enum ReadBlocksError {
-    Io(io::Error),
-    Json(serde_json::Error),
-}
-
-impl From<io::Error> for ReadBlocksError {
-    fn from(e: io::Error) -> Self {
-        Self::Io(e)
-    }
-}
-
-impl From<serde_json::Error> for ReadBlocksError {
-    fn from(e: serde_json::Error) -> Self {
-        Self::Json(e)
-    }
-}
-
-/// Reads blocks into a vector of BlockType from a JSON string.
-/// The enum preserves type information for each block.
-pub fn read_blocktypes_from_json_string(json: &str) -> Result<Vec<BlockType>, serde_json::Error> {
-    serde_json::from_str::<Vec<BlockType>>(json)
-}
-
-/// Reads blocks into a vector of WeaveNode from a JSON string.
-/// The returned nodes are type-erased andcan be weaved into a graph.
-pub fn read_blocks_from_json_string(
-    json: &str,
-) -> Result<Vec<Box<dyn WeaveNode<block_traits::Block>>>, serde_json::Error> {
-    let block_types = read_blocktypes_from_json_string(json)?;
-    let blocks = block_types.iter().map(|bt| bt.as_weave_node()).collect();
-    Ok(blocks)
-}
-
-pub fn read_blocktypes_from_json_file<P: AsRef<Path>>(
-    path: P,
-) -> Result<Vec<BlockType>, ReadBlocksError> {
-    let mut file = File::open(path)?;
-    let mut buf = String::new();
-    file.read_to_string(&mut buf)?;
-    Ok(serde_json::from_str::<Vec<BlockType>>(&buf)?)
-}
 
 #[cfg(test)]
 mod test {
