@@ -21,7 +21,6 @@ channels = { path = "crates/channels" }
 serialization = { path = "crates/serialization" }
 serialization-macros = { path = "crates/serialization-macros" }
 trade-types = { path = "crates/trade-types" }
-weave = { path = "crates/weave" }
 
 [dev-dependencies]
 block-macros-test = { path = "test-crates/block-macros-test" }

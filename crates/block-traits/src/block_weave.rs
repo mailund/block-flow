@@ -1,8 +1,8 @@
 use crate::type_erasure::BlockPackage;
 
 use super::{Block, BlockInput, BlockOutput, BlockSpec};
+use channels::WeaveNode;
 use channels::{ChannelKeys, InputKeys, OutputKeys, RegistryError};
-use weave::WeaveNode;
 
 /// Block that has been deserialized (or serialized)
 /// before we weave it and erase its concrete type.

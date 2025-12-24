@@ -1,6 +1,6 @@
 use crate::intents::SlotIntent;
 use crate::{Block, BlockExecuteTrait, BlockTrait, ExecutionContext};
-use weave::TopoOrdered;
+use ::channels::weave::TopoOrdered;
 
 /// A mock implementation of an execution plan.
 ///

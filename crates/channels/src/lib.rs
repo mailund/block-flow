@@ -1,10 +1,12 @@
 pub mod channel_keys;
 pub mod errors;
 pub mod registry;
+pub mod weave;
 
 pub use channel_keys::*;
 pub use errors::*;
 pub use registry::*;
+pub use weave::*;
 
 #[cfg(test)]
 mod tests {

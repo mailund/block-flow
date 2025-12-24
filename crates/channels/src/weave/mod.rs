@@ -1,8 +1,8 @@
-use channels::{ChannelRegistry, RegistryError};
+use crate::{ChannelRegistry, RegistryError};
 use std::ops::Deref;
 
-mod weave;
-pub use weave::*;
+mod node_weaving;
+pub use node_weaving::*;
 
 /// Something that can be weaved into a node in a graph
 /// with edges connected through channels.
