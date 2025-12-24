@@ -9,6 +9,7 @@ pub mod associated_types;
 pub mod block_spec;
 pub mod block_weave;
 pub mod execution_context;
+pub mod execution_plan;
 pub mod intents;
 pub mod type_erasure;
 

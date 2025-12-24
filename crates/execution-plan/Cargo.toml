@@ -1,9 +1,0 @@
-[package]
-name = "execution-plan"
-version = "0.1.0"
-edition = "2021"
-
-[dependencies]
-block-traits = { path = "../block-traits" }
-trade-types = { path = "../trade-types" }
-weave = { path = "../weave" }
