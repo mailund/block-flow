@@ -6,42 +6,19 @@ extern crate self as block_traits;
 use channels::{Reader, Writer};
 
 pub mod associated_types;
+pub mod block;
 pub mod block_spec;
 pub mod block_weave;
 pub mod execution_context;
+pub mod execution_plan;
 pub mod intents;
 pub mod type_erasure;
 
+pub use associated_types::{BlockInput, BlockOutput, BlockSpecAssociatedTypes, ContractDeps};
+pub use block::{Block, BlockExecuteTrait, BlockTrait};
+pub use block_spec::BlockSpec;
 pub use execution_context::ExecutionContext;
 pub use intents::*;
-
-pub use associated_types::{BlockInput, BlockOutput, BlockSpecAssociatedTypes, ContractDeps};
-pub use block_spec::BlockSpec;
-
-pub trait BlockTrait {
-    fn block_id(&self) -> u32;
-    fn contract_deps(&self) -> Vec<::trade_types::Contract>;
-    fn execute(&self, context: &ExecutionContext) -> Option<Vec<SlotIntent>>;
-}
-
-/// Type-erased block for execution in a weaved execution plan.
-pub struct Block {
-    block: Box<dyn BlockTrait>,
-}
-
-impl BlockTrait for Block {
-    fn block_id(&self) -> u32 {
-        self.block.block_id()
-    }
-
-    fn contract_deps(&self) -> Vec<::trade_types::Contract> {
-        self.block.contract_deps()
-    }
-
-    fn execute(&self, context: &ExecutionContext) -> Option<Vec<SlotIntent>> {
-        self.block.execute(context)
-    }
-}
 
 #[cfg(test)]
 mod test_types {
@@ -205,7 +182,6 @@ mod tests {
     use super::*;
     use crate::ExecutionContext;
     use channels::*;
-    use std::cell::RefCell;
 
     #[test]
     fn test_execution_context() {
@@ -294,20 +270,6 @@ mod tests {
         let writer = keys_out.writer(&registry).unwrap();
         writer.write(&TestOutput { result: 123 });
         assert_eq!(writer.written.borrow().as_ref().unwrap().result, 123);
-    }
-
-    #[test]
-    fn test_wrapped_block_new() {
-        let block = DoublerBlock;
-        let reader = MockReader {
-            data: TestInput { value: 7 },
-        };
-        let writer = MockWriter {
-            written: RefCell::new(None),
-        };
-
-        let wrapped = type_erasure::EncapsulatedBlock::new(block, reader, writer);
-        assert_eq!(*wrapped.state_cell.borrow(), TestState { acc: 0 }); // Should be initialized
     }
 
     // Test block with more complex state

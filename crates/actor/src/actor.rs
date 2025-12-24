@@ -1,11 +1,13 @@
 use super::*;
 use block_traits::intents;
-use block_traits::{Block, BlockTrait, ExecutionContext};
+use block_traits::{Block, BlockExecuteTrait, ExecutionContext};
 use std::cell::{Ref, RefCell};
 use trade_types::Contract;
 
 /// A mock actor.
 pub struct Actor {
+    id: u32,
+
     /// The block encapsulated by this actor.
     /// A block can be a simple block or a composite block,
     /// so in practice the block is usually an execution plan
@@ -19,11 +21,16 @@ pub struct Actor {
 
 impl Actor {
     /// Create a new actor encapsulating the given block.
-    pub fn new(block: Block) -> Self {
+    pub fn new(id: u32, block: Block) -> Self {
         Self {
+            id,
             block,
             orders: RefCell::new(vec![]),
         }
+    }
+
+    pub fn actor_id(&self) -> u32 {
+        self.id
     }
 
     pub fn block(&self) -> &Block {

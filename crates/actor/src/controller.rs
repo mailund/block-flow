@@ -1,6 +1,6 @@
 use super::*;
 
-use block_traits::{BlockTrait, ExecutionContext};
+use block_traits::ExecutionContext;
 use std::collections::HashMap;
 use std::rc::Rc;
 use trade_types::Contract;
@@ -23,7 +23,7 @@ impl ActorController {
     pub fn add_actor(&mut self, actor: Actor) {
         let rc_actor = Rc::new(actor);
         self.id_to_actors
-            .insert(rc_actor.block().block_id(), rc_actor.clone());
+            .insert(rc_actor.actor_id(), rc_actor.clone());
         for contract in rc_actor.contracts() {
             self.contracts_to_actors
                 .entry(contract)
@@ -148,8 +148,10 @@ mod tests {
             let writer =
                 <OutputKeys as channels::OutputKeys<Output>>::writer(&output_keys, &reg).unwrap();
 
-            let block: Block = Block::new(b, reader, writer);
-            Actor::new(block)
+            let package = ::block_traits::type_erasure::BlockPackage::new_from_reader_writer(
+                b, reader, writer,
+            );
+            Actor::new(id, package.into())
         }
 
         #[test]
@@ -158,8 +160,8 @@ mod tests {
             ctrl.add_actor(mk_actor(10));
             ctrl.add_actor(mk_actor(20));
 
-            assert_eq!((ctrl.get_actor_by_id(10).unwrap().block()).block_id(), 10);
-            assert_eq!((ctrl.get_actor_by_id(20).unwrap().block()).block_id(), 20);
+            assert_eq!((ctrl.get_actor_by_id(10).unwrap().actor_id()), 10);
+            assert_eq!((ctrl.get_actor_by_id(20).unwrap().actor_id()), 20);
         }
     }
 
@@ -223,8 +225,11 @@ mod tests {
             let mut b = TestBlock::new_from_init_params(&params);
             b.block_id = id;
 
-            let block: Block = Block::new(b, reader, writer);
-            Actor::new(block)
+            let package = ::block_traits::type_erasure::BlockPackage::new_from_reader_writer(
+                b, reader, writer,
+            );
+            let block: Block = package.into();
+            Actor::new(id, block)
         }
 
         #[test]
@@ -300,8 +305,11 @@ mod tests {
             let mut b = TestBlock::new_from_init_params(&params);
             b.block_id = id;
 
-            let block: Block = Block::new(b, reader, writer);
-            Actor::new(block)
+            let package = ::block_traits::type_erasure::BlockPackage::new_from_reader_writer(
+                b, reader, writer,
+            );
+            let block: Block = package.into();
+            Actor::new(id, block)
         }
 
         #[test]
@@ -318,9 +326,7 @@ mod tests {
             assert!(!ctrl.contracts_to_actors.contains_key(&c("A")));
             assert_eq!(ctrl.contracts_to_actors.get(&c("B")).unwrap().len(), 1);
             assert_eq!(
-                ctrl.contracts_to_actors.get(&c("B")).unwrap()[0]
-                    .block()
-                    .block_id(),
+                ctrl.contracts_to_actors.get(&c("B")).unwrap()[0].actor_id(),
                 2
             );
         }

@@ -1,3 +1,5 @@
+use crate::type_erasure::BlockPackage;
+
 use super::{Block, BlockInput, BlockOutput, BlockSpec};
 use channels::{ChannelKeys, InputKeys, OutputKeys, RegistryError};
 use weave::WeaveNode;
@@ -40,13 +42,11 @@ impl<BSpec: BlockSpec + 'static> WeaveNode<Block> for BlockSerializationPackage<
         self.output_keys.register(channels)?;
 
         let block = BSpec::new_from_init_params(&self.init_params);
-
         let input_reader = self.input_keys.reader(channels)?;
         let output_writer = self.output_keys.writer(channels)?;
+        let package = BlockPackage::new_from_reader_writer(block, input_reader, output_writer);
 
-        let encapsulated = Block::new(block, input_reader, output_writer);
-
-        Ok(encapsulated)
+        Ok(package.into())
     }
 }
 
