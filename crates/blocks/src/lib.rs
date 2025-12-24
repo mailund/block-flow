@@ -31,7 +31,7 @@ macro_rules! define_block_type {
         }
 
         impl BlockType {
-            fn as_weave_block(&self) -> Box<dyn WeaveNode<block_traits::Block>> {
+            fn as_weave_block(&self) -> Box<dyn WeaveNode<Box<dyn block_traits::BlockTrait>>> {
                 match self {
                     $(
                         BlockType::$variant(pkg) => Box::new(pkg.clone()),

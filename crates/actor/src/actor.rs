@@ -1,6 +1,6 @@
 use super::*;
 use block_traits::intents;
-use block_traits::{Block, BlockExecuteTrait, ExecutionContext};
+use block_traits::{BlockTrait, ExecutionContext};
 use std::cell::{Ref, RefCell};
 use trade_types::Contract;
 
@@ -12,7 +12,7 @@ pub struct Actor {
     /// A block can be a simple block or a composite block,
     /// so in practice the block is usually an execution plan
     /// containing multiple blocks.
-    block: Block,
+    block: Box<dyn BlockTrait>,
 
     /// Array of the orders the actor can emit.
     /// RefCell for interior mutability.
@@ -21,7 +21,7 @@ pub struct Actor {
 
 impl Actor {
     /// Create a new actor encapsulating the given block.
-    pub fn new(id: u32, block: Block) -> Self {
+    pub fn new(id: u32, block: Box<dyn BlockTrait>) -> Self {
         Self {
             id,
             block,
@@ -33,8 +33,8 @@ impl Actor {
         self.id
     }
 
-    pub fn block(&self) -> &Block {
-        &self.block
+    pub fn block(&self) -> &dyn BlockTrait {
+        &*self.block
     }
 
     pub fn contracts(&self) -> Vec<Contract> {

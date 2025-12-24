@@ -1,6 +1,6 @@
 use super::type_erasure::WrappedBlock;
 
-use super::{Block, BlockInput, BlockOutput, BlockSpec};
+use super::{BlockInput, BlockOutput, BlockSpec, BlockTrait};
 use channels::WeaveNode;
 use channels::{ChannelKeys, InputKeys, OutputKeys, RegistryError};
 
@@ -37,7 +37,7 @@ where
     pub fn weave(
         &self,
         channels: &mut ::channels::ChannelRegistry,
-    ) -> Result<Block, RegistryError> {
+    ) -> Result<Box<dyn BlockTrait>, RegistryError> {
         self.output_keys.register(channels)?;
 
         let block = B::new_from_init_params(&self.init_params);
@@ -45,11 +45,11 @@ where
         let output_writer = self.output_keys.writer(channels)?;
         let package = WrappedBlock::new_from_reader_writer(block, input_reader, output_writer);
 
-        Ok(package.into())
+        Ok(Box::new(package))
     }
 }
 
-impl<BSpec: BlockSpec + 'static> WeaveNode<Block> for BlockPackage<BSpec> {
+impl<BSpec: BlockSpec + 'static> WeaveNode<Box<dyn BlockTrait>> for BlockPackage<BSpec> {
     fn input_channels(&self) -> Vec<String> {
         self.input_keys.channel_names()
     }
@@ -57,7 +57,10 @@ impl<BSpec: BlockSpec + 'static> WeaveNode<Block> for BlockPackage<BSpec> {
         self.output_keys.channel_names()
     }
 
-    fn weave(&self, channels: &mut ::channels::ChannelRegistry) -> Result<Block, RegistryError> {
+    fn weave(
+        &self,
+        channels: &mut ::channels::ChannelRegistry,
+    ) -> Result<Box<dyn BlockTrait>, RegistryError> {
         BlockPackage::<BSpec>::weave(self, channels)
     }
 }

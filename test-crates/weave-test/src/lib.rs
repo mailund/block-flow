@@ -1,7 +1,6 @@
 #[cfg(test)]
 mod tests {
     use block_traits::block_weave::BlockPackage;
-    use block_traits::Block;
     use blocks::{AfterBlock, SimpleOrderBlock};
     use channels::weave::*;
     use channels::ChannelRegistry;
@@ -30,7 +29,7 @@ mod tests {
             },
         };
         let mut registry = ChannelRegistry::default();
-        let nodes: Vec<Box<dyn WeaveNode<Block>>> =
+        let nodes: Vec<Box<dyn WeaveNode<Box<dyn block_traits::BlockTrait>>>> =
             vec![Box::new(after_node), Box::new(order_node)];
         let result = weave_nodes(nodes, &mut registry);
         assert!(

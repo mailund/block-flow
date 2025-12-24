@@ -31,27 +31,4 @@ impl BlockExecuteTrait for ExecuteBlock {
     }
 }
 
-/// Type-erased block for execution in a weaved execution plan.
-pub struct Block(Box<dyn BlockTrait>);
-
-impl Block {
-    pub fn new(block: Box<dyn BlockTrait>) -> Self {
-        Self(block)
-    }
-}
-
-impl BlockExecuteTrait for Block {
-    fn contract_deps(&self) -> Vec<::trade_types::Contract> {
-        self.0.contract_deps()
-    }
-
-    fn execute(&self, context: &ExecutionContext) -> Option<Vec<SlotIntent>> {
-        self.0.execute(context)
-    }
-}
-
-impl BlockTrait for Block {
-    fn block_id(&self) -> u32 {
-        self.0.block_id()
-    }
-}
+pub type Block = Box<dyn BlockTrait>;

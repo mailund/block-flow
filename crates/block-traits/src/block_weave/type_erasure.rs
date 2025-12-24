@@ -35,7 +35,7 @@ where
     B: BlockSpec + 'static,
 {
     fn from(encapsulated: WrappedBlock<B>) -> Self {
-        Block::new(Box::new(encapsulated))
+        Box::new(encapsulated)
     }
 }
 
