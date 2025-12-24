@@ -1,4 +1,5 @@
 use super::*;
+use block_traits::Block;
 
 #[derive(Debug)]
 pub enum ReadBlocksError {
@@ -28,7 +29,7 @@ pub fn read_blocktypes_from_json_string(json: &str) -> Result<Vec<BlockType>, se
 /// The returned nodes are type-erased andcan be weaved into a graph.
 pub fn read_blocks_from_json_string(
     json: &str,
-) -> Result<Vec<Box<dyn WeaveNode<Box<dyn block_traits::BlockTrait>>>>, serde_json::Error> {
+) -> Result<Vec<Box<dyn WeaveNode<Block>>>, serde_json::Error> {
     let block_types = read_blocktypes_from_json_string(json)?;
     let blocks = block_types.iter().map(|bt| bt.as_weave_block()).collect();
     Ok(blocks)
