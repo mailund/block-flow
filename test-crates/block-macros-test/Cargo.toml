@@ -1,0 +1,20 @@
+[package]
+name = "block-macros-test"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+block-macros = { path = "../../crates/block-macros" }
+
+
+[dev-dependencies]
+block-traits = { path = "../../crates/block-traits" }
+channels = { path = "../../crates/channels" }
+intents = { path = "../../crates/intents" }
+serialization = { path = "../../crates/serialization" }
+serialization-macros = { path = "../../crates/serialization-macros" }
+trade-types = { path = "../../crates/trade-types" }
+
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+# prost = "0.12"  # For protobuf when needed
