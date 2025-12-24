@@ -2,25 +2,6 @@ use crate::intents::SlotIntent;
 use crate::{Block, BlockTrait, ExecutionContext};
 use ::channels::weave::TopoOrdered;
 
-/// A mock implementation of an execution plan.
-///
-/// The plan can execute by executing its constituent blocks in topological order,
-/// but it does not have any support for configuring it yet. That will likely require
-/// a trait and is left for future work.
-pub struct ExecutionPlan {
-    blocks: TopoOrdered<Block>,
-}
-
-impl ExecutionPlan {
-    pub fn new(blocks: TopoOrdered<Block>) -> Self {
-        Self { blocks }
-    }
-
-    pub fn blocks(&self) -> &TopoOrdered<Block> {
-        &self.blocks
-    }
-}
-
 /// Implementing the BlockTrait so execution plans can be used as composite blocks.
 impl BlockTrait for TopoOrdered<Block> {
     fn contract_deps(&self) -> Vec<::trade_types::Contract> {
@@ -43,15 +24,5 @@ impl BlockTrait for TopoOrdered<Block> {
             .collect::<Option<Vec<Vec<SlotIntent>>>>()
             // Flatten the Vec<Vec<SlotIntent>> into Vec<SlotIntent>
             .map(|v| v.into_iter().flatten().collect())
-    }
-}
-
-impl BlockTrait for ExecutionPlan {
-    fn contract_deps(&self) -> Vec<::trade_types::Contract> {
-        self.blocks.contract_deps()
-    }
-
-    fn execute(&self, context: &ExecutionContext) -> Option<Vec<SlotIntent>> {
-        self.blocks.execute(context)
     }
 }
