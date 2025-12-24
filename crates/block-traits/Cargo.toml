@@ -5,7 +5,6 @@ edition = "2021"
 
 [dependencies]
 channels = { path = "../channels" }
-weave = { path = "../weave" }
 serialization = { path = "../serialization" }
 serialization-macros = { path = "../serialization-macros" }
 trade-types = { path = "../trade-types" }
