@@ -1,7 +1,0 @@
-[package]
-name = "intents"
-version = "0.1.0"
-edition = "2021"
-
-[dependencies]
-trade-types = { path = "../trade-types" }

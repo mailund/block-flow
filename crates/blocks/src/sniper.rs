@@ -1,6 +1,6 @@
 use super::*;
+use block_traits::intents::*;
 use block_traits::BlockSpec;
-use intents::*;
 use trade_types::*;
 
 make_defaults!(state, output);

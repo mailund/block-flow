@@ -6,6 +6,5 @@ edition = "2021"
 [dependencies]
 execution-context = { path = "../execution-context" }
 block-traits = { path = "../block-traits" }
-intents = { path = "../intents" }
 trade-types = { path = "../trade-types" }
 weave = { path = "../weave" }
