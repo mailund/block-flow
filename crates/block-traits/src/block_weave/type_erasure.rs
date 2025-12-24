@@ -1,5 +1,4 @@
 use super::*;
-use intents::SlotIntent;
 
 /// Encapsulates a block along with its input reader, output writer, and state cell
 /// to provide a type-erased block implementation. The WrappedBlock is a block with its

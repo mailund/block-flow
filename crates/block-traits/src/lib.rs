@@ -12,11 +12,11 @@ pub mod block_weave;
 pub mod execution_context;
 pub mod execution_plan;
 pub mod intents;
-pub mod type_erasure;
 
 pub use associated_types::{BlockInput, BlockOutput, BlockSpecAssociatedTypes, ContractDeps};
 pub use block::{Block, BlockExecuteTrait, BlockTrait};
 pub use block_spec::BlockSpec;
+pub use block_weave::{BlockPackage, WrappedBlock};
 pub use execution_context::ExecutionContext;
 pub use intents::*;
 

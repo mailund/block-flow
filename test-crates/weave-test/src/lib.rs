@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod tests {
-    use block_traits::block_weave::BlockSerializationPackage;
+    use block_traits::block_weave::BlockPackage;
     use block_traits::Block;
     use blocks::{AfterBlock, SimpleOrderBlock};
     use channels::weave::*;
@@ -9,7 +9,7 @@ mod tests {
 
     #[test]
     fn weave_after_and_simple_order() {
-        let after_node = BlockSerializationPackage::<AfterBlock> {
+        let after_node = BlockPackage::<AfterBlock> {
             input_keys: blocks::after::InputKeys {},
             output_keys: blocks::after::OutputKeys {
                 is_after: "after_output".to_string(),
@@ -17,7 +17,7 @@ mod tests {
             init_params: blocks::after::InitParams { time: 42 },
         };
         // SimpleOrderBlock expects InitParams { contract: Contract }
-        let order_node = BlockSerializationPackage::<SimpleOrderBlock> {
+        let order_node = BlockPackage::<SimpleOrderBlock> {
             input_keys: blocks::simple_order::InputKeys {
                 should_execute: "after_output".to_string(),
             },

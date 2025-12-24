@@ -1,4 +1,4 @@
-use crate::type_erasure::WrappedBlock;
+use super::type_erasure::WrappedBlock;
 
 use super::{Block, BlockInput, BlockOutput, BlockSpec};
 use channels::WeaveNode;
@@ -6,14 +6,19 @@ use channels::{ChannelKeys, InputKeys, OutputKeys, RegistryError};
 
 /// Block that has been deserialized (or serialized)
 /// before we weave it and erase its concrete type.
+/// This struct is plain-old-data and must be weaved to add
+/// functionality to a block.
 #[serialization_macros::serializable_struct]
-pub struct BlockSerializationPackage<BSpec: BlockSpec> {
+pub struct BlockPackage<BSpec: BlockSpec> {
     pub input_keys: <BSpec::Input as BlockInput>::Keys,
     pub output_keys: <BSpec::Output as BlockOutput>::Keys,
     pub init_params: BSpec::InitParameters,
 }
 
-impl<B: BlockSpec> BlockSerializationPackage<B> {
+impl<B> BlockPackage<B>
+where
+    B: BlockSpec + 'static,
+{
     /// Construct a new serialization/deserialization summary
     /// for a block of type <B> from its input/output keys and
     /// init parameters.
@@ -22,15 +27,29 @@ impl<B: BlockSpec> BlockSerializationPackage<B> {
         output_keys: <B::Output as BlockOutput>::Keys,
         init_params: B::InitParameters,
     ) -> Self {
-        BlockSerializationPackage {
+        BlockPackage {
             input_keys,
             output_keys,
             init_params,
         }
     }
+
+    pub fn weave(
+        &self,
+        channels: &mut ::channels::ChannelRegistry,
+    ) -> Result<Block, RegistryError> {
+        self.output_keys.register(channels)?;
+
+        let block = B::new_from_init_params(&self.init_params);
+        let input_reader = self.input_keys.reader(channels)?;
+        let output_writer = self.output_keys.writer(channels)?;
+        let package = WrappedBlock::new_from_reader_writer(block, input_reader, output_writer);
+
+        Ok(package.into())
+    }
 }
 
-impl<BSpec: BlockSpec + 'static> WeaveNode<Block> for BlockSerializationPackage<BSpec> {
+impl<BSpec: BlockSpec + 'static> WeaveNode<Block> for BlockPackage<BSpec> {
     fn input_channels(&self) -> Vec<String> {
         self.input_keys.channel_names()
     }
@@ -39,14 +58,7 @@ impl<BSpec: BlockSpec + 'static> WeaveNode<Block> for BlockSerializationPackage<
     }
 
     fn weave(&self, channels: &mut ::channels::ChannelRegistry) -> Result<Block, RegistryError> {
-        self.output_keys.register(channels)?;
-
-        let block = BSpec::new_from_init_params(&self.init_params);
-        let input_reader = self.input_keys.reader(channels)?;
-        let output_writer = self.output_keys.writer(channels)?;
-        let package = WrappedBlock::new_from_reader_writer(block, input_reader, output_writer);
-
-        Ok(package.into())
+        BlockPackage::<BSpec>::weave(self, channels)
     }
 }
 
@@ -122,7 +134,7 @@ mod tests {
 
     #[test]
     fn package_new_smoke_and_channel_lists() {
-        let pkg = BlockSerializationPackage::<MultiplyBlock>::new(
+        let pkg = BlockPackage::<MultiplyBlock>::new(
             keys_in("in"),
             keys_out("out"),
             InitParams { multiplier: 3 },
@@ -135,7 +147,7 @@ mod tests {
 
     #[test]
     fn weave_node_channel_lists_are_correct_for_arbitrary_names() {
-        let pkg = BlockSerializationPackage::<MultiplyBlock>::new(
+        let pkg = BlockPackage::<MultiplyBlock>::new(
             keys_in("input_chan"),
             keys_out("output_chan"),
             InitParams { multiplier: 2 },
@@ -147,7 +159,7 @@ mod tests {
 
     #[test]
     fn serialize_deserialize_roundtrip_preserves_init_params_and_keys() {
-        let pkg = BlockSerializationPackage::<MultiplyBlock>::new(
+        let pkg = BlockPackage::<MultiplyBlock>::new(
             keys_in("in"),
             keys_out("out"),
             InitParams { multiplier: 7 },
@@ -157,7 +169,7 @@ mod tests {
 
         use serialization::StructSerializer;
         let bytes = ser.serialize(&pkg).unwrap();
-        let restored: BlockSerializationPackage<MultiplyBlock> = ser.deserialize(&bytes).unwrap();
+        let restored: BlockPackage<MultiplyBlock> = ser.deserialize(&bytes).unwrap();
 
         assert_eq!(restored.init_params.multiplier, 7);
         assert_eq!(restored.input_channels(), vec!["in".to_string()]);
@@ -170,7 +182,7 @@ mod tests {
         let bad = br#"{ not valid json }"#;
 
         use serialization::StructSerializer;
-        let res = ser.deserialize::<BlockSerializationPackage<MultiplyBlock>>(bad);
+        let res = ser.deserialize::<BlockPackage<MultiplyBlock>>(bad);
         assert!(res.is_err());
     }
 
@@ -178,7 +190,7 @@ mod tests {
     fn weave_returns_error_when_input_channel_is_missing() {
         // This test *intentionally* does not populate the channel registry.
         // We verify the weave function propagates the RegistryError correctly.
-        let pkg = BlockSerializationPackage::<MultiplyBlock>::new(
+        let pkg = BlockPackage::<MultiplyBlock>::new(
             keys_in("missing_input"),
             keys_out("out"),
             InitParams { multiplier: 10 },

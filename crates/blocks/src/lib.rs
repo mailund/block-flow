@@ -3,7 +3,7 @@ use std::io::{self, Read};
 use std::path::Path;
 
 use block_macros::*;
-use block_traits::block_weave::BlockSerializationPackage;
+use block_traits::block_weave::BlockPackage;
 use block_traits::{BlockSpec, ExecutionContext};
 
 pub mod after;
@@ -26,7 +26,7 @@ macro_rules! define_block_type {
         #[serde(tag = "type", content = "data")]
         pub enum BlockType {
             $(
-                $variant(BlockSerializationPackage<$block_ty>),
+                $variant(BlockPackage<$block_ty>),
             )+
         }
 
@@ -79,13 +79,13 @@ mod test {
             <<AfterBlock as BlockSpecAssociatedTypes>::Output as block_traits::BlockOutput>::Keys;
         type AfterInit = <AfterBlock as BlockSpecAssociatedTypes>::InitParameters;
 
-        let after_pkg = BlockSerializationPackage::<after::AfterBlock> {
-            input_keys: AfterInKey {},
-            output_keys: AfterOutKey {
+        let after_pkg = BlockPackage::<after::AfterBlock>::new(
+            AfterInKey {},
+            AfterOutKey {
                 is_after: "output_is_after".to_string(),
             },
-            init_params: AfterInit { time: 123 },
-        };
+            AfterInit { time: 123 },
+        );
 
         // Delete
         type DeleteInKey =
@@ -94,13 +94,13 @@ mod test {
             <<DeleteBlock as BlockSpecAssociatedTypes>::Output as block_traits::BlockOutput>::Keys;
         type DeleteInit = <DeleteBlock as BlockSpecAssociatedTypes>::InitParameters;
 
-        let delete_pkg = BlockSerializationPackage::<delete::DeleteBlock> {
-            input_keys: DeleteInKey {
+        let delete_pkg = BlockPackage::<delete::DeleteBlock>::new(
+            DeleteInKey {
                 should_delete: "should_delete".to_string(),
             },
-            output_keys: DeleteOutKey {},
-            init_params: DeleteInit {},
-        };
+            DeleteOutKey {},
+            DeleteInit {},
+        );
 
         // SimpleOrder
         type SimpleInKey = <<SimpleOrderBlock as BlockSpecAssociatedTypes>::Input as block_traits::BlockInput>::Keys;
@@ -108,18 +108,18 @@ mod test {
         type SimpleInit = <SimpleOrderBlock as BlockSpecAssociatedTypes>::InitParameters;
 
         let contract = trade_types::Contract::new("TEST");
-        let simple_pkg = BlockSerializationPackage::<simple_order::SimpleOrderBlock> {
-            input_keys: SimpleInKey {
+        let simple_pkg = BlockPackage::<simple_order::SimpleOrderBlock>::new(
+            SimpleInKey {
                 should_execute: "should_execute".to_string(),
             },
-            output_keys: SimpleOutKey {},
-            init_params: SimpleInit {
+            SimpleOutKey {},
+            SimpleInit {
                 contract: contract.clone(),
                 side: trade_types::Side::Buy,
                 price: trade_types::Price::from(trade_types::Cents(100)),
                 quantity: trade_types::Quantity::from(trade_types::Kw(1)),
             },
-        };
+        );
 
         let blocks = vec![
             BlockType::After(after_pkg),

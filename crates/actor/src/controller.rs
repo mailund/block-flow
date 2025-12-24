@@ -148,9 +148,10 @@ mod tests {
             let writer =
                 <OutputKeys as channels::OutputKeys<Output>>::writer(&output_keys, &reg).unwrap();
 
-            let package = ::block_traits::type_erasure::WrappedBlock::new_from_reader_writer(
-                b, reader, writer,
-            );
+            let package =
+                ::block_traits::block_weave::type_erasure::WrappedBlock::new_from_reader_writer(
+                    b, reader, writer,
+                );
             Actor::new(id, package.into())
         }
 
@@ -225,9 +226,10 @@ mod tests {
             let mut b = TestBlock::new_from_init_params(&params);
             b.block_id = id;
 
-            let package = ::block_traits::type_erasure::WrappedBlock::new_from_reader_writer(
-                b, reader, writer,
-            );
+            let package =
+                ::block_traits::block_weave::type_erasure::WrappedBlock::new_from_reader_writer(
+                    b, reader, writer,
+                );
             let block: Block = package.into();
             Actor::new(id, block)
         }
@@ -290,25 +292,21 @@ mod tests {
         }
 
         fn mk_actor(id: u32, contracts: &[&str]) -> Actor {
-            let reg = ::channels::ChannelRegistry::new();
+            use ::block_traits::BlockPackage;
+
+            let mut reg = ::channels::ChannelRegistry::new();
             let input_keys = InputKeys {};
             let output_keys = OutputKeys {};
-
-            let reader =
-                <InputKeys as channels::InputKeys<Input>>::reader(&input_keys, &reg).unwrap();
-            let writer =
-                <OutputKeys as channels::OutputKeys<Output>>::writer(&output_keys, &reg).unwrap();
-
             let params = InitParams {
                 contracts: contracts.iter().map(|s| c(s)).collect(),
             };
             let mut b = TestBlock::new_from_init_params(&params);
             b.block_id = id;
 
-            let package = ::block_traits::type_erasure::WrappedBlock::new_from_reader_writer(
-                b, reader, writer,
-            );
-            let block: Block = package.into();
+            let package: BlockPackage<TestBlock> =
+                BlockPackage::new(input_keys, output_keys, params);
+            let block = package.weave(&mut reg).unwrap();
+
             Actor::new(id, block)
         }
 
