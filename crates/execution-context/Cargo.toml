@@ -1,7 +1,0 @@
-[package]
-name = "execution-context"
-version = "0.1.0"
-edition = "2021"
-
-[dependencies]
-trade-types = { path = "../trade-types" }

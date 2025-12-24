@@ -8,13 +8,12 @@ use channels::{Reader, Writer};
 pub mod associated_types;
 pub mod block_spec;
 pub mod block_weave;
+pub mod execution_context;
 pub mod intents;
 pub mod type_erasure;
 
-pub use intents::*;
-
-// Re-export for convience
 pub use execution_context::ExecutionContext;
+pub use intents::*;
 
 pub use associated_types::{BlockInput, BlockOutput, BlockSpecAssociatedTypes, ContractDeps};
 pub use block_spec::BlockSpec;

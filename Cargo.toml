@@ -18,7 +18,6 @@ block-traits = { path = "crates/block-traits" }
 block-macros = { path = "crates/block-macros" }
 blocks = { path = "crates/blocks" }
 channels = { path = "crates/channels" }
-execution-context = { path = "crates/execution-context" }
 execution-plan = { path = "crates/execution-plan" }
 serialization = { path = "crates/serialization" }
 serialization-macros = { path = "crates/serialization-macros" }

@@ -9,7 +9,6 @@ dependencies = [
  "block-macros",
  "block-traits",
  "channels",
- "execution-context",
  "serde",
  "serde_json",
  "serialization",
@@ -33,7 +32,6 @@ dependencies = [
  "block-traits",
  "blocks",
  "channels",
- "execution-context",
  "execution-plan",
  "serialization",
  "serialization-macros",
@@ -71,7 +69,6 @@ version = "0.1.0"
 dependencies = [
  "block-macros",
  "channels",
- "execution-context",
  "serde",
  "serialization",
  "serialization-macros",
@@ -115,18 +112,10 @@ dependencies = [
 ]
 
 [[package]]
-name = "execution-context"
-version = "0.1.0"
-dependencies = [
- "trade-types",
-]
-
-[[package]]
 name = "execution-plan"
 version = "0.1.0"
 dependencies = [
  "block-traits",
- "execution-context",
  "trade-types",
  "weave",
 ]
