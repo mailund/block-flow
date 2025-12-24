@@ -41,11 +41,7 @@ where
 }
 
 /// Implement BlockTrait for BlockPackage to allow type-erased execution.
-impl<B: BlockSpec> BlockTrait for BlockPackage<B> {
-    fn block_id(&self) -> u32 {
-        self.block.block_id()
-    }
-
+impl<B: BlockSpec> BlockExecuteTrait for BlockPackage<B> {
     fn contract_deps(&self) -> Vec<::trade_types::Contract> {
         self.block.contract_deps()
     }
@@ -64,6 +60,12 @@ impl<B: BlockSpec> BlockTrait for BlockPackage<B> {
 
         let slot_intents = intents.as_slot_intents(self.block.block_id());
         Some(slot_intents)
+    }
+}
+
+impl<B: BlockSpec> BlockTrait for BlockPackage<B> {
+    fn block_id(&self) -> u32 {
+        self.block.block_id()
     }
 }
 

@@ -1,5 +1,5 @@
 use crate::intents::SlotIntent;
-use crate::{Block, BlockTrait, ExecutionContext};
+use crate::{Block, BlockExecuteTrait, BlockTrait, ExecutionContext};
 use weave::TopoOrdered;
 
 /// A mock implementation of an execution plan.
@@ -23,14 +23,10 @@ impl ExecutionPlan {
 }
 
 /// Implementing the BlockTrait so execution plans can be used as composite blocks.
-impl BlockTrait for ExecutionPlan {
-    fn block_id(&self) -> u32 {
-        self.block_id
-    }
-
+impl BlockExecuteTrait for TopoOrdered<Block> {
     fn contract_deps(&self) -> Vec<::trade_types::Contract> {
         let mut deps = Vec::new();
-        for block in self.blocks.iter() {
+        for block in self.iter() {
             deps.extend(block.contract_deps());
         }
         deps
@@ -41,13 +37,28 @@ impl BlockTrait for ExecutionPlan {
     fn execute(&self, context: &ExecutionContext) -> Option<Vec<SlotIntent>> {
         // Execute each block in topological order,
         // flattening the resulting intents into a single vector.
-        self.blocks
-            .iter()
+        self.iter()
             // Get the optional output for each block
             .map(|block| block.execute(context))
             // Short-circuit if any block returned None
             .collect::<Option<Vec<Vec<SlotIntent>>>>()
             // Flatten the Vec<Vec<SlotIntent>> into Vec<SlotIntent>
             .map(|v| v.into_iter().flatten().collect())
+    }
+}
+
+impl BlockExecuteTrait for ExecutionPlan {
+    fn contract_deps(&self) -> Vec<::trade_types::Contract> {
+        self.blocks.contract_deps()
+    }
+
+    fn execute(&self, context: &ExecutionContext) -> Option<Vec<SlotIntent>> {
+        self.blocks.execute(context)
+    }
+}
+
+impl BlockTrait for ExecutionPlan {
+    fn block_id(&self) -> u32 {
+        self.block_id
     }
 }

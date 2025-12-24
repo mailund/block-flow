@@ -15,7 +15,7 @@ pub mod intents;
 pub mod type_erasure;
 
 pub use associated_types::{BlockInput, BlockOutput, BlockSpecAssociatedTypes, ContractDeps};
-pub use block::{Block, BlockTrait};
+pub use block::{Block, BlockExecuteTrait, BlockTrait};
 pub use block_spec::BlockSpec;
 pub use execution_context::ExecutionContext;
 pub use intents::*;
