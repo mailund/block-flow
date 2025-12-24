@@ -20,7 +20,6 @@ blocks = { path = "crates/blocks" }
 channels = { path = "crates/channels" }
 execution-context = { path = "crates/execution-context" }
 execution-plan = { path = "crates/execution-plan" }
-intents = { path = "crates/intents" }
 serialization = { path = "crates/serialization" }
 serialization-macros = { path = "crates/serialization-macros" }
 trade-types = { path = "crates/trade-types" }

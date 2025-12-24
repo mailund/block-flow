@@ -66,8 +66,8 @@ pub fn block_impl(attr: TokenStream, item: TokenStream) -> TokenStream {
     let output_type = output_type.unwrap_or_else(|| syn::parse_str("Output").unwrap());
     let state_type = state_type.unwrap_or_else(|| syn::parse_str("State").unwrap());
     let init_params = init_type.unwrap_or_else(|| syn::parse_str("InitParams").unwrap());
-    let intents_type =
-        intents_type.unwrap_or_else(|| syn::parse_str("::intents::ZeroIntents").unwrap());
+    let intents_type = intents_type
+        .unwrap_or_else(|| syn::parse_str("::block_traits::intents::ZeroIntents").unwrap());
 
     let mut inject_default_contract_deps_impl = false;
 

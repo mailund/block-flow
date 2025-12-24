@@ -1,7 +1,7 @@
 use super::*;
+use block_traits::intents;
 use block_traits::{Block, BlockTrait};
 use execution_context::ExecutionContext;
-use intents::SlotIntent;
 use std::cell::{Ref, RefCell};
 use trade_types::Contract;
 
@@ -35,7 +35,7 @@ impl Actor {
         self.block.contract_deps()
     }
 
-    fn reconcile_intents(&self, intents: &[SlotIntent]) -> Ref<'_, [Order]> {
+    fn reconcile_intents(&self, intents: &[intents::SlotIntent]) -> Ref<'_, [Order]> {
         let mut orders = self.orders.borrow_mut();
 
         // Resize -- the intents will always have the same length and we

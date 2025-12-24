@@ -4,12 +4,14 @@
 extern crate self as block_traits;
 
 use channels::{Reader, Writer};
-use intents::SlotIntent;
 
 pub mod associated_types;
 pub mod block_spec;
 pub mod block_weave;
+pub mod intents;
 pub mod type_erasure;
+
+pub use intents::*;
 
 // Re-export for convience
 pub use execution_context::ExecutionContext;
@@ -163,7 +165,7 @@ mod test_types {
         type Output = TestOutput;
         type State = TestState;
         type InitParameters = DoublerInitParams;
-        type Intents = ::intents::ZeroIntents;
+        type Intents = ::block_traits::intents::ZeroIntents;
     }
     impl ::block_traits::block_spec::EmptyContractDepsTag for DoublerBlock {}
 
@@ -317,7 +319,7 @@ mod tests {
         type Output = TestOutput;
         type State = TestState;
         type InitParameters = AccumulatorInitParams;
-        type Intents = ::intents::ZeroIntents;
+        type Intents = ::block_traits::intents::ZeroIntents;
     }
     impl ::block_traits::block_spec::EmptyContractDepsTag for AccumulatorBlock {}
 

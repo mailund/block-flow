@@ -10,7 +10,6 @@ block-macros = { path = "../../crates/block-macros" }
 [dev-dependencies]
 block-traits = { path = "../../crates/block-traits" }
 channels = { path = "../../crates/channels" }
-intents = { path = "../../crates/intents" }
 serialization = { path = "../../crates/serialization" }
 serialization-macros = { path = "../../crates/serialization-macros" }
 trade-types = { path = "../../crates/trade-types" }

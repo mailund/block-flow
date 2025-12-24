@@ -1,11 +1,9 @@
 mod block_intents;
-mod intents;
+mod intent_types;
 mod slots;
 
-pub use block_intents::{
-    BlockIntents, FiveIntents, FourIntents, OneIntent, ThreeIntents, TwoIntents, ZeroIntents,
-};
-pub use intents::*;
+pub use block_intents::*;
+pub use intent_types::*;
 pub use slots::SlotId;
 
 pub struct SlotIntent {

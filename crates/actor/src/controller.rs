@@ -112,7 +112,7 @@ mod tests {
 
         make_defaults!(input, output, state, init_params);
 
-        #[block(intents = ::intents::ZeroIntents, contract_deps = false)]
+        #[block(intents = block_traits::intents::ZeroIntents, contract_deps = false)]
         pub struct TestBlock {
             pub block_id: u32,
         }
@@ -132,7 +132,7 @@ mod tests {
 
             #[execute]
             fn execute(&self, _input: Input) -> Self::Intents {
-                ::intents::ZeroIntents
+                ::block_traits::intents::ZeroIntents
             }
         }
 
@@ -176,7 +176,7 @@ mod tests {
             pub contracts: Vec<Contract>,
         }
 
-        #[block(intents = ::intents::ZeroIntents, contract_deps = true)]
+        #[block(intents = ::block_traits::intents::ZeroIntents, contract_deps = true)]
         pub struct TestBlock {
             pub block_id: u32,
             pub contracts: Vec<Contract>,
@@ -200,7 +200,7 @@ mod tests {
 
             #[execute]
             fn execute(&self, _input: Input) -> Self::Intents {
-                ::intents::ZeroIntents
+                ::block_traits::intents::ZeroIntents
             }
         }
 
@@ -253,7 +253,7 @@ mod tests {
             pub contracts: Vec<Contract>,
         }
 
-        #[block(intents = ::intents::ZeroIntents, contract_deps = true)]
+        #[block(intents = ::block_traits::intents::ZeroIntents, contract_deps = true)]
         pub struct TestBlock {
             pub block_id: u32,
             pub contracts: Vec<Contract>,
@@ -277,7 +277,7 @@ mod tests {
 
             #[execute]
             fn execute(&self, _input: Input) -> Self::Intents {
-                ::intents::ZeroIntents
+                ::block_traits::intents::ZeroIntents
             }
         }
 

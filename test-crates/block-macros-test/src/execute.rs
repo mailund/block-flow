@@ -1,6 +1,6 @@
 use ::block_macros::*;
+use ::block_traits::intents::ZeroIntents;
 use ::block_traits::ExecutionContext;
-use ::intents::ZeroIntents;
 
 mod self_only_no_return {
     use super::*;
@@ -87,7 +87,7 @@ mod self_only_state {
 }
 
 mod self_only_intents {
-    use intents::ZeroIntents;
+    use block_traits::intents::ZeroIntents;
 
     use super::*;
     make_defaults!(input, output, state, init_params);

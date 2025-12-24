@@ -37,7 +37,7 @@ impl<B: BlockSpec> BlockTrait for EncapsulatedBlock<B> {
     }
 
     fn execute(&self, context: &ExecutionContext) -> Option<Vec<SlotIntent>> {
-        use ::intents::BlockIntents;
+        use crate::intents::BlockIntents;
 
         let input = self.input_reader.read();
         let old_state = self.state_cell.borrow();

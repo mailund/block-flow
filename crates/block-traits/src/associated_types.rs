@@ -122,5 +122,5 @@ pub trait BlockSpecAssociatedTypes {
     type Output: BlockOutput;
     type State: ::serialization::structs::Serializable;
     type InitParameters: ContractDeps + ::serialization::structs::Serializable;
-    type Intents: ::intents::BlockIntents;
+    type Intents: crate::intents::BlockIntents;
 }

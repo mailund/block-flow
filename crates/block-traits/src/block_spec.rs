@@ -11,7 +11,7 @@ use super::*;
 /// ```rust
 /// use block_macros::{block, init_params, input, output, state};
 /// use block_traits::{BlockSpec, ExecutionContext};
-/// use intents::ZeroIntents;
+/// use block_traits::intents::ZeroIntents;
 ///
 /// #[input]
 /// pub struct Input;
