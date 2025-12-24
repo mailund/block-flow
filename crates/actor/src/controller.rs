@@ -148,8 +148,10 @@ mod tests {
             let writer =
                 <OutputKeys as channels::OutputKeys<Output>>::writer(&output_keys, &reg).unwrap();
 
-            let block: Block = Block::new(b, reader, writer);
-            Actor::new(block)
+            let package = ::block_traits::type_erasure::BlockPackage::new_from_reader_writer(
+                b, reader, writer,
+            );
+            Actor::new(package.into())
         }
 
         #[test]
@@ -223,7 +225,10 @@ mod tests {
             let mut b = TestBlock::new_from_init_params(&params);
             b.block_id = id;
 
-            let block: Block = Block::new(b, reader, writer);
+            let package = ::block_traits::type_erasure::BlockPackage::new_from_reader_writer(
+                b, reader, writer,
+            );
+            let block: Block = package.into();
             Actor::new(block)
         }
 
@@ -300,7 +305,10 @@ mod tests {
             let mut b = TestBlock::new_from_init_params(&params);
             b.block_id = id;
 
-            let block: Block = Block::new(b, reader, writer);
+            let package = ::block_traits::type_erasure::BlockPackage::new_from_reader_writer(
+                b, reader, writer,
+            );
+            let block: Block = package.into();
             Actor::new(block)
         }
 
