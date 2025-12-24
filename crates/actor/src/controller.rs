@@ -148,7 +148,7 @@ mod tests {
             let writer =
                 <OutputKeys as channels::OutputKeys<Output>>::writer(&output_keys, &reg).unwrap();
 
-            let package = ::block_traits::type_erasure::BlockPackage::new_from_reader_writer(
+            let package = ::block_traits::type_erasure::WrappedBlock::new_from_reader_writer(
                 b, reader, writer,
             );
             Actor::new(id, package.into())
@@ -225,7 +225,7 @@ mod tests {
             let mut b = TestBlock::new_from_init_params(&params);
             b.block_id = id;
 
-            let package = ::block_traits::type_erasure::BlockPackage::new_from_reader_writer(
+            let package = ::block_traits::type_erasure::WrappedBlock::new_from_reader_writer(
                 b, reader, writer,
             );
             let block: Block = package.into();
@@ -305,7 +305,7 @@ mod tests {
             let mut b = TestBlock::new_from_init_params(&params);
             b.block_id = id;
 
-            let package = ::block_traits::type_erasure::BlockPackage::new_from_reader_writer(
+            let package = ::block_traits::type_erasure::WrappedBlock::new_from_reader_writer(
                 b, reader, writer,
             );
             let block: Block = package.into();

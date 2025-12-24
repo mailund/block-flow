@@ -2,9 +2,9 @@ use super::*;
 use intents::SlotIntent;
 
 /// Encapsulates a block along with its input reader, output writer, and state cell
-/// to provide a type-erased block implementation. The BlockPackage is a block with its
+/// to provide a type-erased block implementation. The WrappedBlock is a block with its
 /// serialisation connections established, ready to be converted into a type-erased Block.
-pub struct BlockPackage<B: BlockSpec> {
+pub struct WrappedBlock<B: BlockSpec> {
     block: B,
     input_reader: <<B::Input as BlockInput>::Keys as channels::InputKeys<B::Input>>::ReaderType,
     output_writer:
@@ -12,7 +12,7 @@ pub struct BlockPackage<B: BlockSpec> {
     state_cell: std::cell::RefCell<B::State>,
 }
 
-impl<B: BlockSpec> BlockPackage<B> {
+impl<B: BlockSpec> WrappedBlock<B> {
     pub fn new_from_reader_writer(
         block: B,
         input_reader: <<B::Input as BlockInput>::Keys as channels::InputKeys<B::Input>>::ReaderType,
@@ -31,17 +31,17 @@ impl<B: BlockSpec> BlockPackage<B> {
 }
 
 /// Convert a BlockPackage into a type-erased Block.
-impl<B> From<BlockPackage<B>> for Block
+impl<B> From<WrappedBlock<B>> for Block
 where
     B: BlockSpec + 'static,
 {
-    fn from(encapsulated: BlockPackage<B>) -> Self {
+    fn from(encapsulated: WrappedBlock<B>) -> Self {
         Block::new(Box::new(encapsulated))
     }
 }
 
 /// Implement BlockTrait for BlockPackage to allow type-erased execution.
-impl<B: BlockSpec> BlockExecuteTrait for BlockPackage<B> {
+impl<B: BlockSpec> BlockExecuteTrait for WrappedBlock<B> {
     fn contract_deps(&self) -> Vec<::trade_types::Contract> {
         self.block.contract_deps()
     }
@@ -63,7 +63,7 @@ impl<B: BlockSpec> BlockExecuteTrait for BlockPackage<B> {
     }
 }
 
-impl<B: BlockSpec> BlockTrait for BlockPackage<B> {
+impl<B: BlockSpec> BlockTrait for WrappedBlock<B> {
     fn block_id(&self) -> u32 {
         self.block.block_id()
     }
@@ -149,7 +149,7 @@ mod tests {
         let reader = in_keys.reader(&registry).unwrap();
         let writer = out_keys.writer(&registry).unwrap();
 
-        let enc = BlockPackage::new_from_reader_writer(block, reader, writer);
+        let enc = WrappedBlock::new_from_reader_writer(block, reader, writer);
         let _ = enc.state_cell.borrow();
     }
 
@@ -169,7 +169,7 @@ mod tests {
         let reader = in_keys.reader(&registry).unwrap();
         let writer = out_keys.writer(&registry).unwrap();
 
-        let enc = BlockPackage::new_from_reader_writer(block, reader, writer);
+        let enc = WrappedBlock::new_from_reader_writer(block, reader, writer);
         let ctx = ExecutionContext { time: 0 };
 
         let intents = enc.execute(&ctx).unwrap();
@@ -197,7 +197,7 @@ mod tests {
         let reader = in_keys.reader(&registry).unwrap();
         let writer = out_keys.writer(&registry).unwrap();
 
-        let block: Block = BlockPackage::new_from_reader_writer(block, reader, writer).into();
+        let block: Block = WrappedBlock::new_from_reader_writer(block, reader, writer).into();
 
         let ctx = ExecutionContext { time: 1 };
 
@@ -225,7 +225,7 @@ mod tests {
         let reader = in_keys.reader(&registry).unwrap();
         let writer = out_keys.writer(&registry).unwrap();
 
-        let enc = BlockPackage::new_from_reader_writer(block, reader, writer);
+        let enc = WrappedBlock::new_from_reader_writer(block, reader, writer);
         let ctx = ExecutionContext { time: 0 };
 
         enc.execute(&ctx);
@@ -249,7 +249,7 @@ mod tests {
             written: RefCell::new(None),
         };
 
-        let wrapped = BlockPackage::new_from_reader_writer(block, reader, writer);
+        let wrapped = WrappedBlock::new_from_reader_writer(block, reader, writer);
         let context = ExecutionContext { time: 200 };
 
         wrapped.execute(&context);
@@ -271,7 +271,7 @@ mod tests {
             written: RefCell::new(None),
         };
 
-        let wrapped = type_erasure::BlockPackage::new_from_reader_writer(block, reader, writer);
+        let wrapped = type_erasure::WrappedBlock::new_from_reader_writer(block, reader, writer);
         let context = ExecutionContext { time: 300 };
 
         for expected_state in 1..=5 {
@@ -298,7 +298,7 @@ mod tests {
             written: RefCell::new(None),
         };
 
-        let wrapped = type_erasure::BlockPackage::new_from_reader_writer(block, reader, writer);
+        let wrapped = type_erasure::WrappedBlock::new_from_reader_writer(block, reader, writer);
         assert_eq!(*wrapped.state_cell.borrow(), TestState { acc: 0 }); // Should be initialized
     }
 }

@@ -1,4 +1,4 @@
-use crate::type_erasure::BlockPackage;
+use crate::type_erasure::WrappedBlock;
 
 use super::{Block, BlockInput, BlockOutput, BlockSpec};
 use channels::WeaveNode;
@@ -44,24 +44,10 @@ impl<BSpec: BlockSpec + 'static> WeaveNode<Block> for BlockSerializationPackage<
         let block = BSpec::new_from_init_params(&self.init_params);
         let input_reader = self.input_keys.reader(channels)?;
         let output_writer = self.output_keys.writer(channels)?;
-        let package = BlockPackage::new_from_reader_writer(block, input_reader, output_writer);
+        let package = WrappedBlock::new_from_reader_writer(block, input_reader, output_writer);
 
         Ok(package.into())
     }
-}
-
-pub fn serialize_block<B: BlockSpec, S: ::serialization::StructSerializer>(
-    serializer: &S,
-    block: BlockSerializationPackage<B>,
-) -> ::serialization::Result<Vec<u8>> {
-    serializer.serialize(&block)
-}
-
-pub fn deserialize_block<B: BlockSpec, S: ::serialization::StructSerializer>(
-    serializer: &S,
-    data: &[u8],
-) -> Result<BlockSerializationPackage<B>, ::serialization::SerializationError> {
-    serializer.deserialize::<BlockSerializationPackage<B>>(data)
 }
 
 #[cfg(test)]
@@ -169,8 +155,9 @@ mod tests {
 
         let ser = ::serialization::structs::JsonStructSerializer::new();
 
-        let bytes = serialize_block::<MultiplyBlock, _>(&ser, pkg).unwrap();
-        let restored = deserialize_block::<MultiplyBlock, _>(&ser, &bytes).unwrap();
+        use serialization::StructSerializer;
+        let bytes = ser.serialize(&pkg).unwrap();
+        let restored: BlockSerializationPackage<MultiplyBlock> = ser.deserialize(&bytes).unwrap();
 
         assert_eq!(restored.init_params.multiplier, 7);
         assert_eq!(restored.input_channels(), vec!["in".to_string()]);
@@ -182,7 +169,8 @@ mod tests {
         let ser = ::serialization::structs::JsonStructSerializer::new();
         let bad = br#"{ not valid json }"#;
 
-        let res = deserialize_block::<MultiplyBlock, _>(&ser, bad);
+        use serialization::StructSerializer;
+        let res = ser.deserialize::<BlockSerializationPackage<MultiplyBlock>>(bad);
         assert!(res.is_err());
     }
 
