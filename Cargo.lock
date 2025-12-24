@@ -41,6 +41,7 @@ dependencies = [
  "serialization-macros",
  "trade-types",
  "weave",
+ "weave-test",
 ]
 
 [[package]]

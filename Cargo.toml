@@ -1,18 +1,7 @@
 [workspace]
 members = [
-    "actor",
-    "block-macros", 
-    "block-macros-test",
-    "block-traits",
-    "blocks", 
-    "channels", 
-    "execution-plan",
-    "intents",
-    "serialization-macros",
-    "serialization",
-    "trade-types",
-    "weave",
-    "weave-test",
+    "crates/*",
+    "test-crates/*",
 ]
 
 [package]
@@ -24,18 +13,19 @@ edition = "2021"
 path = "src/lib.rs"
 
 [dependencies]
-actor = { path = "actor" }
-block-traits = { path = "block-traits" }
-block-macros = { path = "block-macros" }
-blocks = { path = "blocks" }
-channels = { path = "channels" }
-execution-context = { path = "execution-context" }
-execution-plan = { path = "execution-plan" }
-intents = { path = "intents" }
-serialization = { path = "serialization" }
-serialization-macros = { path = "serialization-macros" }
-trade-types = { path = "trade-types" }
-weave = { path = "weave" }
+actor = { path = "crates/actor" }
+block-traits = { path = "crates/block-traits" }
+block-macros = { path = "crates/block-macros" }
+blocks = { path = "crates/blocks" }
+channels = { path = "crates/channels" }
+execution-context = { path = "crates/execution-context" }
+execution-plan = { path = "crates/execution-plan" }
+intents = { path = "crates/intents" }
+serialization = { path = "crates/serialization" }
+serialization-macros = { path = "crates/serialization-macros" }
+trade-types = { path = "crates/trade-types" }
+weave = { path = "crates/weave" }
 
 [dev-dependencies]
-block-macros-test = { path = "block-macros-test" }
+block-macros-test = { path = "test-crates/block-macros-test" }
+weave-test = { path = "test-crates/weave-test" }
