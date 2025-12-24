@@ -1,6 +1,5 @@
 use block_traits::intents::SlotIntent;
-use block_traits::{Block, BlockTrait};
-use execution_context::ExecutionContext;
+use block_traits::{Block, BlockTrait, ExecutionContext};
 use weave::TopoOrdered;
 
 /// A mock implementation of an execution plan.

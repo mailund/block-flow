@@ -1,7 +1,6 @@
 use super::*;
 use block_traits::intents;
-use block_traits::{Block, BlockTrait};
-use execution_context::ExecutionContext;
+use block_traits::{Block, BlockTrait, ExecutionContext};
 use std::cell::{Ref, RefCell};
 use trade_types::Contract;
 

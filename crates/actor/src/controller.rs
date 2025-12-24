@@ -1,7 +1,6 @@
 use super::*;
 
-use block_traits::BlockTrait;
-use execution_context::ExecutionContext;
+use block_traits::{BlockTrait, ExecutionContext};
 use std::collections::HashMap;
 use std::rc::Rc;
 use trade_types::Contract;

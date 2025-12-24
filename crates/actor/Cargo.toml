@@ -4,7 +4,6 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-execution-context = { path = "../execution-context" }
 block-traits = { path = "../block-traits" }
 trade-types = { path = "../trade-types" }
 
