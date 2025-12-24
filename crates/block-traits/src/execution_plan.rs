@@ -1,5 +1,5 @@
 use crate::intents::SlotIntent;
-use crate::{Block, BlockExecuteTrait, BlockTrait, ExecutionContext};
+use crate::{Block, BlockTrait, ExecutionContext};
 use ::channels::weave::TopoOrdered;
 
 /// A mock implementation of an execution plan.
@@ -8,13 +8,12 @@ use ::channels::weave::TopoOrdered;
 /// but it does not have any support for configuring it yet. That will likely require
 /// a trait and is left for future work.
 pub struct ExecutionPlan {
-    block_id: u32,
     blocks: TopoOrdered<Block>,
 }
 
 impl ExecutionPlan {
-    pub fn new(block_id: u32, blocks: TopoOrdered<Block>) -> Self {
-        Self { block_id, blocks }
+    pub fn new(blocks: TopoOrdered<Block>) -> Self {
+        Self { blocks }
     }
 
     pub fn blocks(&self) -> &TopoOrdered<Block> {
@@ -23,7 +22,7 @@ impl ExecutionPlan {
 }
 
 /// Implementing the BlockTrait so execution plans can be used as composite blocks.
-impl BlockExecuteTrait for TopoOrdered<Block> {
+impl BlockTrait for TopoOrdered<Block> {
     fn contract_deps(&self) -> Vec<::trade_types::Contract> {
         let mut deps = Vec::new();
         for block in self.iter() {
@@ -47,18 +46,12 @@ impl BlockExecuteTrait for TopoOrdered<Block> {
     }
 }
 
-impl BlockExecuteTrait for ExecutionPlan {
+impl BlockTrait for ExecutionPlan {
     fn contract_deps(&self) -> Vec<::trade_types::Contract> {
         self.blocks.contract_deps()
     }
 
     fn execute(&self, context: &ExecutionContext) -> Option<Vec<SlotIntent>> {
         self.blocks.execute(context)
-    }
-}
-
-impl BlockTrait for ExecutionPlan {
-    fn block_id(&self) -> u32 {
-        self.block_id
     }
 }

@@ -40,7 +40,7 @@ where
 }
 
 /// Implement BlockTrait for BlockPackage to allow type-erased execution.
-impl<B: BlockSpec> BlockExecuteTrait for WrappedBlock<B> {
+impl<B: BlockSpec> BlockTrait for WrappedBlock<B> {
     fn contract_deps(&self) -> Vec<::trade_types::Contract> {
         self.block.contract_deps()
     }
@@ -59,12 +59,6 @@ impl<B: BlockSpec> BlockExecuteTrait for WrappedBlock<B> {
 
         let slot_intents = intents.as_slot_intents(self.block.block_id());
         Some(slot_intents)
-    }
-}
-
-impl<B: BlockSpec> BlockTrait for WrappedBlock<B> {
-    fn block_id(&self) -> u32 {
-        self.block.block_id()
     }
 }
 
@@ -172,7 +166,6 @@ mod tests {
         let ctx = ExecutionContext { time: 0 };
 
         let intents = enc.execute(&ctx).unwrap();
-        assert_eq!(enc.block_id(), 42);
         assert!(intents.is_empty());
 
         // Output channel stores the FIELD type (i32), not Output struct.
@@ -199,8 +192,6 @@ mod tests {
         let block: Block = WrappedBlock::new_from_reader_writer(block, reader, writer).into();
 
         let ctx = ExecutionContext { time: 1 };
-
-        assert_eq!(block.block_id(), 99);
 
         block.execute(&ctx);
 
