@@ -1,6 +1,9 @@
 use super::*;
-use block_traits::intents::*;
-use block_traits::{execution_context::OrderBookTrait, BlockSpec, ExecutionContextTrait};
+use block_traits::{
+    execution_context::OrderBookTrait,
+    intents::{Intent, IntentFactory, OneIntent},
+    BlockSpec, ExecutionContextTrait,
+};
 use trade_types::*;
 
 make_defaults!(state, output);
