@@ -27,6 +27,23 @@ impl<B: BlockSpec> WrappedBlock<B> {
             state_cell,
         }
     }
+
+    pub fn new_from_package(
+        package: &BlockPackage<B>,
+        registry: &mut channels::ChannelRegistry,
+    ) -> Result<Self, channels::RegistryError> {
+        use channels::InputKeys;
+        use channels::OutputKeys;
+
+        package.output_keys.register(registry)?;
+
+        let block = B::new_from_init_params(&package.init_params);
+        let input_reader = package.input_keys.reader(registry)?;
+        let output_writer = package.output_keys.writer(registry)?;
+        let wrap = WrappedBlock::new_from_reader_writer(block, input_reader, output_writer);
+
+        Ok(wrap)
+    }
 }
 
 /// Implement BlockTrait for BlockPackage to allow type-erased execution.

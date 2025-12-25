@@ -2,7 +2,7 @@ use super::wrap::WrappedBlock;
 
 use super::{BlockInput, BlockOutput, BlockSpec};
 use channels::WeaveNode;
-use channels::{ChannelKeys, InputKeys, OutputKeys, RegistryError};
+use channels::{ChannelKeys, RegistryError};
 
 /// Block that has been deserialized (or serialized)
 /// before we weave it and erase its concrete type.
@@ -38,18 +38,14 @@ where
         &self,
         channels: &mut ::channels::ChannelRegistry,
     ) -> Result<WrappedBlock<B>, RegistryError> {
-        self.output_keys.register(channels)?;
-
-        let block = B::new_from_init_params(&self.init_params);
-        let input_reader = self.input_keys.reader(channels)?;
-        let output_writer = self.output_keys.writer(channels)?;
-        let wrap = WrappedBlock::new_from_reader_writer(block, input_reader, output_writer);
-
-        Ok(wrap)
+        WrappedBlock::new_from_package(self, channels)
     }
 }
 
-impl<BSpec: BlockSpec + 'static> WeaveNode<WrappedBlock<BSpec>> for BlockPackage<BSpec> {
+impl<BSpec> WeaveNode<WrappedBlock<BSpec>> for BlockPackage<BSpec>
+where
+    BSpec: BlockSpec + 'static,
+{
     fn input_channels(&self) -> Vec<String> {
         self.input_keys.channel_names()
     }
