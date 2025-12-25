@@ -1,5 +1,5 @@
 use crate::intents::SlotIntent;
-use crate::{BlockTrait, ContractDeps, ExecutionContextTrait};
+use crate::{ContractDeps, ExecuteTrait, ExecutionContextTrait};
 use ::channels::weave::TopoOrdered;
 
 impl<CD> ContractDeps for TopoOrdered<CD>
@@ -16,10 +16,10 @@ where
 }
 
 /// Implementing the BlockTrait so execution plans can be used as composite blocks.
-impl<C, BT> BlockTrait<C> for TopoOrdered<BT>
+impl<C, X> ExecuteTrait<C> for TopoOrdered<X>
 where
     C: ExecutionContextTrait,
-    BT: BlockTrait<C>,
+    X: ExecuteTrait<C>,
 {
     // Collects and returns all SlotIntents produced by executing the blocks in the plan.
     // If any block fails to execute (returns None), the entire execution returns None.

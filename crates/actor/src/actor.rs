@@ -1,6 +1,6 @@
 use super::*;
 use block_traits::intents;
-use block_traits::{BlockTrait, ExecutionContextTrait};
+use block_traits::{ExecuteTrait, ExecutionContextTrait};
 use std::cell::{Ref, RefCell};
 use trade_types::Contract;
 
@@ -30,7 +30,7 @@ pub struct Actor {
     /// A block can be a simple block or a composite block,
     /// so in practice the block is usually an execution plan
     /// containing multiple blocks.
-    block: Box<dyn BlockTrait<ActorExecutionContext>>, // FIXME: We could use generics here to better control the instruction set
+    block: Box<dyn ExecuteTrait<ActorExecutionContext>>, // FIXME: We could use generics here to better control the instruction set
 
     /// Array of the orders the actor can emit.
     /// RefCell for interior mutability.
@@ -38,7 +38,7 @@ pub struct Actor {
 }
 
 impl Actor {
-    pub fn new(id: u32, block: Box<dyn BlockTrait<ActorExecutionContext>>) -> Self {
+    pub fn new(id: u32, block: Box<dyn ExecuteTrait<ActorExecutionContext>>) -> Self {
         Self {
             id,
             block,

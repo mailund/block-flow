@@ -52,7 +52,7 @@ where
 }
 
 /// Implement BlockTrait for BlockPackage to allow type-erased execution.
-impl<B, C> BlockTrait<C> for WrappedBlock<B>
+impl<B, C> ExecuteTrait<C> for WrappedBlock<B>
 where
     B: BlockSpec,
     C: ExecutionContextTrait,

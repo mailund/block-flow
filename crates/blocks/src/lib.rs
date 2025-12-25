@@ -4,7 +4,7 @@ use std::path::Path;
 
 use block_macros::*;
 use block_traits::{
-    BlockPackage, BlockSpec, BlockTrait, ContractDeps, ExecutionContextTrait, SlotIntent,
+    BlockPackage, BlockSpec, ContractDeps, ExecuteTrait, ExecutionContextTrait, SlotIntent,
     WrappedBlock,
 };
 
@@ -91,7 +91,7 @@ macro_rules! define_block_type {
             }
         }
 
-        impl<C: ExecutionContextTrait> BlockTrait<C> for WrappedBlocks {
+        impl<C: ExecutionContextTrait> ExecuteTrait<C> for WrappedBlocks {
             fn execute(&self, ctx: &C) -> Option<Vec<SlotIntent>>{
                 match self {
                     $(
