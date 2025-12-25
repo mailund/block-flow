@@ -1,29 +1,28 @@
 use super::*;
+use channels::{InputKeys, OutputKeys};
 
 /// Encapsulates a block along with its input reader, output writer, and state cell
 /// to provide a type-erased block implementation. The WrappedBlock is a block with its
 /// serialisation connections established, ready to be converted into a type-erased Block.
 pub struct WrappedBlock<B: BlockSpec> {
     block: B,
-    input_reader: <<B::Input as BlockInput>::Keys as channels::InputKeys<B::Input>>::ReaderType,
-    output_writer:
-        <<B::Output as BlockOutput>::Keys as channels::OutputKeys<B::Output>>::WriterType,
+    in_reader: block_keys::InReader<B>,
+    out_writer: block_keys::OutWriter<B>,
     state_cell: std::cell::RefCell<B::State>,
 }
 
 impl<B: BlockSpec> WrappedBlock<B> {
     pub fn new_from_reader_writer(
         block: B,
-        input_reader: <<B::Input as BlockInput>::Keys as channels::InputKeys<B::Input>>::ReaderType,
-        output_writer:
-            <<B::Output as BlockOutput>::Keys as channels::OutputKeys<B::Output>>::WriterType,
+        in_reader: block_keys::InReader<B>,
+        out_writer: block_keys::OutWriter<B>,
     ) -> Self {
         let init_state = block.init_state();
         let state_cell = std::cell::RefCell::new(init_state);
         Self {
             block,
-            input_reader,
-            output_writer,
+            in_reader,
+            out_writer,
             state_cell,
         }
     }
@@ -32,14 +31,11 @@ impl<B: BlockSpec> WrappedBlock<B> {
         package: &BlockPackage<B>,
         registry: &mut channels::ChannelRegistry,
     ) -> Result<Self, channels::RegistryError> {
-        use channels::InputKeys;
-        use channels::OutputKeys;
-
         package.output_keys.register(registry)?;
-
-        let block = B::new_from_init_params(&package.init_params);
         let input_reader = package.input_keys.reader(registry)?;
         let output_writer = package.output_keys.writer(registry)?;
+
+        let block = B::new_from_init_params(&package.init_params);
         let wrap = WrappedBlock::new_from_reader_writer(block, input_reader, output_writer);
 
         Ok(wrap)
@@ -64,13 +60,13 @@ where
     fn execute(&self, context: &C) -> Option<Vec<SlotIntent>> {
         use crate::intents::BlockIntents;
 
-        let input = self.input_reader.read();
+        let input = self.in_reader.read();
         let old_state = self.state_cell.borrow();
 
         let (output, new_state, intents) = self.block.execute(context, input, &old_state)?;
 
         drop(old_state); // Release borrow before mutable borrow
-        self.output_writer.write(&output);
+        self.out_writer.write(&output);
         *self.state_cell.borrow_mut() = new_state;
 
         let slot_intents = intents.as_slot_intents(self.block.block_id());
@@ -275,7 +271,7 @@ mod tests {
 
         wrapped.execute(&context);
 
-        let written_data = wrapped.output_writer.written.borrow();
+        let written_data = wrapped.out_writer.written.borrow();
         assert!(written_data.is_some());
         assert_eq!(written_data.as_ref().unwrap().result, 30); // 15 * 2
 
@@ -304,7 +300,7 @@ mod tests {
                 }
             );
 
-            let written_data = wrapped.output_writer.written.borrow();
+            let written_data = wrapped.out_writer.written.borrow();
             assert_eq!(written_data.as_ref().unwrap().result, 6); // 3 * 2
         }
     }

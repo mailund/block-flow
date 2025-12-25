@@ -1,3 +1,5 @@
+use channels::{InputKeys, OutputKeys};
+
 /// Trait for block input data types.
 ///
 /// This trait defines the associated types needed for a block's input.
@@ -46,7 +48,7 @@
 /// }
 /// ```
 pub trait BlockInput: Sized {
-    type Keys: ::channels::InputKeys<Self> + ::serialization::structs::Serializable;
+    type Keys: InputKeys<Self> + ::serialization::structs::Serializable;
 }
 
 /// Trait for block output data types.
@@ -107,7 +109,7 @@ pub trait BlockInput: Sized {
 /// }
 /// ```
 pub trait BlockOutput: Sized {
-    type Keys: ::channels::OutputKeys<Self> + ::serialization::structs::Serializable;
+    type Keys: OutputKeys<Self> + ::serialization::structs::Serializable;
 }
 
 /// Trait for retrieving contract dependencies of a block.
@@ -123,4 +125,19 @@ pub trait BlockSpecAssociatedTypes {
     type State: ::serialization::structs::Serializable;
     type InitParameters: ContractDeps + ::serialization::structs::Serializable;
     type Intents: crate::intents::BlockIntents;
+}
+
+/// Type aliases for input reader and output writer for a given block spec.
+/// Just to make the code below more readable.
+pub mod block_keys {
+    use super::*;
+
+    pub type In<B> = <B as BlockSpecAssociatedTypes>::Input;
+    pub type Out<B> = <B as BlockSpecAssociatedTypes>::Output;
+
+    pub type InKeys<B> = <In<B> as BlockInput>::Keys;
+    pub type OutKeys<B> = <Out<B> as BlockOutput>::Keys;
+
+    pub type InReader<B> = <InKeys<B> as InputKeys<In<B>>>::ReaderType;
+    pub type OutWriter<B> = <OutKeys<B> as OutputKeys<Out<B>>>::WriterType;
 }

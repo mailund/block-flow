@@ -13,7 +13,9 @@ pub mod execution_context;
 pub mod execution_plan;
 pub mod intents;
 
-pub use associated_types::{BlockInput, BlockOutput, BlockSpecAssociatedTypes, ContractDeps};
+pub use associated_types::{
+    block_keys, BlockInput, BlockOutput, BlockSpecAssociatedTypes, ContractDeps,
+};
 pub use block_spec::BlockSpec;
 pub use block_trait::BlockTrait;
 pub use block_weave::{BlockPackage, WrappedBlock};
