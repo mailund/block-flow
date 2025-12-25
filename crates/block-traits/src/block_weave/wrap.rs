@@ -104,6 +104,14 @@ mod tests {
             // Mock implementation
             Some(OrderBook {})
         }
+        fn get_position(
+            &self,
+            _block_id: u32,
+            _contract: &Contract,
+        ) -> Option<trade_types::Quantity> {
+            // mock position
+            None
+        }
     }
 
     // ---------------- Test Block ----------------

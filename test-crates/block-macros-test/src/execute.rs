@@ -25,6 +25,10 @@ impl ExecutionContextTrait for ExecutionContext {
         // Mock implementation
         Some(OrderBook {})
     }
+    fn get_position(&self, _block_id: u32, _contract: &Contract) -> Option<trade_types::Quantity> {
+        // mock position
+        None
+    }
 }
 
 mod self_only_no_return {
