@@ -1,6 +1,7 @@
 pub mod package;
-mod type_erasure;
+pub mod wrap;
 
 use super::*;
 
 pub use package::BlockPackage;
+pub use wrap::WrappedBlock;

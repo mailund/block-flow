@@ -6,5 +6,3 @@ pub trait BlockTrait {
     fn contract_deps(&self) -> Vec<::trade_types::Contract>;
     fn execute(&self, context: &ExecutionContext) -> Option<Vec<SlotIntent>>;
 }
-
-pub type Block = Box<dyn BlockTrait>;

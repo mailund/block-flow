@@ -1,9 +1,9 @@
 use crate::intents::SlotIntent;
-use crate::{Block, BlockTrait, ExecutionContext};
+use crate::{BlockTrait, ExecutionContext};
 use ::channels::weave::TopoOrdered;
 
 /// Implementing the BlockTrait so execution plans can be used as composite blocks.
-impl BlockTrait for TopoOrdered<Block> {
+impl<BT: BlockTrait> BlockTrait for TopoOrdered<BT> {
     fn contract_deps(&self) -> Vec<::trade_types::Contract> {
         let mut deps = Vec::new();
         for block in self.iter() {

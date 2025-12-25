@@ -29,16 +29,6 @@ impl<B: BlockSpec> WrappedBlock<B> {
     }
 }
 
-/// Convert a BlockPackage into a type-erased Block.
-impl<B> From<WrappedBlock<B>> for Block
-where
-    B: BlockSpec + 'static,
-{
-    fn from(encapsulated: WrappedBlock<B>) -> Self {
-        Box::new(encapsulated)
-    }
-}
-
 /// Implement BlockTrait for BlockPackage to allow type-erased execution.
 impl<B: BlockSpec> BlockTrait for WrappedBlock<B> {
     fn contract_deps(&self) -> Vec<::trade_types::Contract> {
@@ -189,7 +179,7 @@ mod tests {
         let reader = in_keys.reader(&registry).unwrap();
         let writer = out_keys.writer(&registry).unwrap();
 
-        let block: Block = WrappedBlock::new_from_reader_writer(block, reader, writer).into();
+        let block = WrappedBlock::new_from_reader_writer(block, reader, writer);
 
         let ctx = ExecutionContext { time: 1 };
 
@@ -261,7 +251,7 @@ mod tests {
             written: RefCell::new(None),
         };
 
-        let wrapped = type_erasure::WrappedBlock::new_from_reader_writer(block, reader, writer);
+        let wrapped = wrap::WrappedBlock::new_from_reader_writer(block, reader, writer);
         let context = ExecutionContext { time: 300 };
 
         for expected_state in 1..=5 {
@@ -288,7 +278,7 @@ mod tests {
             written: RefCell::new(None),
         };
 
-        let wrapped = type_erasure::WrappedBlock::new_from_reader_writer(block, reader, writer);
+        let wrapped = wrap::WrappedBlock::new_from_reader_writer(block, reader, writer);
         assert_eq!(*wrapped.state_cell.borrow(), TestState { acc: 0 }); // Should be initialized
     }
 }

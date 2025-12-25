@@ -145,7 +145,7 @@ mod tests {
                 BlockPackage::new(input_keys, output_keys, InitParams);
             let block = package.weave(&mut reg).unwrap();
 
-            Actor::new(id, block)
+            Actor::new(id, Box::new(block))
         }
 
         #[test]
@@ -218,7 +218,7 @@ mod tests {
             let package = BlockPackage::<TestBlock>::new(input_keys, output_keys, params);
             let block = package.weave(&mut reg).unwrap();
 
-            Actor::new(id, block)
+            Actor::new(id, Box::new(block))
         }
 
         #[test]
@@ -294,7 +294,7 @@ mod tests {
                 BlockPackage::new(input_keys, output_keys, params);
             let block = package.weave(&mut reg).unwrap();
 
-            Actor::new(id, block)
+            Actor::new(id, Box::new(block))
         }
 
         #[test]
