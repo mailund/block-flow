@@ -1,6 +1,21 @@
 use ::block_macros::*;
 use ::block_traits::intents::ZeroIntents;
-use ::block_traits::ExecutionContext;
+use ::block_traits::ExecutionContextTrait;
+use ::trade_types::{Contract, OrderBook};
+
+pub struct ExecutionContext {
+    pub time: u64,
+}
+
+impl ExecutionContextTrait for ExecutionContext {
+    fn time(&self) -> u64 {
+        self.time
+    }
+    fn get_order_book(&self, _contract: &Contract) -> Option<OrderBook> {
+        // Mock implementation
+        Some(OrderBook {})
+    }
+}
 
 mod self_only_no_return {
     use super::*;

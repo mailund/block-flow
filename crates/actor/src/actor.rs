@@ -1,8 +1,26 @@
 use super::*;
 use block_traits::intents;
-use block_traits::{BlockTrait, ExecutionContext};
+use block_traits::{BlockTrait, ExecutionContextTrait};
 use std::cell::{Ref, RefCell};
 use trade_types::Contract;
+
+pub struct ActorExecutionContext {
+    time: u64,
+}
+impl ActorExecutionContext {
+    pub fn new(time: u64) -> Self {
+        Self { time }
+    }
+}
+impl ExecutionContextTrait for ActorExecutionContext {
+    fn time(&self) -> u64 {
+        self.time
+    }
+    fn get_order_book(&self, _contract: &Contract) -> Option<trade_types::OrderBook> {
+        // mock order book
+        Some(trade_types::OrderBook)
+    }
+}
 
 /// A mock actor.
 pub struct Actor {
@@ -12,7 +30,7 @@ pub struct Actor {
     /// A block can be a simple block or a composite block,
     /// so in practice the block is usually an execution plan
     /// containing multiple blocks.
-    block: Box<dyn BlockTrait>, // FIXME: We could use generics here to better control the instruction set
+    block: Box<dyn BlockTrait<ActorExecutionContext>>, // FIXME: We could use generics here to better control the instruction set
 
     /// Array of the orders the actor can emit.
     /// RefCell for interior mutability.
@@ -20,21 +38,16 @@ pub struct Actor {
 }
 
 impl Actor {
-    /// Create a new actor encapsulating the given block.
-    pub fn new(id: u32, block: Box<dyn BlockTrait>) -> Self {
+    pub fn new(id: u32, block: Box<dyn BlockTrait<ActorExecutionContext>>) -> Self {
         Self {
             id,
             block,
-            orders: RefCell::new(vec![]),
+            orders: RefCell::new(Vec::new()),
         }
     }
 
     pub fn actor_id(&self) -> u32 {
         self.id
-    }
-
-    pub fn block(&self) -> &dyn BlockTrait {
-        &*self.block
     }
 
     pub fn contracts(&self) -> Vec<Contract> {
@@ -73,7 +86,7 @@ impl Actor {
     /// The tick will execute the underlying block and reconcile the
     /// resulting intents into orders. The function then returns
     /// the new orders or None if the block could not execute.
-    pub fn tick(&'_ self, context: &ExecutionContext) -> Option<Ref<'_, [Order]>> {
+    pub(crate) fn tick(&'_ self, context: &ActorExecutionContext) -> Option<Ref<'_, [Order]>> {
         let intents = self.block.execute(context)?;
         let orders = self.reconcile_intents(&intents);
         Some(orders)

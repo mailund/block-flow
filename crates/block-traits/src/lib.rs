@@ -17,7 +17,7 @@ pub use associated_types::{BlockInput, BlockOutput, BlockSpecAssociatedTypes, Co
 pub use block_spec::BlockSpec;
 pub use block_trait::BlockTrait;
 pub use block_weave::{BlockPackage, WrappedBlock};
-pub use execution_context::ExecutionContext;
+pub use execution_context::ExecutionContextTrait;
 pub use intents::*;
 
 #[cfg(test)]
@@ -158,9 +158,9 @@ mod test_types {
             TestState { acc: 0 }
         }
 
-        fn execute(
+        fn execute<C: ExecutionContextTrait>(
             &self,
-            _context: &ExecutionContext,
+            _context: &C,
             input: Self::Input,
             state: &Self::State,
         ) -> Option<(Self::Output, Self::State, Self::Intents)> {
@@ -180,8 +180,22 @@ mod test_types {
 mod tests {
     use super::test_types::*;
     use super::*;
-    use crate::ExecutionContext;
     use channels::*;
+    use trade_types::{Contract, OrderBook};
+
+    pub struct ExecutionContext {
+        pub time: u64,
+    }
+
+    impl ExecutionContextTrait for ExecutionContext {
+        fn time(&self) -> u64 {
+            self.time
+        }
+        fn get_order_book(&self, _contract: &Contract) -> Option<OrderBook> {
+            // Mock implementation
+            Some(OrderBook {})
+        }
+    }
 
     #[test]
     fn test_execution_context() {
@@ -297,9 +311,9 @@ mod tests {
             TestState { acc: 0 }
         }
 
-        fn execute(
+        fn execute<C: ExecutionContextTrait>(
             &self,
-            _context: &ExecutionContext,
+            _context: &C,
             input: Self::Input,
             state: &Self::State,
         ) -> Option<(Self::Output, Self::State, Self::Intents)> {

@@ -4,7 +4,8 @@ use std::path::Path;
 
 use block_macros::*;
 use block_traits::{
-    BlockPackage, BlockSpec, BlockTrait, ExecutionContext, SlotIntent, WrappedBlock,
+    BlockPackage, BlockSpec, BlockTrait, ContractDeps, ExecutionContextTrait, SlotIntent,
+    WrappedBlock,
 };
 
 pub mod after;
@@ -80,7 +81,7 @@ macro_rules! define_block_type {
             }
         }
 
-        impl BlockTrait for WrappedBlocks {
+        impl ContractDeps for WrappedBlocks {
             fn contract_deps(&self) -> Vec<::trade_types::Contract> {
                 match self {
                     $(
@@ -88,7 +89,10 @@ macro_rules! define_block_type {
                     )+
                 }
             }
-            fn execute(&self, ctx: &ExecutionContext) -> Option<Vec<SlotIntent>>{
+        }
+
+        impl<C: ExecutionContextTrait> BlockTrait<C> for WrappedBlocks {
+            fn execute(&self, ctx: &C) -> Option<Vec<SlotIntent>>{
                 match self {
                     $(
                         WrappedBlocks::$variant(wrapped) => wrapped.execute(ctx),
@@ -112,6 +116,21 @@ mod test {
     use std::fs;
     use std::io;
     use std::path::PathBuf;
+    use trade_types::{Contract, OrderBook};
+
+    pub struct ExecutionContext {
+        pub time: u64,
+    }
+
+    impl ExecutionContextTrait for ExecutionContext {
+        fn time(&self) -> u64 {
+            self.time
+        }
+        fn get_order_book(&self, _contract: &Contract) -> Option<OrderBook> {
+            // Mock implementation
+            Some(OrderBook {})
+        }
+    }
 
     fn tmp_path(name: &str) -> PathBuf {
         let mut p = std::env::temp_dir();

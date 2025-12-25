@@ -36,8 +36,8 @@ impl BlockSpec for AfterBlock {
     }
 
     #[execute]
-    fn execute(&self, context: &ExecutionContext) -> Output {
-        let is_after = context.time > self.time;
+    fn execute<C: ExecutionContextTrait>(&self, context: &C) -> Output {
+        let is_after = context.time() > self.time;
         Output { is_after }
     }
 }
@@ -45,6 +45,21 @@ impl BlockSpec for AfterBlock {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use trade_types::{Contract, OrderBook};
+
+    pub struct ExecutionContext {
+        pub time: u64,
+    }
+
+    impl ExecutionContextTrait for ExecutionContext {
+        fn time(&self) -> u64 {
+            self.time
+        }
+        fn get_order_book(&self, _contract: &Contract) -> Option<OrderBook> {
+            // Mock implementation
+            Some(OrderBook {})
+        }
+    }
 
     fn ctx(time: u64) -> ExecutionContext {
         ExecutionContext { time }

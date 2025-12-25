@@ -1,6 +1,6 @@
 use super::*;
 
-use block_traits::ExecutionContext;
+use super::actor::ActorExecutionContext;
 use std::collections::HashMap;
 use std::rc::Rc;
 use trade_types::Contract;
@@ -65,7 +65,7 @@ impl ActorController {
 
     pub fn tick_delta(&mut self, Delta(contract): &Delta) {
         // Make a new execution context with the current state.
-        let ctx = ExecutionContext { time: self.time };
+        let ctx = ActorExecutionContext::new(self.time);
 
         // Take the actor list out of the map so we can mutate `self` freely while iterating
         // and so we can remove actors that fail easily. Use .retain to keep only successful actors

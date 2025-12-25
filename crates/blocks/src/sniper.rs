@@ -57,7 +57,7 @@ impl SniperBlock {
         Intent::no_intent()
     }
 
-    fn intents(&self, ctx: &ExecutionContext, execute: bool) -> Option<OneIntent> {
+    fn intents<C: ExecutionContextTrait>(&self, ctx: &C, execute: bool) -> Option<OneIntent> {
         let order_book = ctx.get_order_book(&self.contract)?;
         let intent = match (execute, &self.side) {
             (true, Side::Buy) => self.snipe_buy(&order_book),
@@ -97,9 +97,9 @@ impl BlockSpec for SniperBlock {
     }
 
     #[execute]
-    fn execute(
+    fn execute<C: ExecutionContextTrait>(
         &self,
-        ctx: &ExecutionContext,
+        ctx: &C,
         Input { should_execute }: Input,
     ) -> Option<Self::Intents> {
         self.intents(ctx, should_execute)

@@ -38,7 +38,7 @@ where
         &self,
         channels: &mut ::channels::ChannelRegistry,
     ) -> Result<WrappedBlock<B>, RegistryError> {
-        WrappedBlock::new_from_package(self, channels)
+        WrappedBlock::<B>::new_from_package(self, channels)
     }
 }
 
@@ -61,10 +61,42 @@ where
     }
 }
 
+// Helper methods for getting channel names without bothering with
+// the context
+impl<BSpec> BlockPackage<BSpec>
+where
+    BSpec: BlockSpec + 'static,
+{
+    pub fn input_channels(&self) -> Vec<String> {
+        self.input_keys.channel_names()
+    }
+
+    pub fn output_channels(&self) -> Vec<String> {
+        self.output_keys.channel_names()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use block_macros::*;
+
+    // use crate::ExecutionContextTrait;
+    // use trade_types::{Contract, OrderBook};
+
+    // pub struct ExecutionContext {
+    //     pub time: u64,
+    // }
+
+    // impl ExecutionContextTrait for ExecutionContext {
+    //     fn time(&self) -> u64 {
+    //         self.time
+    //     }
+    //     fn get_order_book(&self, _contract: &Contract) -> Option<OrderBook> {
+    //         // Mock implementation
+    //         Some(OrderBook {})
+    //     }
+    // }
 
     // The block-macros expand to ::block_traits::...; inside the block-traits crate
     // we must alias the current crate so that absolute path resolves.

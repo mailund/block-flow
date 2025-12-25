@@ -1,8 +1,8 @@
-use super::execution_context::ExecutionContext;
+use super::execution_context::ExecutionContextTrait;
 use super::intents::SlotIntent;
+use super::ContractDeps;
 
 /// Trait necessary to execute a type-erased block.
-pub trait BlockTrait {
-    fn contract_deps(&self) -> Vec<::trade_types::Contract>;
-    fn execute(&self, context: &ExecutionContext) -> Option<Vec<SlotIntent>>;
+pub trait BlockTrait<Context: ExecutionContextTrait>: ContractDeps {
+    fn execute(&self, context: &Context) -> Option<Vec<SlotIntent>>;
 }

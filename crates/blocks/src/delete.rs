@@ -39,6 +39,21 @@ impl BlockSpec for DeleteBlock {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use trade_types::{Contract, OrderBook};
+
+    pub struct ExecutionContext {
+        pub time: u64,
+    }
+
+    impl ExecutionContextTrait for ExecutionContext {
+        fn time(&self) -> u64 {
+            self.time
+        }
+        fn get_order_book(&self, _contract: &Contract) -> Option<OrderBook> {
+            // Mock implementation
+            Some(OrderBook {})
+        }
+    }
 
     #[test]
     fn make_defaults_creates_unit_output_state_and_init_params() {

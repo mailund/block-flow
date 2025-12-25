@@ -46,13 +46,22 @@ impl<B: BlockSpec> WrappedBlock<B> {
     }
 }
 
-/// Implement BlockTrait for BlockPackage to allow type-erased execution.
-impl<B: BlockSpec> BlockTrait for WrappedBlock<B> {
+impl<B> ContractDeps for WrappedBlock<B>
+where
+    B: BlockSpec,
+{
     fn contract_deps(&self) -> Vec<::trade_types::Contract> {
         self.block.contract_deps()
     }
+}
 
-    fn execute(&self, context: &ExecutionContext) -> Option<Vec<SlotIntent>> {
+/// Implement BlockTrait for BlockPackage to allow type-erased execution.
+impl<B, C> BlockTrait<C> for WrappedBlock<B>
+where
+    B: BlockSpec,
+    C: ExecutionContextTrait,
+{
+    fn execute(&self, context: &C) -> Option<Vec<SlotIntent>> {
         use crate::intents::BlockIntents;
 
         let input = self.input_reader.read();
@@ -72,9 +81,24 @@ impl<B: BlockSpec> BlockTrait for WrappedBlock<B> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::ExecutionContext;
     use block_macros::*;
     use channels::{InputKeys, OutputKeys};
+    use trade_types::{Contract, OrderBook};
+
+    /// Execution context passed to blocks during execution.
+    pub struct ExecutionContext {
+        pub time: u64,
+    }
+
+    impl ExecutionContextTrait for ExecutionContext {
+        fn time(&self) -> u64 {
+            self.time
+        }
+        fn get_order_book(&self, _contract: &Contract) -> Option<OrderBook> {
+            // Mock implementation
+            Some(OrderBook {})
+        }
+    }
 
     // ---------------- Test Block ----------------
     mod test_block {
