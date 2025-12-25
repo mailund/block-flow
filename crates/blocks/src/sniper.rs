@@ -14,27 +14,25 @@ pub struct Input {
 pub struct InitParams {
     pub contract: Contract,
     pub side: Side,
-    pub price: Price,
     pub quantity: Quantity,
     pub threshold: Price,
 }
 
 #[block(intents = OneIntent)]
 pub struct SniperBlock {
-    pub block_id: u32,
+    block_id: u32,
     contract: Contract,
     side: Side,
-    price: Price,
     quantity: Quantity,
     threshold: Price,
 }
 
 impl SniperBlock {
-    fn place_intent(&self) -> Intent {
+    fn place_intent(&self, price: Price) -> Intent {
         Intent::place_intent(
             self.contract.clone(),
             self.side.clone(),
-            self.price.clone(),
+            price.clone(),
             self.quantity.clone(),
         )
     }
@@ -42,7 +40,7 @@ impl SniperBlock {
     fn snipe_buy<OB: OrderBookTrait>(&self, order_book: &OB) -> Intent {
         if let Some(top_price) = order_book.top_of_side(Side::Sell) {
             if top_price <= self.threshold {
-                return self.place_intent();
+                return self.place_intent(top_price);
             }
         }
         Intent::no_intent()
@@ -51,7 +49,7 @@ impl SniperBlock {
     fn snipe_sell<OB: OrderBookTrait>(&self, order_book: &OB) -> Intent {
         if let Some(top_price) = order_book.top_of_side(Side::Buy) {
             if top_price >= self.threshold {
-                return self.place_intent();
+                return self.place_intent(top_price);
             }
         }
         Intent::no_intent()
@@ -77,7 +75,6 @@ impl BlockSpec for SniperBlock {
         InitParams {
             contract,
             side,
-            price,
             quantity,
             threshold,
         }: &InitParams,
@@ -86,7 +83,6 @@ impl BlockSpec for SniperBlock {
             block_id: 0,
             contract: contract.clone(),
             side: side.clone(),
-            price: price.clone(),
             quantity: quantity.clone(),
             threshold: threshold.clone(),
         }
