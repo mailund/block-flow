@@ -12,7 +12,7 @@ pub struct Actor {
     /// A block can be a simple block or a composite block,
     /// so in practice the block is usually an execution plan
     /// containing multiple blocks.
-    block: Box<dyn BlockTrait>,
+    block: Box<dyn BlockTrait>, // FIXME: We could use generics here to better control the instruction set
 
     /// Array of the orders the actor can emit.
     /// RefCell for interior mutability.

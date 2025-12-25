@@ -3,8 +3,9 @@ use std::io::{self, Read};
 use std::path::Path;
 
 use block_macros::*;
-use block_traits::block_weave::BlockPackage;
-use block_traits::{BlockSpec, ExecutionContext};
+use block_traits::{
+    BlockPackage, BlockSpec, BlockTrait, ExecutionContext, SlotIntent, WrappedBlock,
+};
 
 pub mod after;
 pub mod block_io;
@@ -18,23 +19,79 @@ pub use delete::DeleteBlock;
 pub use simple_order::SimpleOrderBlock;
 pub use sniper::SniperBlock;
 
-use channels::WeaveNode;
+use channels::{ChannelKeys, WeaveNode};
 
 macro_rules! define_block_type {
     ( $( $variant:ident => $block_ty:path ),+ $(,)? ) => {
         #[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
         #[serde(tag = "type", content = "data")]
-        pub enum BlockType {
+        pub enum BlockTypes {
             $(
                 $variant(BlockPackage<$block_ty>),
             )+
         }
 
-        impl BlockType {
-            fn as_weave_block(&self) -> Box<dyn WeaveNode<Box<dyn block_traits::BlockTrait>>> {
+        pub enum WrappedBlocks {
+            $(
+                $variant(WrappedBlock<$block_ty>),
+            )+
+        }
+
+        // Getting From<> for all the wrapped variants
+        $(
+            impl From<BlockPackage<$block_ty>> for BlockTypes {
+                fn from(pkg: BlockPackage<$block_ty>) -> Self {
+                    BlockTypes::$variant(pkg)
+                }
+            }
+
+            impl From<WrappedBlock<$block_ty>> for WrappedBlocks {
+                fn from(wrapped: WrappedBlock<$block_ty>) -> Self {
+                    WrappedBlocks::$variant(wrapped)
+                }
+            }
+        )+
+
+        impl WeaveNode<WrappedBlocks> for BlockTypes {
+            fn input_channels(&self) -> Vec<String> {
                 match self {
                     $(
-                        BlockType::$variant(pkg) => Box::new(pkg.clone()),
+                        BlockTypes::$variant(pkg) => pkg.input_keys.channel_names(),
+                    )+
+                }
+            }
+            fn output_channels(&self) -> Vec<String> {
+                match self {
+                    $(
+                        BlockTypes::$variant(pkg) => pkg.output_keys.channel_names(),
+                    )+
+                }
+            }
+
+            fn weave(
+                &self,
+                channels: &mut ::channels::ChannelRegistry,
+            ) -> Result<WrappedBlocks, channels::RegistryError> {
+                match self {
+                    $(
+                        BlockTypes::$variant(pkg) => Ok(WrappedBlocks::$variant(pkg.weave(channels)?)),
+                    )+
+                }
+            }
+        }
+
+        impl BlockTrait for WrappedBlocks {
+            fn contract_deps(&self) -> Vec<::trade_types::Contract> {
+                match self {
+                    $(
+                        WrappedBlocks::$variant(wrapped) => wrapped.contract_deps(),
+                    )+
+                }
+            }
+            fn execute(&self, ctx: &ExecutionContext) -> Option<Vec<SlotIntent>>{
+                match self {
+                    $(
+                        WrappedBlocks::$variant(wrapped) => wrapped.execute(ctx),
                     )+
                 }
             }
@@ -122,30 +179,30 @@ mod test {
         );
 
         let blocks = vec![
-            BlockType::After(after_pkg),
-            BlockType::Delete(delete_pkg),
-            BlockType::SimpleOrder(simple_pkg),
+            BlockTypes::After(after_pkg),
+            BlockTypes::Delete(delete_pkg),
+            BlockTypes::SimpleOrder(simple_pkg),
         ];
 
         let serialized = serde_json::to_string(&blocks).unwrap();
-        let deserialized: Vec<BlockType> = serde_json::from_str(&serialized).unwrap();
+        let deserialized: Vec<BlockTypes> = serde_json::from_str(&serialized).unwrap();
         assert_eq!(deserialized.len(), 3);
 
         match &deserialized[0] {
-            BlockType::After(pkg) => {
+            BlockTypes::After(pkg) => {
                 assert_eq!(pkg.output_keys.is_after, "output_is_after");
                 assert_eq!(pkg.init_params.time, 123);
             }
             _ => panic!("Expected After"),
         }
         match &deserialized[1] {
-            BlockType::Delete(pkg) => {
+            BlockTypes::Delete(pkg) => {
                 assert_eq!(pkg.input_keys.should_delete, "should_delete");
             }
             _ => panic!("Expected Delete"),
         }
         match &deserialized[2] {
-            BlockType::SimpleOrder(pkg) => {
+            BlockTypes::SimpleOrder(pkg) => {
                 assert_eq!(pkg.init_params.contract, contract);
                 assert_eq!(pkg.input_keys.should_execute, "should_execute");
             }
@@ -172,7 +229,7 @@ mod test {
         assert_eq!(blocks.len(), 1);
 
         match &blocks[0] {
-            BlockType::After(summary) => {
+            BlockTypes::After(summary) => {
                 assert_eq!(summary.output_keys.is_after, "output_is_after");
             }
             _ => panic!("Wrong block type"),
@@ -206,7 +263,7 @@ mod test {
         assert_eq!(blocks.len(), 2);
 
         match &blocks[0] {
-            BlockType::After(summary) => {
+            BlockTypes::After(summary) => {
                 assert_eq!(summary.init_params.time, 1);
                 assert_eq!(summary.output_keys.is_after, "is_after");
             }
@@ -214,7 +271,7 @@ mod test {
         }
 
         match &blocks[1] {
-            BlockType::Delete(summary) => {
+            BlockTypes::Delete(summary) => {
                 assert_eq!(summary.input_keys.should_delete, "is_after");
             }
             _ => panic!("Expected Delete block"),
@@ -258,7 +315,7 @@ mod test {
         ]
         "#;
 
-        let nodes = read_blocks_from_json_string(json).unwrap();
+        let nodes = read_blocktypes_from_json_string(json).unwrap();
         assert_eq!(nodes.len(), 3);
     }
 
@@ -289,7 +346,7 @@ mod test {
         ]
         "#;
 
-        let nodes = read_blocks_from_json_string(json).unwrap();
+        let nodes = read_blocktypes_from_json_string(json).unwrap();
         let mut registry = channels::ChannelRegistry::default();
 
         // Provide inputs required by the After block (it has no input keys, so none needed).
@@ -392,7 +449,7 @@ mod test {
         }
 
         let serde_err: serde_json::Error =
-            serde_json::from_str::<Vec<BlockType>>("not json").unwrap_err();
+            serde_json::from_str::<Vec<BlockTypes>>("not json").unwrap_err();
         let e: ReadBlocksError = serde_err.into();
         match e {
             ReadBlocksError::Json(_) => {}

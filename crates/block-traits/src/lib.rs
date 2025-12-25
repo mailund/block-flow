@@ -6,17 +6,17 @@ extern crate self as block_traits;
 use channels::{Reader, Writer};
 
 pub mod associated_types;
-pub mod block;
 pub mod block_spec;
+pub mod block_trait;
 pub mod block_weave;
 pub mod execution_context;
 pub mod execution_plan;
 pub mod intents;
 
 pub use associated_types::{BlockInput, BlockOutput, BlockSpecAssociatedTypes, ContractDeps};
-pub use block::{Block, BlockTrait};
 pub use block_spec::BlockSpec;
-pub use block_weave::BlockPackage;
+pub use block_trait::BlockTrait;
+pub use block_weave::{BlockPackage, WrappedBlock};
 pub use execution_context::ExecutionContext;
 pub use intents::*;
 

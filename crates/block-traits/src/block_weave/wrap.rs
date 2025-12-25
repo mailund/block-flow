@@ -27,15 +27,22 @@ impl<B: BlockSpec> WrappedBlock<B> {
             state_cell,
         }
     }
-}
 
-/// Convert a BlockPackage into a type-erased Block.
-impl<B> From<WrappedBlock<B>> for Block
-where
-    B: BlockSpec + 'static,
-{
-    fn from(encapsulated: WrappedBlock<B>) -> Self {
-        Box::new(encapsulated)
+    pub fn new_from_package(
+        package: &BlockPackage<B>,
+        registry: &mut channels::ChannelRegistry,
+    ) -> Result<Self, channels::RegistryError> {
+        use channels::InputKeys;
+        use channels::OutputKeys;
+
+        package.output_keys.register(registry)?;
+
+        let block = B::new_from_init_params(&package.init_params);
+        let input_reader = package.input_keys.reader(registry)?;
+        let output_writer = package.output_keys.writer(registry)?;
+        let wrap = WrappedBlock::new_from_reader_writer(block, input_reader, output_writer);
+
+        Ok(wrap)
     }
 }
 
@@ -189,7 +196,7 @@ mod tests {
         let reader = in_keys.reader(&registry).unwrap();
         let writer = out_keys.writer(&registry).unwrap();
 
-        let block: Block = WrappedBlock::new_from_reader_writer(block, reader, writer).into();
+        let block = WrappedBlock::new_from_reader_writer(block, reader, writer);
 
         let ctx = ExecutionContext { time: 1 };
 
@@ -261,7 +268,7 @@ mod tests {
             written: RefCell::new(None),
         };
 
-        let wrapped = type_erasure::WrappedBlock::new_from_reader_writer(block, reader, writer);
+        let wrapped = wrap::WrappedBlock::new_from_reader_writer(block, reader, writer);
         let context = ExecutionContext { time: 300 };
 
         for expected_state in 1..=5 {
@@ -288,7 +295,7 @@ mod tests {
             written: RefCell::new(None),
         };
 
-        let wrapped = type_erasure::WrappedBlock::new_from_reader_writer(block, reader, writer);
+        let wrapped = wrap::WrappedBlock::new_from_reader_writer(block, reader, writer);
         assert_eq!(*wrapped.state_cell.borrow(), TestState { acc: 0 }); // Should be initialized
     }
 }

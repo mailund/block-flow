@@ -2,10 +2,14 @@ use crate::{errors::RegistryError, ChannelRegistry};
 use crate::{TopoOrdered, WeaveNode};
 use std::collections::{HashMap, HashSet, VecDeque};
 
-pub fn weave_nodes<T>(
-    nodes: Vec<Box<dyn WeaveNode<T>>>,
+pub fn weave_nodes<W, T>(
+    nodes: Vec<W>,
     registry: &mut ChannelRegistry,
-) -> Result<TopoOrdered<T>, RegistryError> {
+) -> Result<TopoOrdered<T>, RegistryError>
+where
+    W: WeaveNode<T> + 'static,
+    T: 'static,
+{
     // Index nodes
     let n = nodes.len();
 

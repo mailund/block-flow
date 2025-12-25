@@ -1,6 +1,7 @@
 #[cfg(test)]
 mod tests {
     use block_traits::block_weave::BlockPackage;
+    use blocks::BlockTypes;
     use blocks::{AfterBlock, SimpleOrderBlock};
     use channels::weave::*;
     use channels::ChannelRegistry;
@@ -29,9 +30,8 @@ mod tests {
             },
         };
         let mut registry = ChannelRegistry::default();
-        let nodes: Vec<Box<dyn WeaveNode<Box<dyn block_traits::BlockTrait>>>> =
-            vec![Box::new(after_node), Box::new(order_node)];
-        let result = weave_nodes(nodes, &mut registry);
+        let blocks: Vec<BlockTypes> = vec![after_node.into(), order_node.into()];
+        let result = weave_nodes(blocks, &mut registry);
         assert!(
             result.is_ok(),
             "weave_nodes should succeed for AfterBlock -> SimpleOrderBlock"
