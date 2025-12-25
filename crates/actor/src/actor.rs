@@ -1,26 +1,43 @@
 use super::*;
 use block_traits::intents;
-use block_traits::{ExecuteTrait, ExecutionContextTrait};
+use block_traits::ExecuteTrait;
 use std::cell::{Ref, RefCell};
 use trade_types::Contract;
 
-pub struct ActorExecutionContext {
-    time: u64,
-}
-impl ActorExecutionContext {
-    pub fn new(time: u64) -> Self {
-        Self { time }
+mod mock_implementations {
+    use block_traits::execution_context::ExecutionContextTrait;
+    use trade_types::{Cents, Contract, Price, Side};
+
+    pub struct OrderBook;
+
+    impl block_traits::execution_context::OrderBookTrait for OrderBook {
+        fn top_of_side(&self, _side: Side) -> Option<Price> {
+            // Dummy implementation
+            Some(Price::from(Cents(100)))
+        }
+    }
+
+    pub struct ActorExecutionContext {
+        time: u64,
+    }
+    impl ActorExecutionContext {
+        pub fn new(time: u64) -> Self {
+            Self { time }
+        }
+    }
+    impl ExecutionContextTrait for ActorExecutionContext {
+        type OrderBook = OrderBook;
+
+        fn time(&self) -> u64 {
+            self.time
+        }
+        fn get_order_book(&self, _contract: &Contract) -> Option<Self::OrderBook> {
+            // mock order book
+            Some(OrderBook)
+        }
     }
 }
-impl ExecutionContextTrait for ActorExecutionContext {
-    fn time(&self) -> u64 {
-        self.time
-    }
-    fn get_order_book(&self, _contract: &Contract) -> Option<trade_types::OrderBook> {
-        // mock order book
-        Some(trade_types::OrderBook)
-    }
-}
+pub use mock_implementations::ActorExecutionContext;
 
 /// A mock actor.
 pub struct Actor {

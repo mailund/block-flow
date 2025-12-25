@@ -39,13 +39,24 @@ impl BlockSpec for DeleteBlock {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use trade_types::{Contract, OrderBook};
+    use trade_types::{Cents, Contract, Price, Side};
+
+    pub struct OrderBook;
+
+    impl block_traits::execution_context::OrderBookTrait for OrderBook {
+        fn top_of_side(&self, _side: Side) -> Option<Price> {
+            // Dummy implementation
+            Some(Price::from(Cents(100)))
+        }
+    }
 
     pub struct ExecutionContext {
         pub time: u64,
     }
 
     impl ExecutionContextTrait for ExecutionContext {
+        type OrderBook = OrderBook;
+
         fn time(&self) -> u64 {
             self.time
         }

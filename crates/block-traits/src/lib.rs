@@ -183,19 +183,29 @@ mod tests {
     use super::test_types::*;
     use super::*;
     use channels::*;
-    use trade_types::{Contract, OrderBook};
+    use trade_types::{Cents, Contract, Price, Side};
 
+    pub struct OrderBook;
+
+    impl block_traits::execution_context::OrderBookTrait for OrderBook {
+        fn top_of_side(&self, _side: Side) -> Option<Price> {
+            // Dummy implementation
+            Some(Price::from(Cents(100)))
+        }
+    }
     pub struct ExecutionContext {
         pub time: u64,
     }
 
     impl ExecutionContextTrait for ExecutionContext {
+        type OrderBook = OrderBook;
+
         fn time(&self) -> u64 {
             self.time
         }
-        fn get_order_book(&self, _contract: &Contract) -> Option<OrderBook> {
+        fn get_order_book(&self, _contract: &Contract) -> Option<Self::OrderBook> {
             // Mock implementation
-            Some(OrderBook {})
+            Some(OrderBook)
         }
     }
 

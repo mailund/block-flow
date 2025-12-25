@@ -1,6 +1,6 @@
 use super::*;
 use block_traits::intents::*;
-use block_traits::BlockSpec;
+use block_traits::{execution_context::OrderBookTrait, BlockSpec, ExecutionContextTrait};
 use trade_types::*;
 
 make_defaults!(state, output);
@@ -39,7 +39,7 @@ impl SniperBlock {
         )
     }
 
-    fn snipe_buy(&self, order_book: &OrderBook) -> Intent {
+    fn snipe_buy<OB: OrderBookTrait>(&self, order_book: &OB) -> Intent {
         if let Some(top_price) = order_book.top_of_side(Side::Sell) {
             if top_price <= self.threshold {
                 return self.place_intent();
@@ -48,7 +48,7 @@ impl SniperBlock {
         Intent::no_intent()
     }
 
-    fn snipe_sell(&self, order_book: &OrderBook) -> Intent {
+    fn snipe_sell<OB: OrderBookTrait>(&self, order_book: &OB) -> Intent {
         if let Some(top_price) = order_book.top_of_side(Side::Buy) {
             if top_price >= self.threshold {
                 return self.place_intent();

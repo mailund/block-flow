@@ -79,14 +79,24 @@ mod tests {
     use super::*;
     use block_macros::*;
     use channels::{InputKeys, OutputKeys};
-    use trade_types::{Contract, OrderBook};
+    use trade_types::{Cents, Contract, Price, Side};
 
-    /// Execution context passed to blocks during execution.
+    pub struct OrderBook;
+
+    impl execution_context::OrderBookTrait for OrderBook {
+        fn top_of_side(&self, _side: Side) -> Option<Price> {
+            // Dummy implementation
+            Some(Price::from(Cents(100)))
+        }
+    }
+
     pub struct ExecutionContext {
         pub time: u64,
     }
 
     impl ExecutionContextTrait for ExecutionContext {
+        type OrderBook = OrderBook;
+
         fn time(&self) -> u64 {
             self.time
         }

@@ -14,14 +14,6 @@ pub enum Side {
     Buy,
     Sell,
 }
-pub struct OrderBook;
-
-impl OrderBook {
-    pub fn top_of_side(&self, _side: Side) -> Option<Price> {
-        // Dummy implementation
-        Some(Price::from(Cents(100)))
-    }
-}
 
 #[cfg(test)]
 mod tests {
@@ -79,19 +71,5 @@ mod tests {
             Side::Sell => {}
             Side::Buy => panic!("expected Sell"),
         }
-    }
-
-    #[test]
-    fn orderbook_top_of_side_returns_some_for_both_sides() {
-        let ob = OrderBook;
-
-        let buy = ob.top_of_side(Side::Buy);
-        let sell = ob.top_of_side(Side::Sell);
-
-        assert!(buy.is_some());
-        assert!(sell.is_some());
-
-        assert_eq!(buy.unwrap(), Price::from(Cents(100)));
-        assert_eq!(sell.unwrap(), Price::from(Cents(100)));
     }
 }
