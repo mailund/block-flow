@@ -20,9 +20,8 @@ impl<B: BlockSpec> BlockEmbedding<B> {
     ) -> Result<Self, channels::RegistryError> {
         let package = package.clone();
 
-        package.output_keys.register(registry)?;
         let in_reader = package.input_keys.reader(registry)?;
-        let out_writer = package.output_keys.writer(registry)?;
+        let out_writer = package.output_keys.register_for_writer(registry)?;
 
         let block = B::new_from_init_params(&package.init_params);
         let state = match &package.state {
