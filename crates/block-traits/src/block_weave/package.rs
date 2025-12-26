@@ -2,15 +2,15 @@ use super::embed::BlockEmbedding;
 
 use super::{BlockInput, BlockOutput, BlockSpec};
 use channels::{ChannelKeys, RegistryError};
-use weave::WeaveNode;
+use serde::{Deserialize, Serialize};
+use serialization_macros::Serializable;
+use weave::NodePackage;
 
 /// Block that has been deserialized (or serialized)
 /// before we weave it and erase its concrete type.
 /// This struct is plain-old-data and must be weaved to add
 /// functionality to a block.
-#[derive(
-    Clone, Debug, serde::Serialize, serde::Deserialize, ::serialization_macros::Serializable,
-)]
+#[derive(Debug, Serialize, Deserialize, Serializable)]
 pub struct BlockPackage<BSpec: BlockSpec> {
     pub input_keys: <BSpec::Input as BlockInput>::Keys,
     pub output_keys: <BSpec::Output as BlockOutput>::Keys,
@@ -47,25 +47,6 @@ where
     }
 }
 
-impl<BSpec> WeaveNode<BlockEmbedding<BSpec>> for BlockPackage<BSpec>
-where
-    BSpec: BlockSpec + 'static,
-{
-    fn input_channels(&self) -> Vec<String> {
-        self.input_keys.channel_names()
-    }
-    fn output_channels(&self) -> Vec<String> {
-        self.output_keys.channel_names()
-    }
-
-    fn weave(
-        &self,
-        channels: &mut ::channels::ChannelRegistry,
-    ) -> Result<BlockEmbedding<BSpec>, RegistryError> {
-        BlockPackage::<BSpec>::weave(self, channels)
-    }
-}
-
 // Helper methods for getting channel names without bothering with
 // the context
 impl<BSpec> BlockPackage<BSpec>
@@ -78,6 +59,42 @@ where
 
     pub fn output_channels(&self) -> Vec<String> {
         self.output_keys.channel_names()
+    }
+}
+
+impl<BSpec> NodePackage<BlockEmbedding<BSpec>> for BlockPackage<BSpec>
+where
+    BSpec: BlockSpec + 'static,
+{
+    fn input_channels(&self) -> Vec<String> {
+        BlockPackage::<BSpec>::input_channels(self)
+    }
+    fn output_channels(&self) -> Vec<String> {
+        BlockPackage::<BSpec>::output_channels(self)
+    }
+    fn weave(
+        &self,
+        channels: &mut ::channels::ChannelRegistry,
+    ) -> Result<BlockEmbedding<BSpec>, RegistryError> {
+        BlockPackage::<BSpec>::weave(self, channels)
+    }
+}
+
+impl<BSpec> Clone for BlockPackage<BSpec>
+where
+    BSpec: BlockSpec,
+    <BSpec::Input as BlockInput>::Keys: Clone,
+    <BSpec::Output as BlockOutput>::Keys: Clone,
+    BSpec::InitParameters: Clone,
+    BSpec::State: Clone,
+{
+    fn clone(&self) -> Self {
+        Self {
+            input_keys: self.input_keys.clone(),
+            output_keys: self.output_keys.clone(),
+            init_params: self.init_params.clone(),
+            state: self.state.clone(),
+        }
     }
 }
 

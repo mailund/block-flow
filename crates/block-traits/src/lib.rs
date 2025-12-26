@@ -29,13 +29,13 @@ mod test_types {
     use std::cell::RefCell;
 
     // Test init parameter structs
-    #[derive(serde::Serialize, serde::Deserialize)]
+    #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
     pub struct DoublerInitParams;
     impl ContractDeps for DoublerInitParams {}
 
     impl ::serialization::structs::Serializable for DoublerInitParams {}
 
-    #[derive(serde::Serialize, serde::Deserialize)]
+    #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
     pub struct AccumulatorInitParams;
     impl ContractDeps for AccumulatorInitParams {}
 

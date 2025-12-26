@@ -1,10 +1,12 @@
 use super::*;
 use channels::{InputKeys, OutputKeys};
+use weave::EmbeddedNode;
 
 /// Encapsulates a block along with its input reader, output writer, and state cell
 /// to provide a type-erased block implementation. The BlockEmbedding is a block with its
 /// serialisation connections established, ready to be used as an execution context.
 pub struct BlockEmbedding<B: BlockSpec> {
+    package: BlockPackage<B>,
     block: B,
     in_reader: block_keys::InReader<B>,
     out_writer: block_keys::OutWriter<B>,
@@ -16,6 +18,8 @@ impl<B: BlockSpec> BlockEmbedding<B> {
         package: &BlockPackage<B>,
         registry: &mut channels::ChannelRegistry,
     ) -> Result<Self, channels::RegistryError> {
+        let package = package.clone();
+
         package.output_keys.register(registry)?;
         let in_reader = package.input_keys.reader(registry)?;
         let out_writer = package.output_keys.writer(registry)?;
@@ -28,6 +32,7 @@ impl<B: BlockSpec> BlockEmbedding<B> {
         let state_cell = std::cell::RefCell::new(state);
 
         let embedded = Self {
+            package,
             block,
             in_reader,
             out_writer,
@@ -35,6 +40,26 @@ impl<B: BlockSpec> BlockEmbedding<B> {
         };
 
         Ok(embedded)
+    }
+
+    pub fn extract_package(&self) -> BlockPackage<B> {
+        // Take the input/output from the stored package
+        // but return the current state from the state cell.
+        BlockPackage {
+            input_keys: self.package.input_keys.clone(),
+            output_keys: self.package.output_keys.clone(),
+            init_params: self.package.init_params.clone(),
+            state: Some(self.state_cell.borrow().clone()),
+        }
+    }
+}
+
+impl<B> EmbeddedNode<BlockPackage<B>> for BlockEmbedding<B>
+where
+    B: BlockSpec + 'static,
+{
+    fn extract_package(&self) -> BlockPackage<B> {
+        BlockEmbedding::<B>::extract_package(self)
     }
 }
 
