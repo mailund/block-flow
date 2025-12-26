@@ -1,4 +1,5 @@
 use channels::{InputKeys, OutputKeys};
+use serialization::Serializable;
 
 /// Trait for block input data types.
 ///
@@ -48,7 +49,7 @@ use channels::{InputKeys, OutputKeys};
 /// }
 /// ```
 pub trait BlockInput: Sized {
-    type Keys: InputKeys<Self> + ::serialization::structs::Serializable;
+    type Keys: InputKeys<Self> + Serializable;
 }
 
 /// Trait for block output data types.
@@ -109,7 +110,7 @@ pub trait BlockInput: Sized {
 /// }
 /// ```
 pub trait BlockOutput: Sized {
-    type Keys: OutputKeys<Self> + ::serialization::structs::Serializable;
+    type Keys: OutputKeys<Self> + Serializable;
 }
 
 /// Trait for retrieving contract dependencies of a block.
@@ -122,8 +123,8 @@ pub trait ContractDeps {
 pub trait BlockSpecAssociatedTypes {
     type Input: BlockInput;
     type Output: BlockOutput;
-    type State: ::serialization::structs::Serializable;
-    type InitParameters: ContractDeps + ::serialization::structs::Serializable;
+    type State: Clone + Serializable;
+    type InitParameters: ContractDeps + Serializable;
     type Intents: crate::intents::BlockIntents;
 }
 

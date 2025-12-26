@@ -1,7 +1,7 @@
+pub mod embed;
 pub mod package;
-pub mod wrap;
 
 use super::*;
 
+pub use embed::BlockEmbedding;
 pub use package::BlockPackage;
-pub use wrap::WrappedBlock;

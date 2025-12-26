@@ -4,8 +4,8 @@ use std::path::Path;
 
 use block_macros::*;
 use block_traits::{
-    BlockPackage, BlockSpec, ContractDeps, ExecuteTrait, ExecutionContextTrait, SlotIntent,
-    WrappedBlock,
+    BlockEmbedding, BlockPackage, BlockSpec, ContractDeps, ExecuteTrait, ExecutionContextTrait,
+    SlotIntent,
 };
 
 pub mod after;
@@ -33,9 +33,9 @@ macro_rules! define_block_type {
             )+
         }
 
-        pub enum WrappedBlocks {
+        pub enum BlockEmbeddings {
             $(
-                $variant(WrappedBlock<$block_ty>),
+                $variant(BlockEmbedding<$block_ty>),
             )+
         }
 
@@ -47,14 +47,14 @@ macro_rules! define_block_type {
                 }
             }
 
-            impl From<WrappedBlock<$block_ty>> for WrappedBlocks {
-                fn from(wrapped: WrappedBlock<$block_ty>) -> Self {
-                    WrappedBlocks::$variant(wrapped)
+            impl From<BlockEmbedding<$block_ty>> for BlockEmbeddings {
+                fn from(embedded: BlockEmbedding<$block_ty>) -> Self {
+                    BlockEmbeddings::$variant(embedded)
                 }
             }
         )+
 
-        impl WeaveNode<WrappedBlocks> for BlockTypes {
+        impl WeaveNode<BlockEmbeddings> for BlockTypes {
             fn input_channels(&self) -> Vec<String> {
                 match self {
                     $(
@@ -73,30 +73,30 @@ macro_rules! define_block_type {
             fn weave(
                 &self,
                 channels: &mut ::channels::ChannelRegistry,
-            ) -> Result<WrappedBlocks, channels::RegistryError> {
+            ) -> Result<BlockEmbeddings, channels::RegistryError> {
                 match self {
                     $(
-                        BlockTypes::$variant(pkg) => Ok(WrappedBlocks::$variant(pkg.weave(channels)?)),
+                        BlockTypes::$variant(pkg) => Ok(BlockEmbeddings::$variant(pkg.weave(channels)?)),
                     )+
                 }
             }
         }
 
-        impl ContractDeps for WrappedBlocks {
+        impl ContractDeps for BlockEmbeddings {
             fn contract_deps(&self) -> Vec<::trade_types::Contract> {
                 match self {
                     $(
-                        WrappedBlocks::$variant(wrapped) => wrapped.contract_deps(),
+                        BlockEmbeddings::$variant(embedded) => embedded.contract_deps(),
                     )+
                 }
             }
         }
 
-        impl<C: ExecutionContextTrait> ExecuteTrait<C> for WrappedBlocks {
+        impl<C: ExecutionContextTrait> ExecuteTrait<C> for BlockEmbeddings {
             fn execute(&self, ctx: &C) -> Option<Vec<SlotIntent>>{
                 match self {
                     $(
-                        WrappedBlocks::$variant(wrapped) => wrapped.execute(ctx),
+                        BlockEmbeddings::$variant(embedded) => embedded.execute(ctx),
                     )+
                 }
             }
@@ -180,6 +180,7 @@ mod test {
                 is_after: "output_is_after".to_string(),
             },
             AfterInit { time: 123 },
+            None,
         );
 
         // Delete
@@ -195,6 +196,7 @@ mod test {
             },
             DeleteOutKey {},
             DeleteInit {},
+            None,
         );
 
         // SimpleOrder
@@ -214,6 +216,7 @@ mod test {
                 price: trade_types::Price::from(trade_types::Cents(100)),
                 quantity: trade_types::Quantity::from(trade_types::Kw(1)),
             },
+            None,
         );
 
         let blocks = vec![

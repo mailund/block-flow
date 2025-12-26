@@ -15,6 +15,7 @@ mod tests {
                 is_after: "after_output".to_string(),
             },
             init_params: blocks::after::InitParams { time: 42 },
+            state: None,
         };
         // SimpleOrderBlock expects InitParams { contract: Contract }
         let order_node = BlockPackage::<SimpleOrderBlock> {
@@ -28,6 +29,7 @@ mod tests {
                 price: trade_types::Price::from(trade_types::Cents(100)),
                 quantity: trade_types::Quantity::from(trade_types::Kw(1)),
             },
+            state: None,
         };
         let mut registry = ChannelRegistry::default();
         let blocks: Vec<BlockTypes> = vec![after_node.into(), order_node.into()];

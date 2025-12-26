@@ -1,4 +1,4 @@
-use super::wrap::WrappedBlock;
+use super::embed::BlockEmbedding;
 
 use super::{BlockInput, BlockOutput, BlockSpec};
 use channels::{ChannelKeys, RegistryError};
@@ -13,6 +13,7 @@ pub struct BlockPackage<BSpec: BlockSpec> {
     pub input_keys: <BSpec::Input as BlockInput>::Keys,
     pub output_keys: <BSpec::Output as BlockOutput>::Keys,
     pub init_params: BSpec::InitParameters,
+    pub state: Option<BSpec::State>,
 }
 
 impl<B> BlockPackage<B>
@@ -26,23 +27,25 @@ where
         input_keys: <B::Input as BlockInput>::Keys,
         output_keys: <B::Output as BlockOutput>::Keys,
         init_params: B::InitParameters,
+        state: Option<B::State>,
     ) -> Self {
         BlockPackage {
             input_keys,
             output_keys,
             init_params,
+            state,
         }
     }
 
     pub fn weave(
         &self,
         channels: &mut ::channels::ChannelRegistry,
-    ) -> Result<WrappedBlock<B>, RegistryError> {
-        WrappedBlock::<B>::new_from_package(self, channels)
+    ) -> Result<BlockEmbedding<B>, RegistryError> {
+        BlockEmbedding::<B>::new_from_package(self, channels)
     }
 }
 
-impl<BSpec> WeaveNode<WrappedBlock<BSpec>> for BlockPackage<BSpec>
+impl<BSpec> WeaveNode<BlockEmbedding<BSpec>> for BlockPackage<BSpec>
 where
     BSpec: BlockSpec + 'static,
 {
@@ -56,7 +59,7 @@ where
     fn weave(
         &self,
         channels: &mut ::channels::ChannelRegistry,
-    ) -> Result<WrappedBlock<BSpec>, RegistryError> {
+    ) -> Result<BlockEmbedding<BSpec>, RegistryError> {
         BlockPackage::<BSpec>::weave(self, channels)
     }
 }
@@ -169,6 +172,7 @@ mod tests {
             keys_in("in"),
             keys_out("out"),
             InitParams { multiplier: 3 },
+            None,
         );
 
         assert_eq!(pkg.init_params.multiplier, 3);
@@ -182,6 +186,7 @@ mod tests {
             keys_in("input_chan"),
             keys_out("output_chan"),
             InitParams { multiplier: 2 },
+            None,
         );
 
         assert_eq!(pkg.input_channels(), vec!["input_chan".to_string()]);
@@ -194,6 +199,7 @@ mod tests {
             keys_in("in"),
             keys_out("out"),
             InitParams { multiplier: 7 },
+            None,
         );
 
         let ser = ::serialization::structs::JsonStructSerializer::new();
@@ -225,6 +231,7 @@ mod tests {
             keys_in("missing_input"),
             keys_out("out"),
             InitParams { multiplier: 10 },
+            None,
         );
 
         let mut registry: ::channels::ChannelRegistry = Default::default();
