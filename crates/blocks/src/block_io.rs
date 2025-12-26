@@ -20,15 +20,17 @@ impl From<serde_json::Error> for ReadBlocksError {
 
 /// Reads blocks into a vector of BlockType from a JSON string.
 /// The enum preserves type information for each block.
-pub fn read_blocktypes_from_json_string(json: &str) -> Result<Vec<BlockTypes>, serde_json::Error> {
-    serde_json::from_str::<Vec<BlockTypes>>(json)
+pub fn read_blocktypes_from_json_string(
+    json: &str,
+) -> Result<Vec<BlockPackages>, serde_json::Error> {
+    serde_json::from_str::<Vec<BlockPackages>>(json)
 }
 
 pub fn read_blocktypes_from_json_file<P: AsRef<Path>>(
     path: P,
-) -> Result<Vec<BlockTypes>, ReadBlocksError> {
+) -> Result<Vec<BlockPackages>, ReadBlocksError> {
     let mut file = File::open(path)?;
     let mut buf = String::new();
     file.read_to_string(&mut buf)?;
-    Ok(serde_json::from_str::<Vec<BlockTypes>>(&buf)?)
+    Ok(serde_json::from_str::<Vec<BlockPackages>>(&buf)?)
 }

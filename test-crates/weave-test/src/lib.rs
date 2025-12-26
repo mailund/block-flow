@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod tests {
     use block_traits::block_weave::BlockPackage;
-    use blocks::BlockTypes;
+    use blocks::BlockPackages;
     use blocks::{AfterBlock, SimpleOrderBlock};
     use channels::ChannelRegistry;
     use trade_types::Contract;
@@ -32,7 +32,7 @@ mod tests {
             state: None,
         };
         let mut registry = ChannelRegistry::default();
-        let blocks: Vec<BlockTypes> = vec![after_node.into(), order_node.into()];
+        let blocks: Vec<BlockPackages> = vec![after_node.into(), order_node.into()];
         let result = weave_nodes(blocks, &mut registry);
         assert!(
             result.is_ok(),

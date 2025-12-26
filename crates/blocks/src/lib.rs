@@ -7,6 +7,9 @@ use block_traits::{
     BlockEmbedding, BlockPackage, BlockSpec, ContractDeps, ExecuteTrait, ExecutionContextTrait,
     SlotIntent,
 };
+use channels::ChannelKeys;
+use serialization_macros::Serializable;
+use weave::{EmbeddedNode, NodePackage};
 
 pub mod after;
 pub mod block_io;
@@ -20,14 +23,11 @@ pub use delete::DeleteBlock;
 pub use simple_order::SimpleOrderBlock;
 pub use sniper::SniperBlock;
 
-use channels::ChannelKeys;
-use weave::WeaveNode;
-
 macro_rules! define_block_type {
     ( $( $variant:ident => $block_ty:path ),+ $(,)? ) => {
-        #[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
+        #[derive(Clone, Debug, serde::Serialize, serde::Deserialize, Serializable)]
         #[serde(tag = "type", content = "data")]
-        pub enum BlockTypes {
+        pub enum BlockPackages {
             $(
                 $variant(BlockPackage<$block_ty>),
             )+
@@ -41,9 +41,9 @@ macro_rules! define_block_type {
 
         // Getting From<> for all the wrapped variants
         $(
-            impl From<BlockPackage<$block_ty>> for BlockTypes {
+            impl From<BlockPackage<$block_ty>> for BlockPackages {
                 fn from(pkg: BlockPackage<$block_ty>) -> Self {
-                    BlockTypes::$variant(pkg)
+                    BlockPackages::$variant(pkg)
                 }
             }
 
@@ -54,34 +54,44 @@ macro_rules! define_block_type {
             }
         )+
 
-        impl WeaveNode<BlockEmbeddings> for BlockTypes {
+        impl NodePackage<BlockEmbeddings> for BlockPackages {
             fn input_channels(&self) -> Vec<String> {
                 match self {
                     $(
-                        BlockTypes::$variant(pkg) => pkg.input_keys.channel_names(),
+                        BlockPackages::$variant(pkg) => pkg.input_keys.channel_names(),
                     )+
                 }
             }
             fn output_channels(&self) -> Vec<String> {
                 match self {
                     $(
-                        BlockTypes::$variant(pkg) => pkg.output_keys.channel_names(),
+                        BlockPackages::$variant(pkg) => pkg.output_keys.channel_names(),
                     )+
                 }
             }
-
             fn weave(
                 &self,
                 channels: &mut ::channels::ChannelRegistry,
             ) -> Result<BlockEmbeddings, channels::RegistryError> {
                 match self {
                     $(
-                        BlockTypes::$variant(pkg) => Ok(BlockEmbeddings::$variant(pkg.weave(channels)?)),
+                        BlockPackages::$variant(pkg) => Ok(BlockEmbeddings::$variant(pkg.weave(channels)?)),
                     )+
                 }
             }
         }
 
+        impl EmbeddedNode<BlockPackages> for BlockEmbeddings {
+            fn extract_package(&self) -> BlockPackages {
+                match self {
+                    $(
+                        BlockEmbeddings::$variant(embedded) => BlockPackages::$variant(embedded.extract_package()),
+                    )+
+                }
+            }
+        }
+
+        // Embedded blocks have dependencies
         impl ContractDeps for BlockEmbeddings {
             fn contract_deps(&self) -> Vec<::trade_types::Contract> {
                 match self {
@@ -92,6 +102,7 @@ macro_rules! define_block_type {
             }
         }
 
+        // Embedded blocks are also executable
         impl<C: ExecutionContextTrait> ExecuteTrait<C> for BlockEmbeddings {
             fn execute(&self, ctx: &C) -> Option<Vec<SlotIntent>>{
                 match self {
@@ -220,30 +231,30 @@ mod test {
         );
 
         let blocks = vec![
-            BlockTypes::After(after_pkg),
-            BlockTypes::Delete(delete_pkg),
-            BlockTypes::SimpleOrder(simple_pkg),
+            BlockPackages::After(after_pkg),
+            BlockPackages::Delete(delete_pkg),
+            BlockPackages::SimpleOrder(simple_pkg),
         ];
 
         let serialized = serde_json::to_string(&blocks).unwrap();
-        let deserialized: Vec<BlockTypes> = serde_json::from_str(&serialized).unwrap();
+        let deserialized: Vec<BlockPackages> = serde_json::from_str(&serialized).unwrap();
         assert_eq!(deserialized.len(), 3);
 
         match &deserialized[0] {
-            BlockTypes::After(pkg) => {
+            BlockPackages::After(pkg) => {
                 assert_eq!(pkg.output_keys.is_after, "output_is_after");
                 assert_eq!(pkg.init_params.time, 123);
             }
             _ => panic!("Expected After"),
         }
         match &deserialized[1] {
-            BlockTypes::Delete(pkg) => {
+            BlockPackages::Delete(pkg) => {
                 assert_eq!(pkg.input_keys.should_delete, "should_delete");
             }
             _ => panic!("Expected Delete"),
         }
         match &deserialized[2] {
-            BlockTypes::SimpleOrder(pkg) => {
+            BlockPackages::SimpleOrder(pkg) => {
                 assert_eq!(pkg.init_params.contract, contract);
                 assert_eq!(pkg.input_keys.should_execute, "should_execute");
             }
@@ -270,7 +281,7 @@ mod test {
         assert_eq!(blocks.len(), 1);
 
         match &blocks[0] {
-            BlockTypes::After(summary) => {
+            BlockPackages::After(summary) => {
                 assert_eq!(summary.output_keys.is_after, "output_is_after");
             }
             _ => panic!("Wrong block type"),
@@ -304,7 +315,7 @@ mod test {
         assert_eq!(blocks.len(), 2);
 
         match &blocks[0] {
-            BlockTypes::After(summary) => {
+            BlockPackages::After(summary) => {
                 assert_eq!(summary.init_params.time, 1);
                 assert_eq!(summary.output_keys.is_after, "is_after");
             }
@@ -312,7 +323,7 @@ mod test {
         }
 
         match &blocks[1] {
-            BlockTypes::Delete(summary) => {
+            BlockPackages::Delete(summary) => {
                 assert_eq!(summary.input_keys.should_delete, "is_after");
             }
             _ => panic!("Expected Delete block"),
@@ -490,7 +501,7 @@ mod test {
         }
 
         let serde_err: serde_json::Error =
-            serde_json::from_str::<Vec<BlockTypes>>("not json").unwrap_err();
+            serde_json::from_str::<Vec<BlockPackages>>("not json").unwrap_err();
         let e: ReadBlocksError = serde_err.into();
         match e {
             ReadBlocksError::Json(_) => {}
