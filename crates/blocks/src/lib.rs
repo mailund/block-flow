@@ -20,7 +20,8 @@ pub use delete::DeleteBlock;
 pub use simple_order::SimpleOrderBlock;
 pub use sniper::SniperBlock;
 
-use channels::{ChannelKeys, WeaveNode};
+use channels::ChannelKeys;
+use weave::WeaveNode;
 
 macro_rules! define_block_type {
     ( $( $variant:ident => $block_ty:path ),+ $(,)? ) => {

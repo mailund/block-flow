@@ -1,8 +1,8 @@
 use super::wrap::WrappedBlock;
 
 use super::{BlockInput, BlockOutput, BlockSpec};
-use channels::WeaveNode;
 use channels::{ChannelKeys, RegistryError};
+use weave::WeaveNode;
 
 /// Block that has been deserialized (or serialized)
 /// before we weave it and erase its concrete type.

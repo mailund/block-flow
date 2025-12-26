@@ -1,6 +1,6 @@
 use crate::intents::SlotIntent;
 use crate::{ContractDeps, ExecuteTrait, ExecutionContextTrait};
-use ::channels::weave::TopoOrdered;
+use ::weave::TopoOrdered;
 
 impl<CD> ContractDeps for TopoOrdered<CD>
 where

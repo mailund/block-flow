@@ -1,0 +1,9 @@
+[package]
+name = "weave"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+channels = { path = "../channels" }
+
+[dev-dependencies]

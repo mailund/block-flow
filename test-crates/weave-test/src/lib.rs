@@ -3,9 +3,9 @@ mod tests {
     use block_traits::block_weave::BlockPackage;
     use blocks::BlockTypes;
     use blocks::{AfterBlock, SimpleOrderBlock};
-    use channels::weave::*;
     use channels::ChannelRegistry;
     use trade_types::Contract;
+    use weave::*;
 
     #[test]
     fn weave_after_and_simple_order() {

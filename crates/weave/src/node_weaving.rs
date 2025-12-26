@@ -1,5 +1,5 @@
-use crate::{errors::RegistryError, ChannelRegistry};
 use crate::{TopoOrdered, WeaveNode};
+use channels::{errors::RegistryError, ChannelRegistry};
 use std::collections::{HashMap, HashSet, VecDeque};
 
 pub fn weave_nodes<W, T>(

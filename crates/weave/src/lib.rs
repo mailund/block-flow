@@ -1,4 +1,4 @@
-use crate::{ChannelRegistry, RegistryError};
+use channels::{ChannelRegistry, RegistryError};
 use std::ops::Deref;
 
 mod node_weaving;

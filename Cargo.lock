@@ -71,6 +71,7 @@ dependencies = [
  "serialization",
  "serialization-macros",
  "trade-types",
+ "weave",
 ]
 
 [[package]]
@@ -85,6 +86,7 @@ dependencies = [
  "serialization",
  "serialization-macros",
  "trade-types",
+ "weave",
 ]
 
 [[package]]
@@ -308,6 +310,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "weave"
+version = "0.1.0"
+dependencies = [
+ "channels",
+]
+
+[[package]]
 name = "weave-test"
 version = "0.1.0"
 dependencies = [
@@ -319,6 +328,7 @@ dependencies = [
  "serialization",
  "serialization-macros",
  "trade-types",
+ "weave",
 ]
 
 [[package]]
