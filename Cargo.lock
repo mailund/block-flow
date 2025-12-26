@@ -23,22 +23,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "812e12b5285cc515a9c72a5c1d3b6d46a19dac5acfef5265968c166106e31dd3"
 
 [[package]]
-name = "block-flow"
-version = "0.1.0"
-dependencies = [
- "actor",
- "block-macros",
- "block-macros-test",
- "block-traits",
- "blocks",
- "channels",
- "serialization",
- "serialization-macros",
- "trade-types",
- "weave-test",
-]
-
-[[package]]
 name = "block-macros"
 version = "0.1.0"
 dependencies = [
@@ -180,6 +164,22 @@ name = "r-efi"
 version = "5.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "69cdb34c158ceb288df11e18b4bd39de994f6657d83847bdffdbd7f346754b0f"
+
+[[package]]
+name = "ratie"
+version = "0.1.0"
+dependencies = [
+ "actor",
+ "block-macros",
+ "block-macros-test",
+ "block-traits",
+ "blocks",
+ "channels",
+ "serialization",
+ "serialization-macros",
+ "trade-types",
+ "weave-test",
+]
 
 [[package]]
 name = "rustix"
