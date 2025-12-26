@@ -1,7 +1,8 @@
 use super::*;
 
-#[serializable_struct]
-#[derive(PartialEq, Eq, PartialOrd, Ord)]
+#[derive(
+    PartialEq, Eq, PartialOrd, Ord, Clone, Debug, serde::Serialize, serde::Deserialize, Serializable,
+)]
 pub struct Price {
     cents: u32,
 }

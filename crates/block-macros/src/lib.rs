@@ -21,7 +21,7 @@ pub fn output(attr: TokenStream, item: TokenStream) -> TokenStream {
 pub fn state(_attr: TokenStream, item: TokenStream) -> TokenStream {
     let item = syn::parse::<syn::DeriveInput>(item).unwrap();
     let expanded = quote::quote! {
-        #[::serialization_macros::serializable_struct]
+        #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, ::serialization_macros::Serializable)]
         #item
     };
     expanded.into()
@@ -45,8 +45,7 @@ pub fn contract_deps_derive(item: TokenStream) -> TokenStream {
 pub fn init_params(_attr: TokenStream, item: TokenStream) -> TokenStream {
     let item = syn::parse::<syn::DeriveInput>(item).unwrap();
     let expanded = quote::quote! {
-        #[::serialization_macros::serializable_struct]
-        #[derive(::block_macros::ContractDeps)]
+        #[derive(::block_macros::ContractDeps, Clone, Debug, serde::Serialize, serde::Deserialize, ::serialization_macros::Serializable)]
         #item
     };
     expanded.into()

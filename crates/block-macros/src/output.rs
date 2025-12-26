@@ -30,7 +30,7 @@ pub fn output_impl(_attr: TokenStream, item: TokenStream) -> TokenStream {
             #[derive(Clone, Debug)]
             #input
 
-            #[::serialization_macros::serializable_struct]
+            #[derive(Clone, Debug, serde::Serialize, serde::Deserialize, ::serialization_macros::Serializable)]
             pub struct #keys_name {}
 
             pub struct #writer_name;
@@ -104,7 +104,7 @@ pub fn output_impl(_attr: TokenStream, item: TokenStream) -> TokenStream {
         #[derive(Clone, Debug)]
         #input
 
-        #[serialization_macros::serializable_struct]
+        #[derive(Clone, Debug, serde::Serialize, serde::Deserialize, ::serialization_macros::Serializable)]
         pub struct #keys_name {
             #(#key_fields,)*
         }

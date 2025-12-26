@@ -8,7 +8,9 @@ use weave::WeaveNode;
 /// before we weave it and erase its concrete type.
 /// This struct is plain-old-data and must be weaved to add
 /// functionality to a block.
-#[serialization_macros::serializable_struct]
+#[derive(
+    Clone, Debug, serde::Serialize, serde::Deserialize, ::serialization_macros::Serializable,
+)]
 pub struct BlockPackage<BSpec: BlockSpec> {
     pub input_keys: <BSpec::Input as BlockInput>::Keys,
     pub output_keys: <BSpec::Output as BlockOutput>::Keys,

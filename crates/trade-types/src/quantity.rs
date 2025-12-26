@@ -1,7 +1,6 @@
 use super::*;
 
-#[serializable_struct]
-#[derive(PartialEq, Eq)]
+#[derive(PartialEq, Eq, Clone, Debug, serde::Serialize, serde::Deserialize, Serializable)]
 pub struct Quantity {
     kw: u32,
 }

@@ -1,7 +1,6 @@
 use super::*;
 
-#[serializable_struct]
-#[derive(PartialEq, Eq, Hash)]
+#[derive(PartialEq, Eq, Hash, Clone, Debug, serde::Serialize, serde::Deserialize, Serializable)]
 pub struct Contract(String);
 
 impl Contract {

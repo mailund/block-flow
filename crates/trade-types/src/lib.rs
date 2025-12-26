@@ -1,4 +1,4 @@
-use serialization_macros::{serializable_enum, serializable_struct};
+use serialization_macros::Serializable;
 
 mod contract;
 pub use contract::Contract;
@@ -9,7 +9,7 @@ pub use price::{Cents, Euros, Price};
 mod quantity;
 pub use quantity::{Kw, Mw, Quantity};
 
-#[serializable_enum]
+#[derive(PartialEq, Eq, Hash, Debug, Clone, serde::Serialize, serde::Deserialize, Serializable)]
 pub enum Side {
     Buy,
     Sell,
