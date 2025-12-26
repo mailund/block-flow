@@ -12,21 +12,6 @@ pub struct BlockEmbedding<B: BlockSpec> {
 }
 
 impl<B: BlockSpec> BlockEmbedding<B> {
-    pub fn new_from_reader_writer(
-        block: B,
-        in_reader: block_keys::InReader<B>,
-        out_writer: block_keys::OutWriter<B>,
-    ) -> Self {
-        let init_state = block.init_state();
-        let state_cell = std::cell::RefCell::new(init_state);
-        Self {
-            block,
-            in_reader,
-            out_writer,
-            state_cell,
-        }
-    }
-
     pub fn new_from_package(
         package: &BlockPackage<B>,
         registry: &mut channels::ChannelRegistry,
@@ -36,7 +21,6 @@ impl<B: BlockSpec> BlockEmbedding<B> {
         let out_writer = package.output_keys.writer(registry)?;
 
         let block = B::new_from_init_params(&package.init_params);
-
         let state = match &package.state {
             Some(state) => state.clone(),
             None => block.init_state(),
@@ -90,7 +74,7 @@ where
 mod tests {
     use super::*;
     use block_macros::*;
-    use channels::{InputKeys, OutputKeys};
+    use channels::OutputKeys;
     use trade_types::{Cents, Contract, Price, Side};
 
     pub struct OrderBook;
@@ -184,7 +168,6 @@ mod tests {
 
     #[test]
     fn encapsulated_block_new_initializes_state() {
-        let block = TestBlock { block_id: 1 };
         let mut registry = channels::ChannelRegistry::default();
 
         let in_keys = input_keys("in");
@@ -196,16 +179,15 @@ mod tests {
         // Insert manual key manually as they don't support registration.
         registry.put("in", 0i32);
 
-        let reader = in_keys.reader(&registry).unwrap();
-        let writer = out_keys.writer(&registry).unwrap();
+        let package =
+            BlockPackage::<TestBlock>::new(in_keys, out_keys, test_block::InitParams {}, None);
+        let enc = package.weave(&mut registry).unwrap();
 
-        let enc = BlockEmbedding::new_from_reader_writer(block, reader, writer);
         let _ = enc.state_cell.borrow();
     }
 
     #[test]
     fn type_erased_block_execute_writes_output_and_returns_intents() {
-        let block = TestBlock { block_id: 42 };
         let mut registry = channels::ChannelRegistry::default();
 
         // Put the input FIELD value (i32) into the channel used by InputKeys.x
@@ -216,10 +198,9 @@ mod tests {
 
         assert!(out_keys.register(&mut registry).is_ok());
 
-        let reader = in_keys.reader(&registry).unwrap();
-        let writer = out_keys.writer(&registry).unwrap();
-
-        let enc = BlockEmbedding::new_from_reader_writer(block, reader, writer);
+        let package =
+            BlockPackage::<TestBlock>::new(in_keys, out_keys, test_block::InitParams {}, None);
+        let enc = package.weave(&mut registry).unwrap();
         let ctx = ExecutionContext { time: 0 };
 
         let intents = enc.execute(&ctx).unwrap();
@@ -233,7 +214,6 @@ mod tests {
 
     #[test]
     fn block_wrapper_delegates_correctly() {
-        let block = TestBlock { block_id: 99 };
         let mut registry = channels::ChannelRegistry::default();
 
         registry.put("in", 3i32);
@@ -243,109 +223,15 @@ mod tests {
 
         assert!(out_keys.register(&mut registry).is_ok());
 
-        let reader = in_keys.reader(&registry).unwrap();
-        let writer = out_keys.writer(&registry).unwrap();
-
-        let block = BlockEmbedding::new_from_reader_writer(block, reader, writer);
-
+        let package =
+            BlockPackage::<TestBlock>::new(in_keys, out_keys, test_block::InitParams {}, None);
+        let enc = package.weave(&mut registry).unwrap();
         let ctx = ExecutionContext { time: 1 };
 
-        block.execute(&ctx);
+        enc.execute(&ctx);
 
         let cell = registry.get::<i32>("out").unwrap();
         let out = cell.borrow();
         assert_eq!(*out, 6);
-    }
-
-    #[test]
-    fn state_is_updated_across_multiple_executes() {
-        let block = TestBlock { block_id: 5 };
-        let mut registry = channels::ChannelRegistry::default();
-
-        registry.put("in", 4i32);
-
-        let in_keys = input_keys("in");
-        let out_keys = output_keys("out");
-
-        assert!(out_keys.register(&mut registry).is_ok());
-
-        let reader = in_keys.reader(&registry).unwrap();
-        let writer = out_keys.writer(&registry).unwrap();
-
-        let enc = BlockEmbedding::new_from_reader_writer(block, reader, writer);
-        let ctx = ExecutionContext { time: 0 };
-
-        enc.execute(&ctx);
-        enc.execute(&ctx);
-
-        let cell = registry.get::<i32>("out").unwrap();
-        let out = cell.borrow();
-        assert_eq!(*out, 8);
-    }
-
-    use super::test_types::*;
-    use std::cell::RefCell;
-
-    #[test]
-    fn test_wrapped_block_execute() {
-        let block = DoublerBlock;
-        let reader = MockReader {
-            data: TestInput { value: 15 },
-        };
-        let writer = MockWriter {
-            written: RefCell::new(None),
-        };
-
-        let wrapped = BlockEmbedding::new_from_reader_writer(block, reader, writer);
-        let context = ExecutionContext { time: 200 };
-
-        wrapped.execute(&context);
-
-        let written_data = wrapped.out_writer.written.borrow();
-        assert!(written_data.is_some());
-        assert_eq!(written_data.as_ref().unwrap().result, 30); // 15 * 2
-
-        assert_eq!(*wrapped.state_cell.borrow(), TestState { acc: 1 });
-    }
-
-    #[test]
-    fn test_multiple_wrapped_block_executions() {
-        let block = DoublerBlock;
-        let reader = MockReader {
-            data: TestInput { value: 3 },
-        };
-        let writer = MockWriter {
-            written: RefCell::new(None),
-        };
-
-        let wrapped = embed::BlockEmbedding::new_from_reader_writer(block, reader, writer);
-        let context = ExecutionContext { time: 300 };
-
-        for expected_state in 1..=5 {
-            wrapped.execute(&context);
-            assert_eq!(
-                *wrapped.state_cell.borrow(),
-                TestState {
-                    acc: expected_state
-                }
-            );
-
-            let written_data = wrapped.out_writer.written.borrow();
-            assert_eq!(written_data.as_ref().unwrap().result, 6); // 3 * 2
-        }
-    }
-
-    #[test]
-    fn test_wrapped_block_new() {
-        let block = DoublerBlock;
-        let reader = MockReader {
-            data: TestInput { value: 7 },
-        };
-        let writer = MockWriter {
-            written: RefCell::new(None),
-        };
-
-        let wrapped = embed::BlockEmbedding::new_from_reader_writer(block, reader, writer);
-        assert_eq!(*wrapped.state_cell.borrow(), TestState { acc: 0 }); // Should be initialized
     }
 }

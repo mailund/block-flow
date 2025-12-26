@@ -86,23 +86,6 @@ mod tests {
     use super::*;
     use block_macros::*;
 
-    // use crate::ExecutionContextTrait;
-    // use trade_types::{Contract, OrderBook};
-
-    // pub struct ExecutionContext {
-    //     pub time: u64,
-    // }
-
-    // impl ExecutionContextTrait for ExecutionContext {
-    //     fn time(&self) -> u64 {
-    //         self.time
-    //     }
-    //     fn get_order_book(&self, _contract: &Contract) -> Option<OrderBook> {
-    //         // Mock implementation
-    //         Some(OrderBook {})
-    //     }
-    // }
-
     // The block-macros expand to ::block_traits::...; inside the block-traits crate
     // we must alias the current crate so that absolute path resolves.
     extern crate self as block_traits;
