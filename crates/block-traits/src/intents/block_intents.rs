@@ -12,13 +12,6 @@ pub trait BlockIntents: sealed::Sealed {
         Self::N
     }
     fn as_slice(&self) -> &[Intent];
-    fn as_slot_intents(&self, block_id: u32) -> Vec<SlotIntent> {
-        self.as_slice()
-            .iter()
-            .enumerate()
-            .map(|(i, intent)| SlotIntent::new(SlotId::new(block_id, i as u32), intent.clone()))
-            .collect()
-    }
 }
 
 /// Macro defining a set of BlockIntents implementations for

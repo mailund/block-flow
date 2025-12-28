@@ -1,5 +1,4 @@
-use crate::intents::SlotIntent;
-use crate::{ContractDeps, ExecuteTrait, ExecutionContextTrait};
+use crate::{ContractDeps, ExecuteTrait, ExecutionContextTrait, Intent};
 use ::weave::TopoOrdered;
 
 impl<CD> ContractDeps for TopoOrdered<CD>
@@ -23,15 +22,15 @@ where
 {
     // Collects and returns all SlotIntents produced by executing the blocks in the plan.
     // If any block fails to execute (returns None), the entire execution returns None.
-    fn execute(&self, context: &C) -> Option<Vec<SlotIntent>> {
+    fn execute(&self, context: &C) -> Option<Vec<Intent>> {
         // Execute each block in topological order,
         // flattening the resulting intents into a single vector.
         self.iter()
             // Get the optional output for each block
             .map(|block| block.execute(context))
             // Short-circuit if any block returned None
-            .collect::<Option<Vec<Vec<SlotIntent>>>>()
-            // Flatten the Vec<Vec<SlotIntent>> into Vec<SlotIntent>
+            .collect::<Option<Vec<Vec<Intent>>>>()
+            // Flatten the Vec<Vec<Intent>> into Vec<Intent>
             .map(|v| v.into_iter().flatten().collect())
     }
 }

@@ -77,9 +77,7 @@ where
     B: BlockSpec,
     C: ExecutionContextTrait,
 {
-    fn execute(&self, context: &C) -> Option<Vec<SlotIntent>> {
-        use crate::intents::BlockIntents;
-
+    fn execute(&self, context: &C) -> Option<Vec<Intent>> {
         let input = self.in_reader.read();
         let old_state = self.state_cell.borrow();
 
@@ -89,7 +87,7 @@ where
         self.out_writer.write(&output);
         *self.state_cell.borrow_mut() = new_state;
 
-        let slot_intents = intents.as_slot_intents(self.block.block_id());
+        let slot_intents = intents.as_slice().into();
         Some(slot_intents)
     }
 }

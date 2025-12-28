@@ -5,7 +5,7 @@ use std::path::Path;
 use block_macros::*;
 use block_traits::{
     BlockEmbedding, BlockPackage, BlockSpec, ContractDeps, ExecuteTrait, ExecutionContextTrait,
-    SlotIntent,
+    Intent,
 };
 use channels::ChannelKeys;
 use serialization_macros::Serializable;
@@ -111,7 +111,7 @@ macro_rules! define_block_type {
 
         // Embedded blocks are also executable
         impl<C: ExecutionContextTrait> ExecuteTrait<C> for BlockEmbeddings {
-            fn execute(&self, ctx: &C) -> Option<Vec<SlotIntent>>{
+            fn execute(&self, ctx: &C) -> Option<Vec<Intent>>{
                 match self {
                     $(
                         BlockEmbeddings::$variant(embedded) => embedded.execute(ctx),

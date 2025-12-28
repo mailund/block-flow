@@ -79,7 +79,7 @@ impl Actor {
         self.block.contract_deps()
     }
 
-    fn reconcile_intents(&self, intents: &[intents::SlotIntent]) -> Ref<'_, [Order]> {
+    fn reconcile_intents(&self, intents: &[intents::Intent]) -> Ref<'_, [Order]> {
         let mut orders = self.orders.borrow_mut();
 
         // Resize -- the intents will always have the same length and we
@@ -91,7 +91,7 @@ impl Actor {
 
         // Fill in-place
         for (i, intent) in intents.iter().enumerate() {
-            orders[i] = match &intent.intent {
+            orders[i] = match &intent {
                 intents::Intent::NoIntent(_) => Order::NoOrder,
                 intents::Intent::Place(place) => Order::New {
                     contract: place.contract.clone(),
