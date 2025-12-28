@@ -2,10 +2,13 @@ use super::execution_context::ExecutionContextTrait;
 use super::ContractDeps;
 use super::Intent;
 
+/// Trait for consuming intents produced during block execution.
 pub trait IntentConsumerTrait {
+    /// Consume an intent.
     fn consume(&mut self, intent: &Intent);
 }
 
+/// Implement IntentConsumerTrait for any closure that matches the signature.
 impl<F> IntentConsumerTrait for F
 where
     F: FnMut(&Intent),
