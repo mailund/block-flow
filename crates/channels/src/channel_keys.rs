@@ -30,11 +30,4 @@ pub trait OutputKeys<T>: ChannelKeys {
     fn writer(&self, registry: &ChannelRegistry)
         -> Result<Self::WriterType, errors::RegistryError>;
     fn register(&self, registry: &mut ChannelRegistry) -> Result<(), errors::RegistryError>;
-    fn register_for_writer(
-        &self,
-        registry: &mut ChannelRegistry,
-    ) -> Result<Self::WriterType, errors::RegistryError> {
-        self.register(registry)?;
-        self.writer(registry)
-    }
 }

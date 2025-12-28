@@ -135,6 +135,7 @@ pub mod block_keys {
 
     pub type In<B> = <B as BlockSpecAssociatedTypes>::Input;
     pub type Out<B> = <B as BlockSpecAssociatedTypes>::Output;
+    pub type Init<B> = <B as BlockSpecAssociatedTypes>::InitParameters;
 
     pub type InKeys<B> = <In<B> as BlockInput>::Keys;
     pub type OutKeys<B> = <Out<B> as BlockOutput>::Keys;

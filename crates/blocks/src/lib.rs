@@ -17,11 +17,7 @@ pub mod delete;
 pub mod simple_order;
 pub mod sniper;
 
-pub use after::AfterBlock;
 pub use block_io::*;
-pub use delete::DeleteBlock;
-pub use simple_order::SimpleOrderBlock;
-pub use sniper::SniperBlock;
 
 macro_rules! define_block_type {
     ( $( $variant:ident => $block_ty:path ),+ $(,)? ) => {
@@ -68,6 +64,17 @@ macro_rules! define_block_type {
                         BlockPackages::$variant(pkg) => pkg.output_keys.channel_names(),
                     )+
                 }
+            }
+            fn register_channels(
+                &self,
+                channels: &mut ::channels::ChannelRegistry,
+            ) -> Result<(), channels::RegistryError> {
+                match self {
+                    $(
+                        BlockPackages::$variant(pkg) => pkg.register_channels(channels)?,
+                    )+
+                }
+                Ok(())
             }
             fn weave(
                 &self,
@@ -124,11 +131,12 @@ define_block_type!(
 #[cfg(test)]
 mod test {
     use super::*;
-    use block_traits::*;
+    use block_traits::block_keys::{InKeys, Init, OutKeys};
     use std::fs;
     use std::io;
     use std::path::PathBuf;
-    use trade_types::{Cents, Contract, Price, Side};
+    use trade_types::{Cents, Contract, Price, Quantity, Side};
+    use weave::weave_nodes;
 
     pub struct OrderBook;
 
@@ -152,11 +160,7 @@ mod test {
             // Mock implementation
             Some(OrderBook {})
         }
-        fn get_position(
-            &self,
-            _block_id: u32,
-            _contract: &Contract,
-        ) -> Option<trade_types::Quantity> {
+        fn get_position(&self, _block_id: u32, _contract: &Contract) -> Option<Quantity> {
             // mock position
             None
         }
@@ -179,11 +183,9 @@ mod test {
     #[test]
     fn block_type_serialization_roundtrip_all_variants() {
         // After
-        type AfterInKey =
-            <<AfterBlock as BlockSpecAssociatedTypes>::Input as block_traits::BlockInput>::Keys;
-        type AfterOutKey =
-            <<AfterBlock as BlockSpecAssociatedTypes>::Output as block_traits::BlockOutput>::Keys;
-        type AfterInit = <AfterBlock as BlockSpecAssociatedTypes>::InitParameters;
+        type AfterInKey = InKeys<after::AfterBlock>;
+        type AfterOutKey = OutKeys<after::AfterBlock>;
+        type AfterInit = Init<after::AfterBlock>;
 
         let after_pkg = BlockPackage::<after::AfterBlock>::new(
             AfterInKey {},
@@ -195,11 +197,9 @@ mod test {
         );
 
         // Delete
-        type DeleteInKey =
-            <<DeleteBlock as BlockSpecAssociatedTypes>::Input as block_traits::BlockInput>::Keys;
-        type DeleteOutKey =
-            <<DeleteBlock as BlockSpecAssociatedTypes>::Output as block_traits::BlockOutput>::Keys;
-        type DeleteInit = <DeleteBlock as BlockSpecAssociatedTypes>::InitParameters;
+        type DeleteInKey = InKeys<delete::DeleteBlock>;
+        type DeleteOutKey = OutKeys<delete::DeleteBlock>;
+        type DeleteInit = Init<delete::DeleteBlock>;
 
         let delete_pkg = BlockPackage::<delete::DeleteBlock>::new(
             DeleteInKey {
@@ -211,11 +211,11 @@ mod test {
         );
 
         // SimpleOrder
-        type SimpleInKey = <<SimpleOrderBlock as BlockSpecAssociatedTypes>::Input as block_traits::BlockInput>::Keys;
-        type SimpleOutKey = <<SimpleOrderBlock as BlockSpecAssociatedTypes>::Output as block_traits::BlockOutput>::Keys;
-        type SimpleInit = <SimpleOrderBlock as BlockSpecAssociatedTypes>::InitParameters;
+        type SimpleInKey = InKeys<simple_order::SimpleOrderBlock>;
+        type SimpleOutKey = OutKeys<simple_order::SimpleOrderBlock>;
+        type SimpleInit = Init<simple_order::SimpleOrderBlock>;
 
-        let contract = trade_types::Contract::new("TEST");
+        let contract = Contract::new("TEST");
         let simple_pkg = BlockPackage::<simple_order::SimpleOrderBlock>::new(
             SimpleInKey {
                 should_execute: "should_execute".to_string(),
@@ -223,9 +223,9 @@ mod test {
             SimpleOutKey {},
             SimpleInit {
                 contract: contract.clone(),
-                side: trade_types::Side::Buy,
-                price: trade_types::Price::from(trade_types::Cents(100)),
-                quantity: trade_types::Quantity::from(trade_types::Kw(1)),
+                side: Side::Buy,
+                price: Price::from(Cents(100)),
+                quantity: Quantity::from(trade_types::Kw(1)),
             },
             None,
         );
@@ -400,19 +400,20 @@ mod test {
 
         let nodes = read_blocktypes_from_json_string(json).unwrap();
         let mut registry = channels::ChannelRegistry::default();
+        let weave = weave_nodes(&nodes, &mut registry).unwrap();
 
         // Provide inputs required by the After block (it has no input keys, so none needed).
         // Execute After first: it should write is_after (bool) to channel "is_after".
-        let after_block = nodes[0].weave(&mut registry).unwrap();
+        let after_block = &weave[0];
         let ctx = ExecutionContext { time: 11 };
         after_block.execute(&ctx);
 
         // Now Delete reads should_delete from "is_after" (bool channel). It just prints, but
-        // executing it ensures channel reading path is exercised.
-        let delete_block = nodes[1].weave(&mut registry).unwrap();
+        // executing it ensures that the channel's reading path is exercised.
+        let delete_block = &weave[1];
         delete_block.execute(&ctx);
 
-        // Sanity check the produced channel exists and is true.
+        // Sanity-check that the produced channel exists and is true.
         let cell = registry.get::<bool>("is_after").unwrap();
         assert!(*cell.borrow());
     }
@@ -430,7 +431,7 @@ mod test {
     }
 
     #[test]
-    fn read_blocktypes_from_json_string_invalid_json_fails() {
+    fn read_block_packages_from_json_string_invalid_json_fails() {
         // Malformed JSON to cover serde_json error path from from_str.
         let bad = r#"[{ "type": "After", "data": { "#;
         let err = read_blocktypes_from_json_string(bad).unwrap_err();
@@ -439,7 +440,7 @@ mod test {
     }
 
     #[test]
-    fn read_blocktypes_from_json_file_success() {
+    fn read_block_packages_from_json_file_success() {
         let json = r#"
         [
             {
@@ -464,7 +465,7 @@ mod test {
     }
 
     #[test]
-    fn read_blocktypes_from_json_file_missing_file_is_io_error() {
+    fn read_block_packages_from_json_file_missing_file_is_io_error() {
         let path = tmp_path("missing");
         // Ensure it doesn't exist
         let _ = fs::remove_file(&path);
@@ -477,14 +478,14 @@ mod test {
     }
 
     #[test]
-    fn read_blocktypes_from_json_file_bad_json_is_json_error() {
-        let path = tmp_path("badjson");
+    fn read_block_packages_from_json_file_bad_json_is_json_error() {
+        let path = tmp_path("bad_json");
         fs::write(&path, "not json").unwrap();
 
         let err = read_blocktypes_from_json_file(&path).unwrap_err();
         match err {
             ReadBlocksError::Json(_) => {}
-            _ => panic!("Expected Json error"),
+            _ => panic!("Expected JSON error"),
         }
 
         let _ = fs::remove_file(&path);

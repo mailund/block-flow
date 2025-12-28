@@ -1,7 +1,7 @@
 use super::embed::BlockEmbedding;
 
 use super::{BlockInput, BlockOutput, BlockSpec};
-use channels::{ChannelKeys, RegistryError};
+use channels::{ChannelKeys, OutputKeys, RegistryError};
 use serde::{Deserialize, Serialize};
 use serialization_macros::Serializable;
 use weave::NodePackage;
@@ -39,20 +39,25 @@ where
         }
     }
 
+    /// A block will register its output channels for weaving.
+    pub fn register_channels(
+        &self,
+        channels: &mut ::channels::ChannelRegistry,
+    ) -> Result<(), RegistryError> {
+        self.output_keys.register(channels)?;
+        Ok(())
+    }
+
+    /// Weave the block into a BlockEmbedding by creating
+    /// the underlying block from the init parameters and
+    /// wiring up the input and output channels.
     pub fn weave(
         &self,
         channels: &mut ::channels::ChannelRegistry,
     ) -> Result<BlockEmbedding<B>, RegistryError> {
         BlockEmbedding::<B>::new_from_package(self, channels)
     }
-}
 
-// Helper methods for getting channel names without bothering with
-// the context
-impl<BSpec> BlockPackage<BSpec>
-where
-    BSpec: BlockSpec + 'static,
-{
     pub fn input_channels(&self) -> Vec<String> {
         self.input_keys.channel_names()
     }
@@ -71,6 +76,12 @@ where
     }
     fn output_channels(&self) -> Vec<String> {
         BlockPackage::<BSpec>::output_channels(self)
+    }
+    fn register_channels(
+        &self,
+        channels: &mut ::channels::ChannelRegistry,
+    ) -> Result<(), RegistryError> {
+        BlockPackage::<BSpec>::register_channels(self, channels)
     }
     fn weave(
         &self,
