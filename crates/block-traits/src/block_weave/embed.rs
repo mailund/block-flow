@@ -72,23 +72,26 @@ where
 }
 
 /// Implement BlockTrait for BlockPackage to allow type-erased execution.
-impl<B, C> ExecuteTrait<C> for BlockEmbedding<B>
+impl<B, C, I> ExecuteTrait<C, I> for BlockEmbedding<B>
 where
     B: BlockSpec,
     C: ExecutionContextTrait,
+    I: IntentConsumerTrait,
 {
-    fn execute(&self, context: &C) -> Option<Vec<Intent>> {
+    fn execute(&self, context: &C, consumer: &mut I) -> Option<()> {
         let input = self.in_reader.read();
         let old_state = self.state_cell.borrow();
 
-        let (output, new_state, intents) = self.block.execute(context, input, &old_state)?;
-
+        let (output, new_state, new_intents) = self.block.execute(context, input, &old_state)?;
         drop(old_state); // Release borrow before mutable borrow
+
         self.out_writer.write(&output);
         *self.state_cell.borrow_mut() = new_state;
+        for intent in new_intents.as_slice() {
+            consumer.consume(intent);
+        }
 
-        let slot_intents = intents.as_slice().into();
-        Some(slot_intents)
+        Some(())
     }
 }
 
@@ -225,7 +228,9 @@ mod tests {
         let enc = package.weave(&mut registry).unwrap();
         let ctx = ExecutionContext { time: 0 };
 
-        let intents = enc.execute(&ctx).unwrap();
+        let mut intents = vec![];
+        let mut intent_consumer = |intent: &Intent| intents.push(intent.clone());
+        enc.execute(&ctx, &mut intent_consumer).unwrap();
         assert!(intents.is_empty());
 
         // Output channel stores the FIELD type (i32), not Output struct.
@@ -250,7 +255,9 @@ mod tests {
         let enc = package.weave(&mut registry).unwrap();
         let ctx = ExecutionContext { time: 1 };
 
-        enc.execute(&ctx);
+        let mut intents = vec![];
+        let mut intent_consumer = |intent: &Intent| intents.push(intent.clone());
+        enc.execute(&ctx, &mut intent_consumer).unwrap();
 
         let cell = registry.get::<i32>("out").unwrap();
         let out = cell.borrow();

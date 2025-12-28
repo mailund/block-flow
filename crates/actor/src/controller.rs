@@ -1,14 +1,14 @@
 use super::*;
 
-use super::actor::ActorExecutionContext;
+use super::actor::{ActorExecutionContext, ActorTrait};
 use std::collections::HashMap;
 use std::rc::Rc;
 use trade_types::Contract;
 
 pub struct ActorController {
     time: u64, // mock time
-    id_to_actors: HashMap<u32, Rc<Actor>>,
-    contracts_to_actors: HashMap<Contract, Vec<Rc<Actor>>>,
+    id_to_actors: HashMap<u32, Rc<dyn ActorTrait>>,
+    contracts_to_actors: HashMap<Contract, Vec<Rc<dyn ActorTrait>>>,
 }
 
 impl ActorController {
@@ -20,19 +20,17 @@ impl ActorController {
         }
     }
 
-    pub fn add_actor(&mut self, actor: Actor) {
-        let rc_actor = Rc::new(actor);
-        self.id_to_actors
-            .insert(rc_actor.actor_id(), rc_actor.clone());
-        for contract in rc_actor.contracts() {
+    pub fn add_actor(&mut self, actor: Rc<dyn ActorTrait>) {
+        self.id_to_actors.insert(actor.actor_id(), actor.clone());
+        for contract in actor.contracts() {
             self.contracts_to_actors
                 .entry(contract)
                 .or_default()
-                .push(rc_actor.clone());
+                .push(actor.clone());
         }
     }
 
-    pub fn get_actor_by_id(&self, id: u32) -> Option<Rc<Actor>> {
+    pub fn get_actor_by_id(&self, id: u32) -> Option<Rc<dyn ActorTrait>> {
         self.id_to_actors.get(&id).cloned()
     }
 
@@ -42,7 +40,7 @@ impl ActorController {
         }
     }
 
-    fn remove_actor_rc_from_contract_tables(&mut self, actor: &Rc<Actor>) {
+    fn remove_actor_rc_from_contract_tables(&mut self, actor: &Rc<dyn ActorTrait>) {
         for contract in actor.contracts() {
             if let Some(actors) = self.contracts_to_actors.get_mut(&contract) {
                 actors.retain(|a| !Rc::ptr_eq(a, actor));
@@ -134,7 +132,7 @@ mod tests {
             }
         }
 
-        fn mk_actor(id: u32) -> Actor {
+        fn mk_actor(id: u32) -> Rc<dyn ActorTrait> {
             use ::block_traits::BlockPackage;
 
             let mut reg = ::channels::ChannelRegistry::new();
@@ -145,7 +143,9 @@ mod tests {
                 BlockPackage::new(input_keys, output_keys, InitParams, None);
             let block = package.weave(&mut reg).unwrap();
 
-            Actor::new(id, Box::new(block))
+            let actor: Rc<dyn ActorTrait> = Rc::new(Actor::new(id, block));
+
+            actor
         }
 
         #[test]
@@ -203,7 +203,7 @@ mod tests {
             Contract::new(name)
         }
 
-        fn mk_actor(id: u32, contracts: &[&str]) -> Actor {
+        fn mk_actor(id: u32, contracts: &[&str]) -> Rc<dyn ActorTrait> {
             use ::block_traits::BlockPackage;
 
             let mut reg = ::channels::ChannelRegistry::new();
@@ -218,7 +218,9 @@ mod tests {
             let package = BlockPackage::<TestBlock>::new(input_keys, output_keys, params, None);
             let block = package.weave(&mut reg).unwrap();
 
-            Actor::new(id, Box::new(block))
+            let actor: Rc<dyn ActorTrait> = Rc::new(Actor::new(id, block));
+
+            actor
         }
 
         #[test]
@@ -278,7 +280,7 @@ mod tests {
             Contract::new(name)
         }
 
-        fn mk_actor(id: u32, contracts: &[&str]) -> Actor {
+        fn mk_actor(id: u32, contracts: &[&str]) -> Rc<dyn ActorTrait> {
             use ::block_traits::BlockPackage;
 
             let mut reg = ::channels::ChannelRegistry::new();
@@ -294,7 +296,9 @@ mod tests {
                 BlockPackage::new(input_keys, output_keys, params, None);
             let block = package.weave(&mut reg).unwrap();
 
-            Actor::new(id, Box::new(block))
+            let actor: Rc<dyn ActorTrait> = Rc::new(Actor::new(id, block));
+
+            actor
         }
 
         #[test]

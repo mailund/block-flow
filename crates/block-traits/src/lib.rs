@@ -18,7 +18,7 @@ pub use associated_types::{
 };
 pub use block_spec::BlockSpec;
 pub use block_weave::{BlockEmbedding, BlockPackage};
-pub use execute_trait::ExecuteTrait;
+pub use execute_trait::{ExecuteTrait, IntentConsumerTrait};
 pub use execution_context::ExecutionContextTrait;
 pub use intents::*;
 

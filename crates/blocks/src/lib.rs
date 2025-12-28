@@ -110,11 +110,11 @@ macro_rules! define_block_type {
         }
 
         // Embedded blocks are also executable
-        impl<C: ExecutionContextTrait> ExecuteTrait<C> for BlockEmbeddings {
-            fn execute(&self, ctx: &C) -> Option<Vec<Intent>>{
+        impl<C: ExecutionContextTrait, I: FnMut(&Intent)> ExecuteTrait<C, I> for BlockEmbeddings {
+            fn execute(&self, ctx: &C, intent_consumer: &mut I) -> Option<()> {
                 match self {
                     $(
-                        BlockEmbeddings::$variant(embedded) => embedded.execute(ctx),
+                        BlockEmbeddings::$variant(embedded) => embedded.execute(ctx, intent_consumer),
                     )+
                 }
             }
@@ -406,12 +406,14 @@ mod test {
         // Execute After first: it should write is_after (bool) to channel "is_after".
         let after_block = &weave[0];
         let ctx = ExecutionContext { time: 11 };
-        after_block.execute(&ctx);
+        let mut intents = vec![];
+        let mut intent_consumer = |intent: &Intent| intents.push(intent.clone());
+        after_block.execute(&ctx, &mut intent_consumer);
 
         // Now Delete reads should_delete from "is_after" (bool channel). It just prints, but
         // executing it ensures that the channel's reading path is exercised.
         let delete_block = &weave[1];
-        delete_block.execute(&ctx);
+        delete_block.execute(&ctx, &mut intent_consumer);
 
         // Sanity-check that the produced channel exists and is true.
         let cell = registry.get::<bool>("is_after").unwrap();

@@ -1,9 +1,3 @@
-use super::*;
-use block_traits::intents;
-use block_traits::ExecuteTrait;
-use std::cell::{Ref, RefCell};
-use trade_types::Contract;
-
 mod mock_implementations {
     use block_traits::execution_context::ExecutionContextTrait;
     use trade_types::{Cents, Contract, Price, Side};
@@ -47,23 +41,62 @@ mod mock_implementations {
 }
 pub use mock_implementations::ActorExecutionContext;
 
-/// A mock actor.
-pub struct Actor {
+use super::*;
+use std::cell::{Ref, RefCell};
+use trade_types::Contract;
+
+use block_traits::{ContractDeps, ExecuteTrait, Intent, IntentConsumerTrait};
+
+/// Reconciliation book-keeping (mock for now) and the consumer trait
+/// for invoking reconciliation on intents produced by the actor's block.
+pub struct Reconcile<'a> {
+    /// Reference to the actor's orders. Thus lifetime is needed (it can't live longer
+    /// than the actor itself), and we need mutable access to update the orders, thus
+    /// the RefCell (the actor itself is not mutable during tick execution, so we hide
+    /// internal mutability here).
+    orders: &'a RefCell<Vec<Order>>,
+    /// Index into the orders vector to keep track of which order we are processing.
+    idx: usize,
+}
+
+/// Implement the IntentConsumerTrait for Reconcile to process intents.
+/// This gives us a callback that is invoked after each block's execution
+/// where we can reconsile and push order updates out.
+impl<'a> IntentConsumerTrait for Reconcile<'a> {
+    fn consume(&mut self, intent: &Intent) {
+        // The implementation here is still a mock
+        let mut orders = self.orders.borrow_mut();
+
+        if self.idx >= orders.len() {
+            orders.push(Order::NoOrder);
+        }
+
+        orders[self.idx] = match intent {
+            Intent::NoIntent(_) => Order::NoOrder,
+            Intent::Place(place) => Order::New {
+                contract: place.contract.clone(),
+                side: place.side.clone(),
+                price: place.price.clone(),
+                quantity: place.quantity.clone(),
+            },
+        };
+
+        self.idx += 1;
+    }
+}
+
+pub struct Actor<B> {
     id: u32,
-
-    /// The block encapsulated by this actor.
-    /// A block can be a simple block or a composite block,
-    /// so in practice the block is usually an execution plan
-    /// containing multiple blocks.
-    block: Box<dyn ExecuteTrait<ActorExecutionContext>>, // FIXME: We could use generics here to better control the instruction set
-
-    /// Array of the orders the actor can emit.
-    /// RefCell for interior mutability.
+    block: B,
     orders: RefCell<Vec<Order>>,
 }
 
-impl Actor {
-    pub fn new(id: u32, block: Box<dyn ExecuteTrait<ActorExecutionContext>>) -> Self {
+impl<B> Actor<B>
+where
+    B: ContractDeps,
+    for<'a> B: ExecuteTrait<ActorExecutionContext, Reconcile<'a>>,
+{
+    pub fn new(id: u32, block: B) -> Self {
         Self {
             id,
             block,
@@ -79,41 +112,49 @@ impl Actor {
         self.block.contract_deps()
     }
 
-    fn reconcile_intents(&self, intents: &[intents::Intent]) -> Ref<'_, [Order]> {
+    pub(crate) fn tick<'a>(&'a self, context: &ActorExecutionContext) -> Option<Ref<'a, [Order]>> {
+        // Reset orders before each tick
         let mut orders = self.orders.borrow_mut();
-
-        // Resize -- the intents will always have the same length and we
-        // *could* allocate this up front if we could compute this length
-        // (which we almost can; we can for all Intents and for execution
-        // plans we could compute it upon creation). But I haven't bothered
-        // yet.
-        orders.resize(intents.len(), Order::NoOrder);
-
-        // Fill in-place
-        for (i, intent) in intents.iter().enumerate() {
-            orders[i] = match &intent {
-                intents::Intent::NoIntent(_) => Order::NoOrder,
-                intents::Intent::Place(place) => Order::New {
-                    contract: place.contract.clone(),
-                    side: place.side.clone(),
-                    price: place.price.clone(),
-                    quantity: place.quantity.clone(),
-                },
-            };
+        for o in orders.iter_mut() {
+            *o = Order::NoOrder;
         }
 
-        // Return the updated orders as a Ref
-        let orders = self.orders.borrow();
-        Ref::map(orders, |o| o.as_slice())
-    }
+        let mut consumer = Reconcile {
+            orders: &self.orders,
+            idx: 0,
+        };
 
-    /// Perform a tick of the actor, given the execution context.
-    /// The tick will execute the underlying block and reconcile the
-    /// resulting intents into orders. The function then returns
-    /// the new orders or None if the block could not execute.
-    pub(crate) fn tick(&'_ self, context: &ActorExecutionContext) -> Option<Ref<'_, [Order]>> {
-        let intents = self.block.execute(context)?;
-        let orders = self.reconcile_intents(&intents);
-        Some(orders)
+        // Execute with the reconcile consumer processing the intents
+        self.block.execute(context, &mut consumer)?;
+
+        // Returning the orders -- this is a mock and it should output the orders
+        // on IPC channels in a real implementation.
+        let orders = self.orders.borrow();
+        Some(Ref::map(orders, |o| o.as_slice()))
+    }
+}
+
+pub trait ActorTrait {
+    /// Id of the actor / algorithm
+    fn actor_id(&self) -> u32;
+    /// Contracts registered for ticks upon initialization
+    fn contracts(&self) -> Vec<Contract>;
+    /// Perform a tick for the actor, returning any orders generated.
+    fn tick(&self, ctx: &ActorExecutionContext) -> Option<Ref<'_, [Order]>>;
+}
+
+impl<B> ActorTrait for Actor<B>
+where
+    B: ContractDeps,
+    for<'a> B: ExecuteTrait<ActorExecutionContext, Reconcile<'a>>,
+{
+    fn actor_id(&self) -> u32 {
+        Actor::actor_id(self)
+    }
+    fn contracts(&self) -> Vec<Contract> {
+        Actor::contracts(self)
+    }
+    fn tick(&self, ctx: &ActorExecutionContext) -> Option<Ref<'_, [Order]>> {
+        Actor::tick(self, ctx)
     }
 }

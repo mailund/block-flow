@@ -15,22 +15,20 @@ where
 }
 
 /// Implementing the BlockTrait so execution plans can be used as composite blocks.
-impl<C, X> ExecuteTrait<C> for TopoOrdered<X>
+impl<C, X, I> ExecuteTrait<C, I> for TopoOrdered<X>
 where
     C: ExecutionContextTrait,
-    X: ExecuteTrait<C>,
+    X: ExecuteTrait<C, I>,
+    I: FnMut(&Intent),
 {
     // Collects and returns all SlotIntents produced by executing the blocks in the plan.
     // If any block fails to execute (returns None), the entire execution returns None.
-    fn execute(&self, context: &C) -> Option<Vec<Intent>> {
+    fn execute(&self, context: &C, intent_consumer: &mut I) -> Option<()> {
         // Execute each block in topological order,
         // flattening the resulting intents into a single vector.
-        self.iter()
-            // Get the optional output for each block
-            .map(|block| block.execute(context))
-            // Short-circuit if any block returned None
-            .collect::<Option<Vec<Vec<Intent>>>>()
-            // Flatten the Vec<Vec<Intent>> into Vec<Intent>
-            .map(|v| v.into_iter().flatten().collect())
+        for block in self.iter() {
+            block.execute(context, intent_consumer)?;
+        }
+        Some(())
     }
 }
