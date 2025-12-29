@@ -1,6 +1,6 @@
 use super::*;
 
-use super::actor::{ActorExecutionContext, ActorTrait};
+use super::{ActorExecutionContext, ActorTrait};
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;

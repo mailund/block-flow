@@ -3,8 +3,10 @@ use std::fmt::Debug;
 use trade_types::*;
 
 mod actor;
+mod actor_execution_context;
 mod controller;
-pub use actor::Actor;
+pub use actor::{Actor, ActorTrait};
+pub use actor_execution_context::ActorExecutionContext;
 pub use controller::ActorController;
 
 /// This is a mock of outbound orders
