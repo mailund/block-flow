@@ -1,6 +1,10 @@
 use super::*;
-use block_traits::{ContractDeps, ExecuteTrait, Intent, IntentConsumerTrait};
+use block_traits::{ExecuteTrait, Intent, IntentConsumerTrait};
 use trade_types::Contract;
+
+/// "Type alias" (for a trait) for algorithms an actor can run.
+pub trait ActorAlgo: ExecuteTrait<ActorExecutionContext, Reconcile> {}
+impl<T> ActorAlgo for T where T: ExecuteTrait<ActorExecutionContext, Reconcile> {}
 
 /// Reconciliation book-keeping (mock for now) and the consumer trait
 /// for invoking reconciliation on intents produced by the actor's block.
@@ -33,20 +37,23 @@ impl IntentConsumerTrait for Reconcile {
     }
 }
 
-pub struct Actor<B> {
+pub struct Actor<Algo>
+where
+    Algo: ActorAlgo,
+{
     id: u32,
-    block: B,
+    algo: Algo,
     reconcile: Reconcile,
 }
 
-impl<B> Actor<B>
+impl<Algo> Actor<Algo>
 where
-    B: ExecuteTrait<ActorExecutionContext, Reconcile>,
+    Algo: ActorAlgo,
 {
-    pub fn new(id: u32, block: B) -> Self {
+    pub fn new(id: u32, algo: Algo) -> Self {
         Self {
             id,
-            block,
+            algo,
             reconcile: Reconcile {
                 orders: vec![],
                 idx: 0,
@@ -59,11 +66,11 @@ where
     }
 
     pub fn contracts(&self) -> Vec<Contract> {
-        self.block.contract_deps()
+        self.algo.contract_deps()
     }
 
     pub(crate) fn tick(&mut self, context: &ActorExecutionContext) -> Option<()> {
-        self.block.execute(context, &mut self.reconcile)
+        self.algo.execute(context, &mut self.reconcile)
     }
 }
 
@@ -76,10 +83,9 @@ pub trait ActorTrait {
     fn tick(&mut self, ctx: &ActorExecutionContext) -> Option<()>;
 }
 
-impl<B> ActorTrait for Actor<B>
+impl<Algo> ActorTrait for Actor<Algo>
 where
-    B: ContractDeps,
-    for<'a> B: ExecuteTrait<ActorExecutionContext, Reconcile>,
+    Algo: ActorAlgo,
 {
     fn actor_id(&self) -> u32 {
         Actor::actor_id(self)
