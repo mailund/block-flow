@@ -1,10 +1,16 @@
 use super::*;
-use block_traits::{ExecuteTrait, Intent, IntentConsumerTrait};
+use block_traits::{Effect, EffectConsumerTrait, ExecuteTrait, Intent, IntentConsumerTrait};
 use trade_types::Contract;
 
 /// "Type alias" (for a trait) for algorithms an actor can run.
-pub trait ActorAlgo: for<'a> ExecuteTrait<ActorExecutionContext, Reconcile<'a>> {}
-impl<T> ActorAlgo for T where T: for<'a> ExecuteTrait<ActorExecutionContext, Reconcile<'a>> {}
+pub trait ActorAlgo:
+    for<'a> ExecuteTrait<ActorExecutionContext, Reconcile<'a>, EffectHandler>
+{
+}
+impl<T> ActorAlgo for T where
+    T: for<'a> ExecuteTrait<ActorExecutionContext, Reconcile<'a>, EffectHandler>
+{
+}
 
 struct Reconciliator {
     orders: Vec<Order>,
@@ -64,6 +70,18 @@ impl<'a> IntentConsumerTrait for Reconcile<'a> {
     }
 }
 
+pub struct EffectHandler;
+impl EffectHandler {
+    fn new() -> Self {
+        Self {}
+    }
+}
+impl EffectConsumerTrait for EffectHandler {
+    fn schedule_effect(&mut self, _effect: Effect) {
+        // Mock implementation; real implementation would handle effects appropriately.
+    }
+}
+
 pub struct Actor<Algo>
 where
     Algo: ActorAlgo,
@@ -71,6 +89,7 @@ where
     id: u32,
     algo: Box<Algo>,
     reconciliator: Reconciliator,
+    effect_handler: EffectHandler,
 }
 
 impl<Algo> Actor<Algo>
@@ -80,10 +99,12 @@ where
     pub fn new(id: u32, algo: Box<Algo>) -> Self {
         let no_intents = algo.no_intents();
         let reconciliator = Reconciliator::new(no_intents);
+        let effect_handler = EffectHandler::new();
         Self {
             id,
             algo,
             reconciliator,
+            effect_handler,
         }
     }
 
@@ -97,7 +118,8 @@ where
 
     fn execute(&mut self, context: &ActorExecutionContext) -> Option<()> {
         let mut reconcile = self.reconciliator.reconciliate();
-        self.algo.execute(context, &mut reconcile)
+        self.algo
+            .execute(context, &mut reconcile, &mut self.effect_handler)
     }
 }
 

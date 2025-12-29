@@ -8,6 +8,7 @@ use channels::{Reader, Writer};
 pub mod associated_types;
 pub mod block_spec;
 pub mod block_weave;
+pub mod effects;
 pub mod execute_trait;
 pub mod execution_context;
 pub mod execution_plan;
@@ -18,7 +19,8 @@ pub use associated_types::{
 };
 pub use block_spec::BlockSpec;
 pub use block_weave::{BlockEmbedding, BlockPackage};
-pub use execute_trait::{ExecuteTrait, IntentConsumerTrait};
+pub use effects::*;
+pub use execute_trait::{EffectConsumerTrait, ExecuteTrait, IntentConsumerTrait};
 pub use execution_context::ExecutionContextTrait;
 pub use intents::*;
 
@@ -160,11 +162,12 @@ mod test_types {
             TestState { acc: 0 }
         }
 
-        fn execute<C: ExecutionContextTrait>(
+        fn execute<C: ExecutionContextTrait, E: EffectConsumerTrait>(
             &self,
             _context: &C,
             input: Self::Input,
             state: &Self::State,
+            _effect_consumer: &mut E,
         ) -> Option<(Self::Output, Self::State, Self::Intents)> {
             let output = TestOutput {
                 result: input.value * 2,
@@ -248,7 +251,10 @@ mod tests {
         let input = TestInput { value: 21 };
         let state = TestState { acc: 0 };
 
-        let (output, new_state, _intents) = block.execute(&context, input, &state).unwrap();
+        let mut effect_handler = |_effect: Effect| {};
+        let (output, new_state, _intents) = block
+            .execute(&context, input, &state, &mut effect_handler)
+            .unwrap();
 
         assert_eq!(output.result, 42);
         assert_eq!(new_state, TestState { acc: 1 });
@@ -260,10 +266,12 @@ mod tests {
         let context = ExecutionContext { time: 100 };
         let input = TestInput { value: 5 };
         let mut state = block.init_state();
+        let mut effect_handler = |_effect: Effect| {};
 
         for expected_count in 1..=3 {
-            let (output, new_state, _intents) =
-                block.execute(&context, input.clone(), &state).unwrap();
+            let (output, new_state, _intents) = block
+                .execute(&context, input.clone(), &state, &mut effect_handler)
+                .unwrap();
             assert_eq!(output.result, 10); // 5 * 2
             assert_eq!(
                 new_state,
@@ -331,11 +339,12 @@ mod tests {
             TestState { acc: 0 }
         }
 
-        fn execute<C: ExecutionContextTrait>(
+        fn execute<C: ExecutionContextTrait, E: EffectConsumerTrait>(
             &self,
             _context: &C,
             input: Self::Input,
             state: &Self::State,
+            _effect_consumer: &mut E,
         ) -> Option<(Self::Output, Self::State, Self::Intents)> {
             let new_state = TestState {
                 acc: state.acc + input.value,
@@ -370,7 +379,10 @@ mod tests {
         let expected_results = vec![5, 15, 18];
 
         for (input, expected) in inputs.into_iter().zip(expected_results) {
-            let (output, new_state, _intents) = block.execute(&context, input, &state).unwrap();
+            let mut effect_handler = |_effect: Effect| {};
+            let (output, new_state, _intents) = block
+                .execute(&context, input, &state, &mut effect_handler)
+                .unwrap();
             assert_eq!(output.result, expected);
             assert_eq!(new_state, TestState { acc: expected });
             state = new_state;

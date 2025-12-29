@@ -1,4 +1,6 @@
-use crate::{ContractDeps, ExecuteTrait, ExecutionContextTrait, Intent};
+use crate::{
+    ContractDeps, EffectConsumerTrait, ExecuteTrait, ExecutionContextTrait, IntentConsumerTrait,
+};
 use ::weave::TopoOrdered;
 
 impl<CD> ContractDeps for TopoOrdered<CD>
@@ -15,11 +17,12 @@ where
 }
 
 /// Implementing the BlockTrait so execution plans can be used as composite blocks.
-impl<C, X, I> ExecuteTrait<C, I> for TopoOrdered<X>
+impl<C, X, I, E> ExecuteTrait<C, I, E> for TopoOrdered<X>
 where
     C: ExecutionContextTrait,
-    X: ExecuteTrait<C, I>,
-    I: FnMut(&Intent),
+    X: ExecuteTrait<C, I, E>,
+    I: IntentConsumerTrait,
+    E: EffectConsumerTrait,
 {
     fn no_intents(&self) -> usize {
         // Sum the number of intents from each block in the plan
@@ -27,11 +30,11 @@ where
     }
     // Collects and returns all SlotIntents produced by executing the blocks in the plan.
     // If any block fails to execute (returns None), the entire execution returns None.
-    fn execute(&self, context: &C, intent_consumer: &mut I) -> Option<()> {
+    fn execute(&self, context: &C, intent_consumer: &mut I, effect_consumer: &mut E) -> Option<()> {
         // Execute each block in topological order,
         // flattening the resulting intents into a single vector.
         for block in self.iter() {
-            block.execute(context, intent_consumer)?;
+            block.execute(context, intent_consumer, effect_consumer)?;
         }
         Some(())
     }

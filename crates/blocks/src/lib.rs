@@ -4,8 +4,8 @@ use std::path::Path;
 
 use block_macros::*;
 use block_traits::{
-    BlockEmbedding, BlockPackage, BlockSpec, ContractDeps, ExecuteTrait, ExecutionContextTrait,
-    Intent, IntentConsumerTrait,
+    BlockEmbedding, BlockPackage, BlockSpec, ContractDeps, EffectConsumerTrait, ExecuteTrait,
+    ExecutionContextTrait, Intent, IntentConsumerTrait,
 };
 use channels::ChannelKeys;
 use serialization_macros::Serializable;
@@ -110,18 +110,18 @@ macro_rules! define_block_type {
         }
 
         // Embedded blocks are also executable
-        impl<C: ExecutionContextTrait, I: IntentConsumerTrait> ExecuteTrait<C, I> for BlockEmbeddings {
+        impl<C: ExecutionContextTrait, I: IntentConsumerTrait, E: EffectConsumerTrait> ExecuteTrait<C, I, E> for BlockEmbeddings {
             fn no_intents(&self) -> usize {
                 match self {
                     $( BlockEmbeddings::$variant(embedded) =>
-                        <BlockEmbedding<$block_ty> as ExecuteTrait<C, I>>::no_intents(embedded),
+                        <BlockEmbedding<$block_ty> as ExecuteTrait<C, I, E>>::no_intents(embedded),
                     )+
                 }
             }
-            fn execute(&self, ctx: &C, intent_consumer: &mut I) -> Option<()> {
+            fn execute(&self, ctx: &C, intent_consumer: &mut I, effect_consumer: &mut E) -> Option<()> {
                 match self {
                     $(
-                        BlockEmbeddings::$variant(embedded) => embedded.execute(ctx, intent_consumer),
+                        BlockEmbeddings::$variant(embedded) => embedded.execute(ctx, intent_consumer, effect_consumer),
                     )+
                 }
             }
@@ -139,6 +139,7 @@ define_block_type!(
 mod test {
     use super::*;
     use block_traits::block_keys::{InKeys, Init, OutKeys};
+    use block_traits::Effect;
     use std::fs;
     use std::io;
     use std::path::PathBuf;
@@ -415,12 +416,13 @@ mod test {
         let ctx = ExecutionContext { time: 11 };
         let mut intents = vec![];
         let mut intent_consumer = |intent: &Intent| intents.push(intent.clone());
-        after_block.execute(&ctx, &mut intent_consumer);
+        let mut effect_consumer = |_: Effect| {};
+        after_block.execute(&ctx, &mut intent_consumer, &mut effect_consumer);
 
         // Now Delete reads should_delete from "is_after" (bool channel). It just prints, but
         // executing it ensures that the channel's reading path is exercised.
         let delete_block = &weave[1];
-        delete_block.execute(&ctx, &mut intent_consumer);
+        delete_block.execute(&ctx, &mut intent_consumer, &mut effect_consumer);
 
         // Sanity-check that the produced channel exists and is true.
         let cell = registry.get::<bool>("is_after").unwrap();

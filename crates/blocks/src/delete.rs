@@ -26,12 +26,10 @@ impl BlockSpec for DeleteBlock {
     }
 
     #[execute]
-    fn execute(&self, input: Input) {
-        if input.should_delete {
+    fn execute<E: EffectConsumerTrait>(&self, Input { should_delete }: Input, effects: &mut E) {
+        if should_delete {
             // In a real implementation, this would trigger deletion logic.
-            println!("DeleteBlock: Deletion triggered.");
-        } else {
-            println!("DeleteBlock: No deletion.");
+            effects.schedule_terminate_effect();
         }
     }
 }
@@ -39,6 +37,7 @@ impl BlockSpec for DeleteBlock {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use block_traits::Effect;
     use trade_types::{Cents, Contract, Price, Side};
 
     pub struct OrderBook;
@@ -109,6 +108,7 @@ mod tests {
         let block = DeleteBlock { block_id: 1 };
         let ctx = ExecutionContext { time: 0 }; // adjust if your ExecutionContext has more fields
         let state = State;
+        let mut effect_handler = |_effect: Effect| {};
 
         // The #[execute] macro should adapt this "unit return" method to the full signature:
         // fn execute(&self, &ExecutionContext, Input, &State) -> (Output, State, Intents)
@@ -119,6 +119,7 @@ mod tests {
                     should_delete: false,
                 },
                 &state,
+                &mut effect_handler,
             )
             .unwrap();
 
@@ -134,6 +135,7 @@ mod tests {
         let block = DeleteBlock { block_id: 1 };
         let ctx = ExecutionContext { time: 0 }; // adjust if needed
         let state = State;
+        let mut effect_handler = |_effect: Effect| {};
 
         let (out, state_out, intents) = block
             .execute(
@@ -142,6 +144,7 @@ mod tests {
                     should_delete: true,
                 },
                 &state,
+                &mut effect_handler,
             )
             .unwrap();
 

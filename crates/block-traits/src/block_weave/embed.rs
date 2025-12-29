@@ -72,28 +72,31 @@ where
 }
 
 /// Implement ExecuteTrait for BlockPackage so we can use it type-erased in execution weaves.
-impl<B, C, I> ExecuteTrait<C, I> for BlockEmbedding<B>
+impl<B, C, I, E> ExecuteTrait<C, I, E> for BlockEmbedding<B>
 where
     B: BlockSpec,
     C: ExecutionContextTrait,
     I: IntentConsumerTrait,
+    E: EffectConsumerTrait,
 {
     fn no_intents(&self) -> usize {
         // For block specs we always know the number of intents at compile time
         // from the associated Intents type.
         B::Intents::len()
     }
-    fn execute(&self, context: &C, consumer: &mut I) -> Option<()> {
+    fn execute(&self, context: &C, intent_consumer: &mut I, effect_consumer: &mut E) -> Option<()> {
         let input = self.in_reader.read();
         let old_state = self.state_cell.borrow();
 
-        let (output, new_state, new_intents) = self.block.execute(context, input, &old_state)?;
+        let (output, new_state, new_intents) =
+            self.block
+                .execute(context, input, &old_state, effect_consumer)?;
         drop(old_state); // Release borrow before mutable borrow
 
         self.out_writer.write(&output);
         *self.state_cell.borrow_mut() = new_state;
         for intent in new_intents.as_slice() {
-            consumer.consume(intent);
+            intent_consumer.consume(intent);
         }
 
         Some(())
@@ -235,7 +238,9 @@ mod tests {
 
         let mut intents = vec![];
         let mut intent_consumer = |intent: &Intent| intents.push(intent.clone());
-        enc.execute(&ctx, &mut intent_consumer).unwrap();
+        let mut effect_consumer = |_: Effect| {};
+        enc.execute(&ctx, &mut intent_consumer, &mut effect_consumer)
+            .unwrap();
         assert!(intents.is_empty());
 
         // Output channel stores the FIELD type (i32), not Output struct.
@@ -262,7 +267,9 @@ mod tests {
 
         let mut intents = vec![];
         let mut intent_consumer = |intent: &Intent| intents.push(intent.clone());
-        enc.execute(&ctx, &mut intent_consumer).unwrap();
+        let mut effect_consumer = |_: Effect| {};
+        enc.execute(&ctx, &mut intent_consumer, &mut effect_consumer)
+            .unwrap();
 
         let cell = registry.get::<i32>("out").unwrap();
         let out = cell.borrow();

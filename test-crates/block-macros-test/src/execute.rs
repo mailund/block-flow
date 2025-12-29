@@ -33,6 +33,8 @@ impl ExecutionContextTrait for ExecutionContext {
 
 mod self_only_no_return {
     use super::*;
+    use block_traits::Effect;
+
     make_defaults!(input, output, state, init_params);
 
     #[block]
@@ -47,12 +49,15 @@ mod self_only_no_return {
     fn test_context_input_output_execution() {
         let block = DummyBlock;
         let context = ExecutionContext { time: 0 };
-        let _ = block.execute(&context, Input, &State);
+        let mut effect_handler = |_effect: Effect| {};
+        let _ = block.execute(&context, Input, &State, &mut effect_handler);
     }
 }
 
 mod self_only_unit_return {
     use super::*;
+    use block_traits::Effect;
+
     make_defaults!(input, output, state, init_params);
 
     #[block]
@@ -67,7 +72,8 @@ mod self_only_unit_return {
     fn test_context_input_output_execution() {
         let block = DummyBlock;
         let context = ExecutionContext { time: 0 };
-        let _ = block.execute(&context, Input, &State);
+        let mut effect_handler = |_effect: Effect| {};
+        let _ = block.execute(&context, Input, &State, &mut effect_handler);
     }
 }
 
@@ -89,7 +95,8 @@ mod self_only_output {
     fn test_context_input_output_execution() {
         let block = DummyBlock;
         let context = ExecutionContext { time: 0 };
-        let _ = block.execute(&context, Input, &State);
+        let mut effect_handler = |_effect: block_traits::Effect| {};
+        let _ = block.execute(&context, Input, &State, &mut effect_handler);
     }
 }
 
@@ -111,7 +118,8 @@ mod self_only_state {
     fn test_context_input_output_execution() {
         let block = DummyBlock;
         let context = ExecutionContext { time: 0 };
-        let _ = block.execute(&context, Input, &State);
+        let mut effect_handler = |_effect: block_traits::Effect| {};
+        let _ = block.execute(&context, Input, &State, &mut effect_handler);
     }
 }
 
@@ -135,7 +143,8 @@ mod self_only_intents {
     fn test_context_input_output_execution() {
         let block = DummyBlock;
         let context = ExecutionContext { time: 0 };
-        let _ = block.execute(&context, Input, &State);
+        let mut effect_handler = |_effect: block_traits::Effect| {};
+        let _ = block.execute(&context, Input, &State, &mut effect_handler);
     }
 }
 
@@ -157,7 +166,8 @@ mod self_only_output_state {
     fn test_context_input_output_execution() {
         let block = DummyBlock;
         let context = ExecutionContext { time: 0 };
-        let _ = block.execute(&context, Input, &State);
+        let mut effect_handler = |_effect: block_traits::Effect| {};
+        let _ = block.execute(&context, Input, &State, &mut effect_handler);
     }
 }
 
@@ -179,7 +189,8 @@ mod self_only_output_intents {
     fn test_context_input_output_execution() {
         let block = DummyBlock;
         let context = ExecutionContext { time: 0 };
-        let _ = block.execute(&context, Input, &State);
+        let mut effect_handler = |_effect: block_traits::Effect| {};
+        let _ = block.execute(&context, Input, &State, &mut effect_handler);
     }
 }
 
@@ -201,7 +212,8 @@ mod self_only_state_intents {
     fn test_context_input_output_execution() {
         let block = DummyBlock;
         let context = ExecutionContext { time: 0 };
-        let _ = block.execute(&context, Input, &State);
+        let mut effect_handler = |_effect: block_traits::Effect| {};
+        let _ = block.execute(&context, Input, &State, &mut effect_handler);
     }
 }
 
@@ -223,7 +235,8 @@ mod self_only_full_tuple {
     fn test_context_input_output_execution() {
         let block = DummyBlock;
         let context = ExecutionContext { time: 0 };
-        let _ = block.execute(&context, Input, &State);
+        let mut effect_handler = |_effect: block_traits::Effect| {};
+        let _ = block.execute(&context, Input, &State, &mut effect_handler);
     }
 }
 
@@ -245,7 +258,8 @@ mod self_only_option_output_none {
     fn test_context_input_output_execution() {
         let block = DummyBlock;
         let context = ExecutionContext { time: 0 };
-        let _ = block.execute(&context, Input, &State);
+        let mut effect_handler = |_effect: block_traits::Effect| {};
+        let _ = block.execute(&context, Input, &State, &mut effect_handler);
     }
 }
 
@@ -267,7 +281,8 @@ mod self_only_option_output_some {
     fn test_context_input_output_execution() {
         let block = DummyBlock;
         let context = ExecutionContext { time: 0 };
-        let _ = block.execute(&context, Input, &State);
+        let mut effect_handler = |_effect: block_traits::Effect| {};
+        let _ = block.execute(&context, Input, &State, &mut effect_handler);
     }
 }
 
@@ -289,7 +304,8 @@ mod self_only_option_output_state_none {
     fn test_context_input_output_execution() {
         let block = DummyBlock;
         let context = ExecutionContext { time: 0 };
-        let _ = block.execute(&context, Input, &State);
+        let mut effect_handler = |_effect: block_traits::Effect| {};
+        let _ = block.execute(&context, Input, &State, &mut effect_handler);
     }
 }
 
@@ -311,7 +327,8 @@ mod self_only_option_output_state_some {
     fn test_context_input_output_execution() {
         let block = DummyBlock;
         let context = ExecutionContext { time: 0 };
-        let _ = block.execute(&context, Input, &State);
+        let mut effect_handler = |_effect: block_traits::Effect| {};
+        let _ = block.execute(&context, Input, &State, &mut effect_handler);
     }
 }
 
@@ -333,7 +350,8 @@ mod self_only_option_full_tuple_none {
     fn test_context_input_output_execution() {
         let block = DummyBlock;
         let context = ExecutionContext { time: 0 };
-        let _ = block.execute(&context, Input, &State);
+        let mut effect_handler = |_effect: block_traits::Effect| {};
+        let _ = block.execute(&context, Input, &State, &mut effect_handler);
     }
 }
 
@@ -355,7 +373,8 @@ mod self_only_option_full_tuple_some {
     fn test_context_input_output_execution() {
         let block = DummyBlock;
         let context = ExecutionContext { time: 0 };
-        let _ = block.execute(&context, Input, &State);
+        let mut effect_handler = |_effect: block_traits::Effect| {};
+        let _ = block.execute(&context, Input, &State, &mut effect_handler);
     }
 }
 
@@ -407,7 +426,8 @@ mod context_only_no_return {
     fn test_context_input_output_execution() {
         let block = DummyBlock;
         let context = ExecutionContext { time: 0 };
-        let _ = block.execute(&context, Input, &State);
+        let mut effect_handler = |_effect: block_traits::Effect| {};
+        let _ = block.execute(&context, Input, &State, &mut effect_handler);
     }
 }
 
@@ -429,7 +449,8 @@ mod context_only_unit_return {
     fn test_context_input_output_execution() {
         let block = DummyBlock;
         let context = ExecutionContext { time: 0 };
-        let _ = block.execute(&context, Input, &State);
+        let mut effect_handler = |_effect: block_traits::Effect| {};
+        let _ = block.execute(&context, Input, &State, &mut effect_handler);
     }
 }
 
@@ -452,7 +473,8 @@ mod context_only_output {
     fn test_context_input_output_execution() {
         let block = DummyBlock;
         let context = ExecutionContext { time: 0 };
-        let _ = block.execute(&context, Input, &State);
+        let mut effect_handler = |_effect: block_traits::Effect| {};
+        let _ = block.execute(&context, Input, &State, &mut effect_handler);
     }
 }
 
@@ -475,7 +497,8 @@ mod context_only_state {
     fn test_context_input_output_execution() {
         let block = DummyBlock;
         let context = ExecutionContext { time: 0 };
-        let _ = block.execute(&context, Input, &State);
+        let mut effect_handler = |_effect: block_traits::Effect| {};
+        let _ = block.execute(&context, Input, &State, &mut effect_handler);
     }
 }
 
@@ -498,7 +521,8 @@ mod context_only_intents {
     fn test_context_input_output_execution() {
         let block = DummyBlock;
         let context = ExecutionContext { time: 0 };
-        let _ = block.execute(&context, Input, &State);
+        let mut effect_handler = |_effect: block_traits::Effect| {};
+        let _ = block.execute(&context, Input, &State, &mut effect_handler);
     }
 }
 
@@ -521,7 +545,8 @@ mod context_only_output_state {
     fn test_context_input_output_execution() {
         let block = DummyBlock;
         let context = ExecutionContext { time: 0 };
-        let _ = block.execute(&context, Input, &State);
+        let mut effect_handler = |_effect: block_traits::Effect| {};
+        let _ = block.execute(&context, Input, &State, &mut effect_handler);
     }
 }
 
@@ -544,7 +569,8 @@ mod context_only_output_intents {
     fn test_context_input_output_execution() {
         let block = DummyBlock;
         let context = ExecutionContext { time: 0 };
-        let _ = block.execute(&context, Input, &State);
+        let mut effect_handler = |_effect: block_traits::Effect| {};
+        let _ = block.execute(&context, Input, &State, &mut effect_handler);
     }
 }
 
@@ -567,7 +593,8 @@ mod context_only_state_intents {
     fn test_context_input_output_execution() {
         let block = DummyBlock;
         let context = ExecutionContext { time: 0 };
-        let _ = block.execute(&context, Input, &State);
+        let mut effect_handler = |_effect: block_traits::Effect| {};
+        let _ = block.execute(&context, Input, &State, &mut effect_handler);
     }
 }
 
@@ -590,7 +617,8 @@ mod context_only_full_tuple {
     fn test_context_input_output_execution() {
         let block = DummyBlock;
         let context = ExecutionContext { time: 0 };
-        let _ = block.execute(&context, Input, &State);
+        let mut effect_handler = |_effect: block_traits::Effect| {};
+        let _ = block.execute(&context, Input, &State, &mut effect_handler);
     }
 }
 
@@ -642,7 +670,8 @@ mod input_only_no_return {
     fn test_context_input_output_execution() {
         let block = DummyBlock;
         let context = ExecutionContext { time: 0 };
-        let _ = block.execute(&context, Input, &State);
+        let mut effect_handler = |_effect: block_traits::Effect| {};
+        let _ = block.execute(&context, Input, &State, &mut effect_handler);
     }
 }
 
@@ -664,7 +693,8 @@ mod input_only_unit_return {
     fn test_context_input_output_execution() {
         let block = DummyBlock;
         let context = ExecutionContext { time: 0 };
-        let _ = block.execute(&context, Input, &State);
+        let mut effect_handler = |_effect: block_traits::Effect| {};
+        let _ = block.execute(&context, Input, &State, &mut effect_handler);
     }
 }
 
@@ -687,7 +717,8 @@ mod input_only_output {
     fn test_context_input_output_execution() {
         let block = DummyBlock;
         let context = ExecutionContext { time: 0 };
-        let _ = block.execute(&context, Input, &State);
+        let mut effect_handler = |_effect: block_traits::Effect| {};
+        let _ = block.execute(&context, Input, &State, &mut effect_handler);
     }
 }
 
@@ -710,7 +741,8 @@ mod input_only_state {
     fn test_context_input_output_execution() {
         let block = DummyBlock;
         let context = ExecutionContext { time: 0 };
-        let _ = block.execute(&context, Input, &State);
+        let mut effect_handler = |_effect: block_traits::Effect| {};
+        let _ = block.execute(&context, Input, &State, &mut effect_handler);
     }
 }
 
@@ -733,7 +765,8 @@ mod input_only_intents {
     fn test_context_input_output_execution() {
         let block = DummyBlock;
         let context = ExecutionContext { time: 0 };
-        let _ = block.execute(&context, Input, &State);
+        let mut effect_handler = |_effect: block_traits::Effect| {};
+        let _ = block.execute(&context, Input, &State, &mut effect_handler);
     }
 }
 
@@ -756,7 +789,8 @@ mod input_only_output_state {
     fn test_context_input_output_execution() {
         let block = DummyBlock;
         let context = ExecutionContext { time: 0 };
-        let _ = block.execute(&context, Input, &State);
+        let mut effect_handler = |_effect: block_traits::Effect| {};
+        let _ = block.execute(&context, Input, &State, &mut effect_handler);
     }
 }
 
@@ -779,7 +813,8 @@ mod input_only_output_intents {
     fn test_context_input_output_execution() {
         let block = DummyBlock;
         let context = ExecutionContext { time: 0 };
-        let _ = block.execute(&context, Input, &State);
+        let mut effect_handler = |_effect: block_traits::Effect| {};
+        let _ = block.execute(&context, Input, &State, &mut effect_handler);
     }
 }
 
@@ -802,7 +837,8 @@ mod input_only_state_intents {
     fn test_context_input_output_execution() {
         let block = DummyBlock;
         let context = ExecutionContext { time: 0 };
-        let _ = block.execute(&context, Input, &State);
+        let mut effect_handler = |_effect: block_traits::Effect| {};
+        let _ = block.execute(&context, Input, &State, &mut effect_handler);
     }
 }
 
@@ -825,7 +861,8 @@ mod input_only_full_tuple {
     fn test_context_input_output_execution() {
         let block = DummyBlock;
         let context = ExecutionContext { time: 0 };
-        let _ = block.execute(&context, Input, &State);
+        let mut effect_handler = |_effect: block_traits::Effect| {};
+        let _ = block.execute(&context, Input, &State, &mut effect_handler);
     }
 }
 
@@ -877,7 +914,8 @@ mod state_only_no_return {
     fn test_context_input_output_execution() {
         let block = DummyBlock;
         let context = ExecutionContext { time: 0 };
-        let _ = block.execute(&context, Input, &State);
+        let mut effect_handler = |_effect: block_traits::Effect| {};
+        let _ = block.execute(&context, Input, &State, &mut effect_handler);
     }
 }
 
@@ -899,7 +937,8 @@ mod state_only_unit_return {
     fn test_context_input_output_execution() {
         let block = DummyBlock;
         let context = ExecutionContext { time: 0 };
-        let _ = block.execute(&context, Input, &State);
+        let mut effect_handler = |_effect: block_traits::Effect| {};
+        let _ = block.execute(&context, Input, &State, &mut effect_handler);
     }
 }
 
@@ -922,7 +961,8 @@ mod state_only_output {
     fn test_context_input_output_execution() {
         let block = DummyBlock;
         let context = ExecutionContext { time: 0 };
-        let _ = block.execute(&context, Input, &State);
+        let mut effect_handler = |_effect: block_traits::Effect| {};
+        let _ = block.execute(&context, Input, &State, &mut effect_handler);
     }
 }
 
@@ -945,7 +985,8 @@ mod state_only_state {
     fn test_context_input_output_execution() {
         let block = DummyBlock;
         let context = ExecutionContext { time: 0 };
-        let _ = block.execute(&context, Input, &State);
+        let mut effect_handler = |_effect: block_traits::Effect| {};
+        let _ = block.execute(&context, Input, &State, &mut effect_handler);
     }
 }
 
@@ -968,7 +1009,8 @@ mod state_only_intents {
     fn test_context_input_output_execution() {
         let block = DummyBlock;
         let context = ExecutionContext { time: 0 };
-        let _ = block.execute(&context, Input, &State);
+        let mut effect_handler = |_effect: block_traits::Effect| {};
+        let _ = block.execute(&context, Input, &State, &mut effect_handler);
     }
 }
 
@@ -991,7 +1033,8 @@ mod state_only_output_state {
     fn test_context_input_output_execution() {
         let block = DummyBlock;
         let context = ExecutionContext { time: 0 };
-        let _ = block.execute(&context, Input, &State);
+        let mut effect_handler = |_effect: block_traits::Effect| {};
+        let _ = block.execute(&context, Input, &State, &mut effect_handler);
     }
 }
 
@@ -1014,7 +1057,8 @@ mod state_only_output_intents {
     fn test_context_input_output_execution() {
         let block = DummyBlock;
         let context = ExecutionContext { time: 0 };
-        let _ = block.execute(&context, Input, &State);
+        let mut effect_handler = |_effect: block_traits::Effect| {};
+        let _ = block.execute(&context, Input, &State, &mut effect_handler);
     }
 }
 
@@ -1037,7 +1081,8 @@ mod state_only_state_intents {
     fn test_context_input_output_execution() {
         let block = DummyBlock;
         let context = ExecutionContext { time: 0 };
-        let _ = block.execute(&context, Input, &State);
+        let mut effect_handler = |_effect: block_traits::Effect| {};
+        let _ = block.execute(&context, Input, &State, &mut effect_handler);
     }
 }
 
@@ -1060,7 +1105,8 @@ mod state_only_full_tuple {
     fn test_context_input_output_execution() {
         let block = DummyBlock;
         let context = ExecutionContext { time: 0 };
-        let _ = block.execute(&context, Input, &State);
+        let mut effect_handler = |_effect: block_traits::Effect| {};
+        let _ = block.execute(&context, Input, &State, &mut effect_handler);
     }
 }
 
@@ -1112,7 +1158,8 @@ mod context_input_no_return {
     fn test_context_input_output_execution() {
         let block = DummyBlock;
         let context = ExecutionContext { time: 0 };
-        let _ = block.execute(&context, Input, &State);
+        let mut effect_handler = |_effect: block_traits::Effect| {};
+        let _ = block.execute(&context, Input, &State, &mut effect_handler);
     }
 }
 
@@ -1135,7 +1182,8 @@ mod context_input_output {
     fn test_context_input_output_execution() {
         let block = DummyBlock;
         let context = ExecutionContext { time: 0 };
-        let _ = block.execute(&context, Input, &State);
+        let mut effect_handler = |_effect: block_traits::Effect| {};
+        let _ = block.execute(&context, Input, &State, &mut effect_handler);
     }
 }
 
@@ -1157,7 +1205,8 @@ mod context_state_no_return {
     fn test_context_input_output_execution() {
         let block = DummyBlock;
         let context = ExecutionContext { time: 0 };
-        let _ = block.execute(&context, Input, &State);
+        let mut effect_handler = |_effect: block_traits::Effect| {};
+        let _ = block.execute(&context, Input, &State, &mut effect_handler);
     }
 }
 
@@ -1179,7 +1228,8 @@ mod input_state_no_return {
     fn test_context_input_output_execution() {
         let block = DummyBlock;
         let context = ExecutionContext { time: 0 };
-        let _ = block.execute(&context, Input, &State);
+        let mut effect_handler = |_effect: block_traits::Effect| {};
+        let _ = block.execute(&context, Input, &State, &mut effect_handler);
     }
 }
 
@@ -1201,7 +1251,8 @@ mod context_input_state_no_return {
     fn test_context_input_output_execution() {
         let block = DummyBlock;
         let context = ExecutionContext { time: 0 };
-        let _ = block.execute(&context, Input, &State);
+        let mut effect_handler = |_effect: block_traits::Effect| {};
+        let _ = block.execute(&context, Input, &State, &mut effect_handler);
     }
 }
 
@@ -1229,6 +1280,7 @@ mod context_input_state_full_tuple {
     fn test_context_input_output_execution() {
         let block = DummyBlock;
         let context = ExecutionContext { time: 0 };
-        let _ = block.execute(&context, Input, &State);
+        let mut effect_handler = |_effect: block_traits::Effect| {};
+        let _ = block.execute(&context, Input, &State, &mut effect_handler);
     }
 }

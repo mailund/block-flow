@@ -45,6 +45,7 @@ impl BlockSpec for AfterBlock {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use block_traits::Effect;
     use trade_types::{Cents, Contract, Price, Side};
 
     pub struct OrderBook;
@@ -115,7 +116,10 @@ mod tests {
         let context = ctx(9);
 
         // Call the *full* signature (what #[execute] generates).
-        let (out, state_out, _intents) = block.execute(&context, Input, &State).unwrap();
+        let mut effect_handler = |_effect: Effect| {};
+        let (out, state_out, _intents) = block
+            .execute(&context, Input, &State, &mut effect_handler)
+            .unwrap();
 
         assert!(!out.is_after);
         assert!(matches!(state_out, State)); // default-filled (unit)
@@ -127,8 +131,11 @@ mod tests {
         let block = AfterBlock::new_from_init_params(&params);
 
         let context = ctx(11);
+        let mut effect_handler = |_effect: Effect| {};
 
-        let (out, state_out, _intents) = block.execute(&context, Input, &State).unwrap();
+        let (out, state_out, _intents) = block
+            .execute(&context, Input, &State, &mut effect_handler)
+            .unwrap();
 
         assert!(out.is_after);
         assert!(matches!(state_out, State));
@@ -140,8 +147,11 @@ mod tests {
         let block = AfterBlock::new_from_init_params(&params);
 
         let context = ctx(10);
+        let mut effect_handler = |_effect: Effect| {};
 
-        let (out, _state_out, _intents) = block.execute(&context, Input, &State).unwrap();
+        let (out, _state_out, _intents) = block
+            .execute(&context, Input, &State, &mut effect_handler)
+            .unwrap();
 
         assert!(!out.is_after);
     }

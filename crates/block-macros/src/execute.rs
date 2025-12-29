@@ -27,10 +27,15 @@ pub fn execute_impl(_attr: TokenStream, item: TokenStream) -> TokenStream {
     let mut ctx_pat: Option<Box<Pat>> = None;
     let mut input_pat: Option<Box<Pat>> = None;
     let mut state_pat: Option<Box<Pat>> = None;
+    let mut eff_pat: Option<Box<Pat>> = None;
 
     for arg in f.sig.inputs.iter() {
         if let FnArg::Typed(PatType { pat, ty, .. }) = arg {
-            if ctx_pat.is_none() && (is_ref_to_exec_ctx_trait(ty) || is_ref_to_generic_param(ty)) {
+            if eff_pat.is_none() && is_mut_ref_to_effect_consumer_trait_or_generic(ty) {
+                eff_pat = Some(pat.clone());
+                continue;
+            }
+            if ctx_pat.is_none() && is_ref_to_exec_ctx_trait_or_generic(ty) {
                 ctx_pat = Some(pat.clone());
                 continue;
             }
@@ -44,7 +49,7 @@ pub fn execute_impl(_attr: TokenStream, item: TokenStream) -> TokenStream {
             }
             return syn::Error::new(
                 ty.span(),
-                "unsupported parameter type for #[execute]. Allowed: &ExeContext (generic), Input (by value), &State",
+                "unsupported parameter type for #[execute]. Allowed: &C (ExecutionContextTrait), Input (by value), &State, &mut E (EffectConsumerTrait)",
             )
             .to_compile_error()
             .into();
@@ -58,19 +63,23 @@ pub fn execute_impl(_attr: TokenStream, item: TokenStream) -> TokenStream {
     let state_pat: Pat = state_pat
         .map(|p| *p)
         .unwrap_or_else(|| syn::parse_quote!(_));
+    let eff_pat: Pat = eff_pat.map(|p| *p).unwrap_or_else(|| syn::parse_quote!(_));
 
-    f.sig.generics = syn::parse_quote!(<ExeContext: ::block_traits::ExecutionContextTrait>);
+    f.sig.generics = syn::parse_quote!(
+        <C: ::block_traits::ExecutionContextTrait, E: ::block_traits::EffectConsumerTrait>
+    );
 
     f.sig.inputs = {
         let mut inputs = syn::punctuated::Punctuated::new();
         inputs.push(receiver);
-        inputs.push(syn::parse_quote!(#ctx_pat: &ExeContext));
+        inputs.push(syn::parse_quote!(#ctx_pat: &C));
         inputs.push(syn::parse_quote!(
             #input_pat: <Self as ::block_traits::BlockSpecAssociatedTypes>::Input
         ));
         inputs.push(syn::parse_quote!(
             #state_pat: &<Self as ::block_traits::BlockSpecAssociatedTypes>::State
         ));
+        inputs.push(syn::parse_quote!(#eff_pat: &mut E));
         inputs
     };
 
@@ -230,20 +239,27 @@ pub fn execute_impl(_attr: TokenStream, item: TokenStream) -> TokenStream {
     quote!(#f).into()
 }
 
-fn is_ref_to_exec_ctx_trait(ty: &Type) -> bool {
-    matches!(ty, Type::Reference(r) if is_last_segment(&r.elem, "ExecutionContextTrait"))
+fn is_ref_to_exec_ctx_trait_or_generic(ty: &Type) -> bool {
+    matches!(ty, Type::Reference(r)
+        if r.mutability.is_none()
+            && (is_last_segment(&r.elem, "ExecutionContextTrait") || is_ref_to_single_ident(&r.elem)))
+}
+
+fn is_mut_ref_to_effect_consumer_trait_or_generic(ty: &Type) -> bool {
+    matches!(ty, Type::Reference(r)
+        if r.mutability.is_some()
+            && (is_last_segment(&r.elem, "EffectConsumerTrait") || is_ref_to_single_ident(&r.elem)))
 }
 
 fn is_ref_to_state(ty: &Type) -> bool {
-    matches!(ty, Type::Reference(r) if is_last_segment(&r.elem, "State"))
+    matches!(ty, Type::Reference(r) if r.mutability.is_none() && is_last_segment(&r.elem, "State"))
 }
 
-fn is_ref_to_generic_param(ty: &Type) -> bool {
-    let Type::Reference(r) = ty else { return false };
-    let Type::Path(TypePath { qself: None, path }) = r.elem.as_ref() else {
+fn is_ref_to_single_ident(ty: &Type) -> bool {
+    let Type::Path(TypePath { qself: None, path }) = ty else {
         return false;
     };
-    path.segments.len() == 1
+    path.segments.len() == 1 && matches!(path.segments[0].arguments, PathArguments::None)
 }
 
 fn is_input_value(ty: &Type) -> bool {

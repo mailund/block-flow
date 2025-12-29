@@ -10,7 +10,7 @@ use super::*;
 ///
 /// ```rust
 /// use block_macros::{block, init_params, input, output, state};
-/// use block_traits::{BlockSpec, ExecutionContextTrait};
+/// use block_traits::{BlockSpec, ExecutionContextTrait, EffectConsumerTrait};
 /// use block_traits::intents::ZeroIntents;
 ///
 /// #[input]
@@ -51,11 +51,12 @@ use super::*;
 ///         State
 ///     }
 ///
-///     fn execute<C: ExecutionContextTrait>(
+///     fn execute<C: ExecutionContextTrait, E: EffectConsumerTrait>(
 ///         &self,
 ///         context: &C,
 ///         _input: Input,
 ///         _state: &State,
+///         _effect_consumer: &mut E,
 ///     ) -> Option<(Output, State, Self::Intents)> {
 ///         let is_after = context.time() > self.time;
 ///         let output = Output { is_after };
@@ -88,14 +89,16 @@ pub trait BlockSpec: BlockSpecAssociatedTypes + ContractDeps {
     ///   Channels                      |                        v                        
     ///
     /// ```
-    fn execute<C>(
+    fn execute<C, E>(
         &self,
         context: &C,
         input: Self::Input,
         state: &Self::State,
+        effect_consumer: &mut E,
     ) -> Option<(Self::Output, Self::State, Self::Intents)>
     where
-        C: ExecutionContextTrait;
+        C: ExecutionContextTrait,
+        E: EffectConsumerTrait;
 }
 
 /// Default ContractDeps implementation for blocks without contract dependencies.

@@ -85,6 +85,7 @@ impl BlockSpec for SimpleOrderBlock {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use block_traits::Effect;
     use trade_types::Contract;
 
     pub struct OrderBook;
@@ -193,6 +194,7 @@ mod tests {
         let ctx = ExecutionContext { time: 0 };
         let state = State;
 
+        let mut effect_handler = |_effect: Effect| {};
         let (_out, _state_out, intents) = block
             .execute(
                 &ctx,
@@ -200,6 +202,7 @@ mod tests {
                     should_execute: true,
                 },
                 &state,
+                &mut effect_handler,
             )
             .unwrap();
 
@@ -226,6 +229,7 @@ mod tests {
         let ctx = ExecutionContext { time: 0 };
         let state = State;
 
+        let mut effect_handler = |_effect: Effect| {};
         let (_out, _state_out, intents) = block
             .execute(
                 &ctx,
@@ -233,6 +237,7 @@ mod tests {
                     should_execute: false,
                 },
                 &state,
+                &mut effect_handler,
             )
             .unwrap();
 
