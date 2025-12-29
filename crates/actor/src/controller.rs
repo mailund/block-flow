@@ -326,8 +326,8 @@ mod tests {
 
             let package: BlockPackage<TestBlock> =
                 BlockPackage::new(input_keys, output_keys, params, None);
-            let block = package.weave(&mut reg).unwrap();
-            let actor = Actor::new(id, Box::new(block));
+            let algo = package.weave(&mut reg).unwrap();
+            let actor = Actor::new(id, Box::new(algo));
 
             actor.into()
         }

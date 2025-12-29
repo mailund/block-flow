@@ -24,7 +24,7 @@ where
 pub trait ExecuteTrait<ExeContext, IntentConsumer>: ContractDeps
 where
     ExeContext: ExecutionContextTrait,
-    IntentConsumer: IntentConsumerTrait,
+    IntentConsumer: IntentConsumerTrait + ?Sized,
 {
     /// Number of intents produced by the execution.
     /// This should be a constant once the execution trait is instantiated, but since we can build
