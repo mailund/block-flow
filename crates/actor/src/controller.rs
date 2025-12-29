@@ -31,7 +31,7 @@ impl ActorHandle {
     }
 
     pub fn tick(&self, context: &ActorExecutionContext) -> Option<()> {
-        self.0.borrow_mut().tick(context)
+        self.0.borrow_mut().execute(context)
     }
 
     pub fn ptr_eq(a: &Self, b: &Self) -> bool {

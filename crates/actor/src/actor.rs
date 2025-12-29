@@ -82,7 +82,7 @@ where
         self.algo.contract_deps()
     }
 
-    pub(crate) fn tick(&mut self, context: &ActorExecutionContext) -> Option<()> {
+    pub(crate) fn execute(&mut self, context: &ActorExecutionContext) -> Option<()> {
         self.algo.execute(context, &mut self.reconcile)
     }
 }
@@ -93,7 +93,7 @@ pub trait ActorTrait {
     /// Contracts registered for ticks upon initialization
     fn contracts(&self) -> Vec<Contract>;
     /// Perform a tick for the actor, returning any orders generated.
-    fn tick(&mut self, ctx: &ActorExecutionContext) -> Option<()>;
+    fn execute(&mut self, ctx: &ActorExecutionContext) -> Option<()>;
 }
 
 impl<Algo> ActorTrait for Actor<Algo>
@@ -106,7 +106,7 @@ where
     fn contracts(&self) -> Vec<Contract> {
         Actor::contracts(self)
     }
-    fn tick(&mut self, ctx: &ActorExecutionContext) -> Option<()> {
-        Actor::tick(self, ctx)
+    fn execute(&mut self, ctx: &ActorExecutionContext) -> Option<()> {
+        Actor::execute(self, ctx)
     }
 }
