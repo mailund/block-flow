@@ -5,7 +5,7 @@ use trade_types::*;
 mod actor;
 mod actor_execution_context;
 mod controller;
-pub use actor::{Actor, ActorTrait};
+pub use actor::{Actor, ActorAlgo, ActorTrait};
 pub use actor_execution_context::ActorExecutionContext;
 pub use controller::ActorController;
 

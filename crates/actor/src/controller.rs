@@ -1,6 +1,6 @@
 use super::*;
 
-use super::{ActorExecutionContext, ActorTrait};
+use super::{ActorAlgo, ActorExecutionContext, ActorTrait};
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
@@ -8,6 +8,14 @@ use trade_types::Contract;
 
 #[derive(Clone)]
 pub struct ActorHandle(Rc<RefCell<dyn ActorTrait>>);
+impl<Algo> From<Actor<Algo>> for ActorHandle
+where
+    Algo: ActorAlgo + 'static,
+{
+    fn from(actor: Actor<Algo>) -> Self {
+        ActorHandle::new(actor)
+    }
+}
 
 impl ActorHandle {
     pub fn new(actor: impl ActorTrait + 'static) -> Self {
@@ -165,10 +173,9 @@ mod tests {
             let package: BlockPackage<TestBlock> =
                 BlockPackage::new(input_keys, output_keys, InitParams, None);
             let block = package.weave(&mut reg).unwrap();
+            let actor = Actor::new(id, Box::new(block));
 
-            let actor: ActorHandle = ActorHandle::new(Actor::new(id, Box::new(block)));
-
-            actor
+            actor.into()
         }
 
         #[test]
@@ -240,10 +247,9 @@ mod tests {
 
             let package = BlockPackage::<TestBlock>::new(input_keys, output_keys, params, None);
             let block = package.weave(&mut reg).unwrap();
+            let actor = Actor::new(id, Box::new(block));
 
-            let actor: ActorHandle = ActorHandle::new(Actor::new(id, Box::new(block)));
-
-            actor
+            actor.into()
         }
 
         #[test]
@@ -318,10 +324,9 @@ mod tests {
             let package: BlockPackage<TestBlock> =
                 BlockPackage::new(input_keys, output_keys, params, None);
             let block = package.weave(&mut reg).unwrap();
+            let actor = Actor::new(id, Box::new(block));
 
-            let actor: ActorHandle = ActorHandle::new(Actor::new(id, Box::new(block)));
-
-            actor
+            actor.into()
         }
 
         #[test]
