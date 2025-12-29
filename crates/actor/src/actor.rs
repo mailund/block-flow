@@ -3,25 +3,20 @@ use block_traits::{ExecuteTrait, Intent, IntentConsumerTrait};
 use trade_types::Contract;
 
 /// "Type alias" (for a trait) for algorithms an actor can run.
-pub trait ActorAlgo: ExecuteTrait<ActorExecutionContext, Reconcile> {}
-impl<T> ActorAlgo for T where T: ExecuteTrait<ActorExecutionContext, Reconcile> {}
+pub trait ActorAlgo: for<'a> ExecuteTrait<ActorExecutionContext, Reconcile<'a>> {}
+impl<T> ActorAlgo for T where T: for<'a> ExecuteTrait<ActorExecutionContext, Reconcile<'a>> {}
 
 /// Reconciliation book-keeping (mock for now) and the consumer trait
 /// for invoking reconciliation on intents produced by the actor's block.
-pub struct Reconcile {
-    pub(super) orders: Vec<Order>,
+pub struct Reconcile<'a> {
+    orders: &'a mut [Order],
     idx: usize,
 }
-impl Reconcile {
-    pub fn new(no_intents: usize) -> Self {
-        Self {
-            orders: vec![Order::NoOrder; no_intents],
-            idx: 0,
-        }
-    }
-    pub fn reconcile(&mut self) -> &mut Reconcile {
-        self.idx = 0;
-        self
+impl<'a> Reconcile<'a> {
+    /// Create a new Reconcile intent consumer with a mutable slice of orders.
+    /// This can be passed to an actor algorithm's execute method to process intents.
+    pub fn new(orders: &'a mut [Order]) -> Self {
+        Self { orders, idx: 0 }
     }
     /// Process an intent into an order, given the previous order state.
     /// This is a mock implementation for now; the real implementation should decide
@@ -37,15 +32,21 @@ impl Reconcile {
             },
         }
     }
+    /// Process one intent at a time, updating the orders slice based on the intent
+    /// and the previous order state. This is a mock and the real implementation should
+    /// likely output order updates to an outbound channel or similar.
+    fn consume(&mut self, intent: &Intent) {
+        self.orders[self.idx] = self.process_intent(&self.orders[self.idx], intent);
+        self.idx += 1;
+    }
 }
 
 /// Implement the IntentConsumerTrait for Reconcile to process intents.
 /// This gives us a callback that is invoked after each block's execution
 /// where we can reconsile and push order updates out.
-impl IntentConsumerTrait for Reconcile {
+impl<'a> IntentConsumerTrait for Reconcile<'a> {
     fn consume(&mut self, intent: &Intent) {
-        self.orders[self.idx] = self.process_intent(&self.orders[self.idx], intent);
-        self.idx += 1;
+        Reconcile::consume(self, intent);
     }
 }
 
@@ -55,7 +56,7 @@ where
 {
     id: u32,
     algo: Box<Algo>,
-    reconcile: Reconcile,
+    orders: Vec<Order>,
 }
 
 impl<Algo> Actor<Algo>
@@ -63,13 +64,9 @@ where
     Algo: ActorAlgo,
 {
     pub fn new(id: u32, algo: Box<Algo>) -> Self {
-        let no_intents = algo.no_intents();
-        let reconcile = Reconcile::new(no_intents);
-        Self {
-            id,
-            algo,
-            reconcile,
-        }
+        // Allocate orders upfront based on the number of intents the algo will produce.
+        let orders = vec![Order::default(); algo.no_intents()];
+        Self { id, algo, orders }
     }
 
     fn actor_id(&self) -> u32 {
@@ -81,7 +78,8 @@ where
     }
 
     fn execute(&mut self, context: &ActorExecutionContext) -> Option<()> {
-        self.algo.execute(context, self.reconcile.reconcile())
+        let mut reconcile = Reconcile::new(&mut self.orders);
+        self.algo.execute(context, &mut reconcile)
     }
 }
 
