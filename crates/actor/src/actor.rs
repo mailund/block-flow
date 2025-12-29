@@ -22,7 +22,7 @@ impl Reconcile {
     /// Process an intent into an order, given the previous order state.
     /// This is a mock implementation for now; the real implementation should decide
     /// whether to act on a new intent based on the previous order state.
-    pub fn process_intent(&self, prev_order: &Order, intent: &Intent) -> Order {
+    fn process_intent(&self, prev_order: &Order, intent: &Intent) -> Order {
         match intent {
             Intent::NoIntent(_) => prev_order.clone(),
             Intent::Place(place) => Order::New {
@@ -74,15 +74,15 @@ where
         }
     }
 
-    pub fn actor_id(&self) -> u32 {
+    fn actor_id(&self) -> u32 {
         self.id
     }
 
-    pub fn contracts(&self) -> Vec<Contract> {
+    fn contracts(&self) -> Vec<Contract> {
         self.algo.contract_deps()
     }
 
-    pub(crate) fn execute(&mut self, context: &ActorExecutionContext) -> Option<()> {
+    fn execute(&mut self, context: &ActorExecutionContext) -> Option<()> {
         self.algo.execute(context, &mut self.reconcile)
     }
 }

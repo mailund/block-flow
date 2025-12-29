@@ -22,14 +22,6 @@ impl ActorHandle {
         Self(Rc::new(RefCell::new(actor)))
     }
 
-    pub fn from_rc(rc: Rc<RefCell<dyn ActorTrait>>) -> Self {
-        Self(rc)
-    }
-
-    pub fn as_rc(&self) -> Rc<RefCell<dyn ActorTrait>> {
-        self.0.clone()
-    }
-
     pub fn actor_id(&self) -> u32 {
         self.0.borrow().actor_id()
     }
