@@ -78,6 +78,11 @@ where
     C: ExecutionContextTrait,
     I: IntentConsumerTrait,
 {
+    fn no_intents(&self) -> usize {
+        // For block specs we always know the number of intents at compile time
+        // from the associated Intents type.
+        B::Intents::len()
+    }
     fn execute(&self, context: &C, consumer: &mut I) -> Option<()> {
         let input = self.in_reader.read();
         let old_state = self.state_cell.borrow();

@@ -21,6 +21,10 @@ where
     X: ExecuteTrait<C, I>,
     I: FnMut(&Intent),
 {
+    fn no_intents(&self) -> usize {
+        // Sum the number of intents from each block in the plan
+        self.iter().map(|block| block.no_intents()).sum()
+    }
     // Collects and returns all SlotIntents produced by executing the blocks in the plan.
     // If any block fails to execute (returns None), the entire execution returns None.
     fn execute(&self, context: &C, intent_consumer: &mut I) -> Option<()> {
