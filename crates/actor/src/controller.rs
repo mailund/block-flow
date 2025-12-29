@@ -30,9 +30,8 @@ impl ActorHandle {
         self.0.borrow().contracts()
     }
 
-    pub fn tick<'a>(&'a self, context: &ActorExecutionContext) -> Option<()> {
-        let mut a = self.0.borrow_mut();
-        a.tick(context)
+    pub fn tick(&self, context: &ActorExecutionContext) -> Option<()> {
+        self.0.borrow_mut().tick(context)
     }
 
     pub fn ptr_eq(a: &Self, b: &Self) -> bool {
@@ -96,7 +95,7 @@ impl ActorController {
         // For failed actors, remove them from the id map and all contract lists.
         if let Some(mut actors) = self.contracts_to_actors.remove(contract) {
             actors.retain(|actor| {
-                if let Some(_) = actor.tick(&ctx) {
+                if actor.tick(&ctx).is_some() {
                     true // Successful, keep in list
                 } else {
                     self.remove_actor_rc_from_contract_tables(actor);

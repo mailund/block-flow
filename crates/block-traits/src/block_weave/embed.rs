@@ -71,7 +71,7 @@ where
     }
 }
 
-/// Implement BlockTrait for BlockPackage to allow type-erased execution.
+/// Implement ExecuteTrait for BlockPackage so we can use it type-erased in execution weaves.
 impl<B, C, I> ExecuteTrait<C, I> for BlockEmbedding<B>
 where
     B: BlockSpec,

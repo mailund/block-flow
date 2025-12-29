@@ -1,5 +1,3 @@
-use std::fmt::Binary;
-
 use trade_types::{Contract, Price, Quantity, Side};
 
 #[derive(Clone, Debug)]
@@ -51,6 +49,3 @@ pub trait IntentFactory {
 }
 
 impl IntentFactory for Intent {}
-
-// Give the factory to all blocks that load the trait.
-impl<B: Binary> IntentFactory for B {}

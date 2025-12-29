@@ -105,7 +105,7 @@ where
         self.block.contract_deps()
     }
 
-    pub(crate) fn tick<'a>(&mut self, context: &ActorExecutionContext) -> Option<()> {
+    pub(crate) fn tick(&mut self, context: &ActorExecutionContext) -> Option<()> {
         self.block.execute(context, &mut self.reconcile)
     }
 }
