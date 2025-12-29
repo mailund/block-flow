@@ -6,6 +6,20 @@ use trade_types::Contract;
 pub trait ActorAlgo: for<'a> ExecuteTrait<ActorExecutionContext, Reconcile<'a>> {}
 impl<T> ActorAlgo for T where T: for<'a> ExecuteTrait<ActorExecutionContext, Reconcile<'a>> {}
 
+struct Reconciliator {
+    orders: Vec<Order>,
+}
+impl Reconciliator {
+    pub fn new(size: usize) -> Self {
+        Self {
+            orders: vec![Order::default(); size],
+        }
+    }
+    pub fn reconciliate(&mut self) -> Reconcile<'_> {
+        Reconcile::new(&mut self.orders)
+    }
+}
+
 /// Reconciliation book-keeping (mock for now) and the consumer trait
 /// for invoking reconciliation on intents produced by the actor's block.
 pub struct Reconcile<'a> {
@@ -56,7 +70,7 @@ where
 {
     id: u32,
     algo: Box<Algo>,
-    orders: Vec<Order>,
+    reconciliator: Reconciliator,
 }
 
 impl<Algo> Actor<Algo>
@@ -64,9 +78,13 @@ where
     Algo: ActorAlgo,
 {
     pub fn new(id: u32, algo: Box<Algo>) -> Self {
-        // Allocate orders upfront based on the number of intents the algo will produce.
-        let orders = vec![Order::default(); algo.no_intents()];
-        Self { id, algo, orders }
+        let no_intents = algo.no_intents();
+        let reconciliator = Reconciliator::new(no_intents);
+        Self {
+            id,
+            algo,
+            reconciliator,
+        }
     }
 
     fn actor_id(&self) -> u32 {
@@ -78,7 +96,7 @@ where
     }
 
     fn execute(&mut self, context: &ActorExecutionContext) -> Option<()> {
-        let mut reconcile = Reconcile::new(&mut self.orders);
+        let mut reconcile = self.reconciliator.reconciliate();
         self.algo.execute(context, &mut reconcile)
     }
 }

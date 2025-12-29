@@ -30,7 +30,7 @@ impl ActorHandle {
         self.0.borrow().contracts()
     }
 
-    pub fn tick(&self, context: &ActorExecutionContext) -> Option<()> {
+    pub fn execute(&self, context: &ActorExecutionContext) -> Option<()> {
         self.0.borrow_mut().execute(context)
     }
 
@@ -85,31 +85,42 @@ impl ActorController {
         }
     }
 
-    pub fn tick_delta(&mut self, Delta(contract): &Delta) {
-        // Make a new execution context with the current state.
-        let ctx = ActorExecutionContext::new(self.time);
-
-        // Take the actor list out of the map so we can mutate `self` freely while iterating
-        // and so we can remove actors that fail easily. Use .retain to keep only successful actors
-        // (those that return None have failed and should be removed). For successful actors, emit their orders.
-        // For failed actors, remove them from the id map and all contract lists.
-        if let Some(mut actors) = self.contracts_to_actors.remove(contract) {
-            actors.retain(|actor| {
-                if actor.tick(&ctx).is_some() {
-                    true // Successful, keep in list
-                } else {
-                    self.remove_actor_rc_from_contract_tables(actor);
-                    false // Failed, remove from list
-                }
-            });
-
-            // Put the survivors back (or drop the key if empty).
-            if !actors.is_empty() {
-                self.contracts_to_actors.insert(contract.clone(), actors);
+    // Delete failed actors. This is a slow (O(nm) where n is number of dead actors and m is
+    // number of actors for the contract) operation but should be ok since failures are rare.
+    fn remove_failed_actors(&mut self, dead: &[ActorHandle], contract: &Contract) {
+        // Remove from contract mapping
+        if let Some(actors) = self.contracts_to_actors.get_mut(contract) {
+            actors.retain(|a| !dead.iter().any(|d| ActorHandle::ptr_eq(d, a)));
+            if actors.is_empty() {
+                self.contracts_to_actors.remove(contract);
             }
         }
+        // Remove from id mapping
+        for actor in dead {
+            self.remove_actor_rc_from_contract_tables(actor);
+        }
+    }
 
-        // Update state for next tick.
+    pub fn tick_delta(&mut self, Delta(contract): &Delta) {
+        let ctx = ActorExecutionContext::new(self.time);
+
+        // Optional to avoid allocation if no actors fail
+        let mut dead: Option<Vec<ActorHandle>> = None;
+        if let Some(actors) = self.contracts_to_actors.get(contract) {
+            for actor in actors {
+                // Execute actor and track failures
+                let failure = actor.execute(&ctx).is_none();
+                if failure {
+                    dead.get_or_insert_with(Vec::new).push(actor.clone());
+                }
+            }
+        }
+        // Handle dead actors
+        if let Some(dead) = dead.as_deref() {
+            self.remove_failed_actors(dead, contract);
+        }
+
+        // Mock updating state...
         self.time += 1;
     }
 }
