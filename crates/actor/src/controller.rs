@@ -166,7 +166,7 @@ mod tests {
                 BlockPackage::new(input_keys, output_keys, InitParams, None);
             let block = package.weave(&mut reg).unwrap();
 
-            let actor: ActorHandle = ActorHandle::new(Actor::new(id, block));
+            let actor: ActorHandle = ActorHandle::new(Actor::new(id, Box::new(block)));
 
             actor
         }
@@ -241,7 +241,7 @@ mod tests {
             let package = BlockPackage::<TestBlock>::new(input_keys, output_keys, params, None);
             let block = package.weave(&mut reg).unwrap();
 
-            let actor: ActorHandle = ActorHandle::new(Actor::new(id, block));
+            let actor: ActorHandle = ActorHandle::new(Actor::new(id, Box::new(block)));
 
             actor
         }
@@ -319,7 +319,7 @@ mod tests {
                 BlockPackage::new(input_keys, output_keys, params, None);
             let block = package.weave(&mut reg).unwrap();
 
-            let actor: ActorHandle = ActorHandle::new(Actor::new(id, block));
+            let actor: ActorHandle = ActorHandle::new(Actor::new(id, Box::new(block)));
 
             actor
         }

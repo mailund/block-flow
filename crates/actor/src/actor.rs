@@ -12,27 +12,43 @@ pub struct Reconcile {
     orders: Vec<Order>,
     idx: usize,
 }
-
-/// Implement the IntentConsumerTrait for Reconcile to process intents.
-/// This gives us a callback that is invoked after each block's execution
-/// where we can reconsile and push order updates out.
-impl IntentConsumerTrait for Reconcile {
-    fn consume(&mut self, intent: &Intent) {
-        // The implementation here is still a mock
-        if self.idx >= self.orders.len() {
-            self.orders.push(Order::NoOrder);
+impl Reconcile {
+    pub fn new() -> Self {
+        Self {
+            orders: vec![],
+            idx: 0,
         }
-
-        self.orders[self.idx] = match intent {
-            Intent::NoIntent(_) => Order::NoOrder,
+    }
+    /// Process an intent into an order, given the previous order state.
+    /// This is a mock implementation for now; the real implementation should decide
+    /// whether to act on a new intent based on the previous order state.
+    pub fn process_intent(&self, prev_order: &Order, intent: &Intent) -> Order {
+        match intent {
+            Intent::NoIntent(_) => prev_order.clone(),
             Intent::Place(place) => Order::New {
                 contract: place.contract.clone(),
                 side: place.side.clone(),
                 price: place.price.clone(),
                 quantity: place.quantity.clone(),
             },
-        };
+        }
+    }
+}
+impl Default for Reconcile {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
+/// Implement the IntentConsumerTrait for Reconcile to process intents.
+/// This gives us a callback that is invoked after each block's execution
+/// where we can reconsile and push order updates out.
+impl IntentConsumerTrait for Reconcile {
+    fn consume(&mut self, intent: &Intent) {
+        if self.idx >= self.orders.len() {
+            self.orders.push(Order::NoOrder);
+        }
+        self.orders[self.idx] = self.process_intent(&self.orders[self.idx], intent);
         self.idx += 1;
     }
 }
@@ -42,7 +58,7 @@ where
     Algo: ActorAlgo,
 {
     id: u32,
-    algo: Algo,
+    algo: Box<Algo>,
     reconcile: Reconcile,
 }
 
@@ -50,14 +66,11 @@ impl<Algo> Actor<Algo>
 where
     Algo: ActorAlgo,
 {
-    pub fn new(id: u32, algo: Algo) -> Self {
+    pub fn new(id: u32, algo: Box<Algo>) -> Self {
         Self {
             id,
             algo,
-            reconcile: Reconcile {
-                orders: vec![],
-                idx: 0,
-            },
+            reconcile: Default::default(),
         }
     }
 
