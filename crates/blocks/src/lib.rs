@@ -111,10 +111,10 @@ macro_rules! define_block_type {
 
         // Embedded blocks are also executable
         impl<C: ExecutionContextTrait, I: IntentConsumerTrait, E: EffectConsumerTrait> ExecuteTrait<C, I, E> for BlockEmbeddings {
-            fn no_intents(&self) -> usize {
+            fn num_intents(&self) -> usize {
                 match self {
                     $( BlockEmbeddings::$variant(embedded) =>
-                        <BlockEmbedding<$block_ty> as ExecuteTrait<C, I, E>>::no_intents(embedded),
+                        <BlockEmbedding<$block_ty> as ExecuteTrait<C, I, E>>::num_intents(embedded),
                     )+
                 }
             }

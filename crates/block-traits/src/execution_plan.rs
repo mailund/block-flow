@@ -24,9 +24,9 @@ where
     I: IntentConsumerTrait,
     E: EffectConsumerTrait,
 {
-    fn no_intents(&self) -> usize {
+    fn num_intents(&self) -> usize {
         // Sum the number of intents from each block in the plan
-        self.iter().map(|block| block.no_intents()).sum()
+        self.iter().map(|block| block.num_intents()).sum()
     }
     // Collects and returns all SlotIntents produced by executing the blocks in the plan.
     // If any block fails to execute (returns None), the entire execution returns None.

@@ -4,11 +4,11 @@ use trade_types::Contract;
 
 /// "Type alias" (for a trait) for algorithms an actor can run.
 pub trait ActorAlgo:
-    for<'a> ExecuteTrait<ActorExecutionContext, Reconcile<'a>, EffectHandler>
+    for<'a> ExecuteTrait<ActorExecutionContext, ReconcileIntentConsumer<'a>, EffectHandler>
 {
 }
 impl<T> ActorAlgo for T where
-    T: for<'a> ExecuteTrait<ActorExecutionContext, Reconcile<'a>, EffectHandler>
+    T: for<'a> ExecuteTrait<ActorExecutionContext, ReconcileIntentConsumer<'a>, EffectHandler>
 {
 }
 
@@ -21,18 +21,18 @@ impl Reconciliator {
             orders: vec![Order::default(); size],
         }
     }
-    pub fn reconciliate(&mut self) -> Reconcile<'_> {
-        Reconcile::new(&mut self.orders)
+    pub fn reconciliate(&mut self) -> ReconcileIntentConsumer<'_> {
+        ReconcileIntentConsumer::new(&mut self.orders)
     }
 }
 
 /// Reconciliation book-keeping (mock for now) and the consumer trait
 /// for invoking reconciliation on intents produced by the actor's block.
-pub struct Reconcile<'a> {
+pub struct ReconcileIntentConsumer<'a> {
     orders: &'a mut [Order],
     idx: usize,
 }
-impl<'a> Reconcile<'a> {
+impl<'a> ReconcileIntentConsumer<'a> {
     /// Create a new Reconcile intent consumer with a mutable slice of orders.
     /// This can be passed to an actor algorithm's execute method to process intents.
     pub fn new(orders: &'a mut [Order]) -> Self {
@@ -64,9 +64,9 @@ impl<'a> Reconcile<'a> {
 /// Implement the IntentConsumerTrait for Reconcile to process intents.
 /// This gives us a callback that is invoked after each block's execution
 /// where we can reconsile and push order updates out.
-impl<'a> IntentConsumerTrait for Reconcile<'a> {
+impl<'a> IntentConsumerTrait for ReconcileIntentConsumer<'a> {
     fn consume(&mut self, intent: &Intent) {
-        Reconcile::consume(self, intent);
+        ReconcileIntentConsumer::consume(self, intent);
     }
 }
 
@@ -97,7 +97,7 @@ where
     Algo: ActorAlgo,
 {
     pub fn new(id: u32, algo: Box<Algo>) -> Self {
-        let no_intents = algo.no_intents();
+        let no_intents = algo.num_intents();
         let reconciliator = Reconciliator::new(no_intents);
         let effect_handler = EffectHandler::new();
         Self {

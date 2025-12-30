@@ -79,7 +79,7 @@ where
     I: IntentConsumerTrait,
     E: EffectConsumerTrait,
 {
-    fn no_intents(&self) -> usize {
+    fn num_intents(&self) -> usize {
         // For block specs we always know the number of intents at compile time
         // from the associated Intents type.
         B::Intents::len()
