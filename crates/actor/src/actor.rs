@@ -4,11 +4,11 @@ use trade_types::Contract;
 
 /// "Type alias" (for a trait) for algorithms an actor can run.
 pub trait ActorAlgo:
-    for<'a> ExecuteTrait<ActorExecutionContext, ReconcileIntentConsumer<'a>, EffectHandler>
+    for<'a> ExecuteTrait<ActorExecutionContext, ReconcileIntentConsumer<'a>, EffectConsumer<'a>>
 {
 }
 impl<T> ActorAlgo for T where
-    T: for<'a> ExecuteTrait<ActorExecutionContext, ReconcileIntentConsumer<'a>, EffectHandler>
+    T: for<'a> ExecuteTrait<ActorExecutionContext, ReconcileIntentConsumer<'a>, EffectConsumer<'a>>
 {
 }
 
@@ -21,7 +21,7 @@ impl Reconciliator {
             orders: vec![Order::default(); size],
         }
     }
-    pub fn reconciliate(&mut self) -> ReconcileIntentConsumer<'_> {
+    pub fn intent_consumer(&mut self) -> ReconcileIntentConsumer<'_> {
         ReconcileIntentConsumer::new(&mut self.orders)
     }
 }
@@ -70,15 +70,34 @@ impl<'a> IntentConsumerTrait for ReconcileIntentConsumer<'a> {
     }
 }
 
-pub struct EffectHandler;
+struct EffectHandler {
+    effects: Vec<Effect>,
+}
 impl EffectHandler {
     fn new() -> Self {
-        Self {}
+        let effects = Vec::new();
+        Self { effects }
+    }
+    fn effects(&self) -> &Vec<Effect> {
+        &self.effects
+    }
+    fn effect_consumer(&mut self) -> EffectConsumer<'_> {
+        EffectConsumer::new(&mut self.effects)
     }
 }
-impl EffectConsumerTrait for EffectHandler {
-    fn schedule_effect(&mut self, _effect: Effect) {
-        // Mock implementation; real implementation would handle effects appropriately.
+
+pub struct EffectConsumer<'a> {
+    effects: &'a mut Vec<Effect>,
+}
+impl<'a> EffectConsumer<'a> {
+    pub fn new(effects: &'a mut Vec<Effect>) -> Self {
+        effects.clear();
+        Self { effects }
+    }
+}
+impl<'a> EffectConsumerTrait for EffectConsumer<'a> {
+    fn schedule_effect(&mut self, effect: Effect) {
+        self.effects.push(effect);
     }
 }
 
@@ -97,8 +116,8 @@ where
     Algo: ActorAlgo,
 {
     pub fn new(id: u32, algo: Box<Algo>) -> Self {
-        let no_intents = algo.num_intents();
-        let reconciliator = Reconciliator::new(no_intents);
+        let num_intents = algo.num_intents();
+        let reconciliator = Reconciliator::new(num_intents);
         let effect_handler = EffectHandler::new();
         Self {
             id,
@@ -116,10 +135,27 @@ where
         self.algo.contract_deps()
     }
 
+    /// Handle effects after execution.
+    fn handle_effects(&self) {
+        // The effect handler ensures that any new effects produced during execution
+        // are collected in the effects() vector and can be processed here.
+        for effect in self.effect_handler.effects() {
+            println!("Actor {} handling effect: {:?}", self.id, effect);
+        }
+    }
+
+    /// Executing the algo. Intent and effect handling is done through callbacks.
+    /// This enables the actor to output orders as they are produced by the algo.
+    /// That way, the actor can respond to intents immediately without waiting
+    /// for the entire algo to finish executing.
+    /// Effects are collected and handled after execution as long as the algorithm
+    /// terminates successfully (i.e., does not return None).
     fn execute(&mut self, context: &ActorExecutionContext) -> Option<()> {
-        let mut reconcile = self.reconciliator.reconciliate();
+        let mut intent_consumer = self.reconciliator.intent_consumer();
+        let mut effect_consumer = self.effect_handler.effect_consumer();
         self.algo
-            .execute(context, &mut reconcile, &mut self.effect_handler)
+            .execute(context, &mut intent_consumer, &mut effect_consumer)
+            .map(|_| self.handle_effects())
     }
 }
 
