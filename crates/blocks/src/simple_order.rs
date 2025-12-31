@@ -29,23 +29,19 @@ pub struct SimpleOrderBlock {
 
 impl SimpleOrderBlock {
     fn place_intent(&self) -> Intent {
-        Intent::place_intent(
-            self.contract.clone(),
-            self.side.clone(),
-            self.price.clone(),
-            self.quantity.clone(),
-        )
-    }
-
-    fn no_intent(&self) -> Intent {
-        Intent::no_intent()
+        Intent::Place {
+            contract: self.contract.clone(),
+            side: self.side.clone(),
+            price: self.price.clone(),
+            quantity: self.quantity.clone(),
+        }
     }
 
     fn intents(&self, execute: bool) -> OneIntent {
         if execute {
             OneIntent::new([self.place_intent()])
         } else {
-            OneIntent::new([self.no_intent()])
+            OneIntent::new([Intent::NoIntent])
         }
     }
 }

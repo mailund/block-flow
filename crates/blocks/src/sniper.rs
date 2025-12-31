@@ -32,12 +32,12 @@ pub struct SniperBlock {
 
 impl SniperBlock {
     fn place_intent(&self, price: Price) -> Intent {
-        Intent::place_intent(
-            self.contract.clone(),
-            self.side.clone(),
-            price.clone(),
-            self.quantity.clone(),
-        )
+        Intent::Place {
+            contract: self.contract.clone(),
+            side: self.side.clone(),
+            price: price.clone(),
+            quantity: self.quantity.clone(),
+        }
     }
 
     fn snipe_buy<OB: OrderBookTrait>(&self, order_book: &OB) -> Intent {
@@ -46,7 +46,7 @@ impl SniperBlock {
                 return self.place_intent(top_price);
             }
         }
-        Intent::no_intent()
+        Intent::NoIntent
     }
 
     fn snipe_sell<OB: OrderBookTrait>(&self, order_book: &OB) -> Intent {
@@ -55,7 +55,7 @@ impl SniperBlock {
                 return self.place_intent(top_price);
             }
         }
-        Intent::no_intent()
+        Intent::NoIntent
     }
 
     fn intents<C: ExecutionContextTrait>(&self, ctx: &C, execute: bool) -> Option<OneIntent> {
@@ -63,7 +63,7 @@ impl SniperBlock {
         let intent = match (execute, &self.side) {
             (true, Side::Buy) => self.snipe_buy(&order_book),
             (true, Side::Sell) => self.snipe_sell(&order_book),
-            _ => Intent::no_intent(),
+            _ => Intent::NoIntent,
         };
         Some(OneIntent::new([intent]))
     }

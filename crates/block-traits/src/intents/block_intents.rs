@@ -68,7 +68,7 @@ macro_rules! declare_intents {
 
         impl Default for $name {
             fn default() -> Self {
-                Self(std::array::from_fn(|_| Intent::no_intent()))
+                Self(std::array::from_fn(|_| Default::default()))
             }
         }
 
