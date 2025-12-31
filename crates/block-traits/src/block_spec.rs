@@ -80,7 +80,7 @@ pub trait BlockSpec: BlockSpecAssociatedTypes + ContractDeps {
     /// input and output will be handled by reading and writing to channels
     /// and the state will be managed by the wrapper.
     ///
-    /// ```ignore
+    /// ```text
     ///
     ///   RefCell                              |                        ^
     ///                                        v                        |
@@ -106,7 +106,7 @@ pub trait BlockSpec: BlockSpecAssociatedTypes + ContractDeps {
 /// This should really only be used for testing purposes, but if you need a
 /// a block to implement ContractDeps without any dependencies, you can use this marker.
 /// You will need to implement the EmptyContractDepsTag for your block
-/// ```ignore
+/// ```text
 /// impl ::block_traits::block_spec::EmptyContractDepsTag for YourBlock {}
 /// ```
 /// and then you get the ContractDeps for free.

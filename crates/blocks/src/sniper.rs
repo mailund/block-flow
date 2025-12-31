@@ -1,7 +1,7 @@
 use super::*;
 use block_traits::{
     execution_context::OrderBookTrait,
-    intents::{Intent, IntentFactory, OneIntent},
+    intents::{Intent, OneIntent},
     BlockSpec, ExecutionContextTrait,
 };
 use trade_types::*;

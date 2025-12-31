@@ -1,29 +1,28 @@
 use trade_types::{Contract, Price, Quantity, Side};
 
 #[derive(Clone, Debug)]
-pub struct NoIntent;
-impl NoIntent {
-    pub fn new() -> Self {
-        NoIntent
-    }
-}
-impl Default for NoIntent {
-    fn default() -> Self {
-        Self::new()
-    }
+pub enum Intent {
+    NoIntent,
+    Place {
+        contract: Contract,
+        side: Side,
+        price: Price,
+        quantity: Quantity,
+    },
 }
 
-#[derive(Clone, Debug)]
-pub struct PlaceIntent {
-    pub contract: Contract,
-    pub side: Side,
-    pub price: Price,
-    pub quantity: Quantity,
-}
+impl Intent {
+    pub fn no_intent() -> Intent {
+        Intent::NoIntent
+    }
 
-impl PlaceIntent {
-    pub fn new(contract: Contract, side: Side, price: Price, quantity: Quantity) -> Self {
-        PlaceIntent {
+    pub fn place_intent(
+        contract: Contract,
+        side: Side,
+        price: Price,
+        quantity: Quantity,
+    ) -> Intent {
+        Intent::Place {
             contract,
             side,
             price,
@@ -32,20 +31,22 @@ impl PlaceIntent {
     }
 }
 
-#[derive(Clone, Debug)]
-pub enum Intent {
-    NoIntent(NoIntent),
-    Place(PlaceIntent),
-}
-
 pub trait IntentFactory {
     fn no_intent() -> Intent {
-        Intent::NoIntent(NoIntent::new())
+        Intent::no_intent()
     }
-
     fn place_intent(contract: Contract, side: Side, price: Price, quantity: Quantity) -> Intent {
-        Intent::Place(PlaceIntent::new(contract, side, price, quantity))
+        Intent::place_intent(contract, side, price, quantity)
     }
 }
 
 impl IntentFactory for Intent {}
+impl<B: crate::BlockSpec> IntentFactory for B {}
+// impl<X, C, I, E> IntentFactory for X
+// where
+//     X: crate::ExecuteTrait<C, I, E>,
+//     C: crate::ExecutionContextTrait,
+//     I: IntentConsumerTrait,
+//     E: crate::EffectConsumerTrait,
+// {
+// }

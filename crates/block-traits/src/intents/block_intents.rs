@@ -16,7 +16,7 @@ pub trait BlockIntents: sealed::Sealed {
 
 /// Macro defining a set of BlockIntents implementations for
 /// fixed-size arrays of Intent. Call like:
-/// ```ignore
+/// ```text
 /// declare_intents!(ThreeIntents, 3);
 /// ```
 /// to declare a BlockIntents implementation for three intents.

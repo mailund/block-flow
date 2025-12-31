@@ -210,13 +210,18 @@ mod tests {
         assert_eq!(intents_arr.len(), 1);
 
         match &intents_arr[0] {
-            Intent::Place(place) => {
-                assert_eq!(&place.contract, &contract);
-                assert_eq!(&place.side, &side);
-                assert_eq!(&place.price, &price);
-                assert_eq!(&place.quantity, &quantity);
+            Intent::Place {
+                contract: intent_contract,
+                side: intent_side,
+                price: intent_price,
+                quantity: intent_quantity,
+            } => {
+                assert_eq!(&contract, intent_contract);
+                assert_eq!(&side, intent_side);
+                assert_eq!(&price, intent_price);
+                assert_eq!(&quantity, intent_quantity);
             }
-            Intent::NoIntent(_) => {
+            Intent::NoIntent => {
                 panic!("Expected Place intent, got NoIntent");
             }
         }
@@ -245,8 +250,8 @@ mod tests {
         assert_eq!(intents_arr.len(), 1);
 
         match &intents_arr[0] {
-            Intent::NoIntent(_) => {}
-            Intent::Place(_) => {
+            Intent::NoIntent => {}
+            Intent::Place { .. } => {
                 panic!("Expected NoIntent, got Place");
             }
         }
@@ -262,7 +267,7 @@ mod tests {
         assert_eq!(t.len(), 1);
         assert_eq!(f.len(), 1);
 
-        assert!(matches!(t[0], Intent::Place(_)));
-        assert!(matches!(f[0], Intent::NoIntent(_)));
+        assert!(matches!(t[0], Intent::Place { .. }));
+        assert!(matches!(f[0], Intent::NoIntent));
     }
 }
