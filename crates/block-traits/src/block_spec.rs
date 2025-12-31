@@ -11,7 +11,7 @@ use super::*;
 /// ```rust
 /// use block_macros::{block, init_params, input, output, state};
 /// use block_traits::{BlockSpec, ExecutionContextTrait, EffectConsumerTrait};
-/// use block_traits::intents::ZeroIntents;
+/// use block_traits::{intents::ZeroIntents, execute_status};
 ///
 /// #[input]
 /// pub struct Input;
@@ -57,10 +57,10 @@ use super::*;
 ///         _input: Input,
 ///         _state: &State,
 ///         _effect_consumer: &mut E,
-///     ) -> Option<(Output, State, Self::Intents)> {
+///     ) -> Result<(Output, State, Self::Intents), execute_status::FailureStatus> {
 ///         let is_after = context.time() > self.time;
 ///         let output = Output { is_after };
-///         Some((output, State, ZeroIntents::new()))
+///         Ok((output, State, ZeroIntents::new()))
 ///     }
 /// }
 /// ```
@@ -89,6 +89,7 @@ pub trait BlockSpec: BlockSpecAssociatedTypes + ContractDeps {
     ///   Channels                      |                        v                        
     ///
     /// ```
+    #[allow(clippy::type_complexity)]
     fn execute<C, E>(
         &self,
         context: &C,
