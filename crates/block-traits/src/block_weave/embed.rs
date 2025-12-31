@@ -84,7 +84,12 @@ where
         // from the associated Intents type.
         B::Intents::len()
     }
-    fn execute(&self, context: &C, intent_consumer: &mut I, effect_consumer: &mut E) -> Option<()> {
+    fn execute(
+        &self,
+        context: &C,
+        intent_consumer: &mut I,
+        effect_consumer: &mut E,
+    ) -> execute_status::ExecuteResult {
         let input = self.in_reader.read();
         let old_state = self.state_cell.borrow();
 
@@ -96,10 +101,10 @@ where
         self.out_writer.write(&output);
         *self.state_cell.borrow_mut() = new_state;
         for intent in new_intents.as_slice() {
-            intent_consumer.consume(intent);
+            intent_consumer.consume(intent)?;
         }
 
-        Some(())
+        Ok(execute_trait::execute_status::Success)
     }
 }
 

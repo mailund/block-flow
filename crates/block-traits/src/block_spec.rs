@@ -95,7 +95,7 @@ pub trait BlockSpec: BlockSpecAssociatedTypes + ContractDeps {
         input: Self::Input,
         state: &Self::State,
         effect_consumer: &mut E,
-    ) -> Option<(Self::Output, Self::State, Self::Intents)>
+    ) -> Result<(Self::Output, Self::State, Self::Intents), execute_status::FailureStatus>
     where
         C: ExecutionContextTrait,
         E: EffectConsumerTrait;

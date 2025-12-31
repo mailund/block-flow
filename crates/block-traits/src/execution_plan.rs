@@ -1,5 +1,6 @@
 use crate::{
-    ContractDeps, EffectConsumerTrait, ExecuteTrait, ExecutionContextTrait, IntentConsumerTrait,
+    execute_trait::execute_status, ContractDeps, EffectConsumerTrait, ExecuteTrait,
+    ExecutionContextTrait, IntentConsumerTrait,
 };
 use ::weave::TopoOrdered;
 
@@ -30,12 +31,17 @@ where
     }
     // Collects and returns all SlotIntents produced by executing the blocks in the plan.
     // If any block fails to execute (returns None), the entire execution returns None.
-    fn execute(&self, context: &C, intent_consumer: &mut I, effect_consumer: &mut E) -> Option<()> {
+    fn execute(
+        &self,
+        context: &C,
+        intent_consumer: &mut I,
+        effect_consumer: &mut E,
+    ) -> execute_status::ExecuteResult {
         // Execute each block in topological order,
         // flattening the resulting intents into a single vector.
         for block in self.iter() {
             block.execute(context, intent_consumer, effect_consumer)?;
         }
-        Some(())
+        Ok(execute_status::Success)
     }
 }

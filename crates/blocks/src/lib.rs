@@ -4,8 +4,8 @@ use std::path::Path;
 
 use block_macros::*;
 use block_traits::{
-    BlockEmbedding, BlockPackage, BlockSpec, ContractDeps, EffectConsumerTrait, ExecuteTrait,
-    ExecutionContextTrait, Intent, IntentConsumerTrait,
+    execute_status, BlockEmbedding, BlockPackage, BlockSpec, ContractDeps, EffectConsumerTrait,
+    ExecuteTrait, ExecutionContextTrait, Intent, IntentConsumerTrait,
 };
 use channels::ChannelKeys;
 use serialization_macros::Serializable;
@@ -118,7 +118,7 @@ macro_rules! define_block_type {
                     )+
                 }
             }
-            fn execute(&self, ctx: &C, intent_consumer: &mut I, effect_consumer: &mut E) -> Option<()> {
+            fn execute(&self, ctx: &C, intent_consumer: &mut I, effect_consumer: &mut E) -> execute_status::ExecuteResult {
                 match self {
                     $(
                         BlockEmbeddings::$variant(embedded) => embedded.execute(ctx, intent_consumer, effect_consumer),
@@ -417,12 +417,17 @@ mod test {
         let mut intents = vec![];
         let mut intent_consumer = |intent: &Intent| intents.push(intent.clone());
         let mut effect_consumer = |_: Effect| {};
-        after_block.execute(&ctx, &mut intent_consumer, &mut effect_consumer);
+
+        assert!(after_block
+            .execute(&ctx, &mut intent_consumer, &mut effect_consumer)
+            .is_ok());
 
         // Now Delete reads should_delete from "is_after" (bool channel). It just prints, but
         // executing it ensures that the channel's reading path is exercised.
         let delete_block = &weave[1];
-        delete_block.execute(&ctx, &mut intent_consumer, &mut effect_consumer);
+        assert!(delete_block
+            .execute(&ctx, &mut intent_consumer, &mut effect_consumer)
+            .is_ok());
 
         // Sanity-check that the produced channel exists and is true.
         let cell = registry.get::<bool>("is_after").unwrap();

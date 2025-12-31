@@ -1,6 +1,7 @@
 use super::*;
 
 use super::{ActorAlgo, ActorExecutionContext, ActorTrait};
+use block_traits::execute_status;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
@@ -30,7 +31,7 @@ impl ActorHandle {
         self.0.borrow().contracts()
     }
 
-    pub fn execute(&self, context: &ActorExecutionContext) -> Option<()> {
+    pub fn execute(&self, context: &ActorExecutionContext) -> execute_status::ExecuteResult {
         self.0.borrow_mut().execute(context)
     }
 
@@ -109,7 +110,7 @@ impl ActorController {
         if let Some(actors) = self.contracts_to_actors.get(contract) {
             for actor in actors {
                 // Execute actor and track failures
-                let failure = actor.execute(&ctx).is_none();
+                let failure = actor.execute(&ctx).is_err();
                 if failure {
                     dead.get_or_insert_with(Vec::new).push(actor.clone());
                 }

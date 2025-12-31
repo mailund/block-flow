@@ -1,5 +1,7 @@
 use super::*;
-use block_traits::{Effect, EffectConsumerTrait, ExecuteTrait, Intent, IntentConsumerTrait};
+use block_traits::{
+    execute_status, Effect, EffectConsumerTrait, ExecuteTrait, Intent, IntentConsumerTrait,
+};
 use trade_types::Contract;
 
 /// Marker trait for “things we can run as an actor algorithm”.
@@ -101,15 +103,16 @@ impl<'a> ReconcileIntentConsumer<'a> {
     /// Consume one intent and update one slot of the order buffer.
     ///
     /// Panics if the algorithm emits more intents than the buffer length.
-    fn consume(&mut self, intent: &Intent) {
+    fn consume(&mut self, intent: &Intent) -> Result<(), execute_status::FailureStatus> {
         self.orders[self.idx] = self.process_intent(&self.orders[self.idx], intent);
         self.idx += 1;
+        Ok(())
     }
 }
 
 impl<'a> IntentConsumerTrait for ReconcileIntentConsumer<'a> {
-    fn consume(&mut self, intent: &Intent) {
-        ReconcileIntentConsumer::consume(self, intent);
+    fn consume(&mut self, intent: &Intent) -> Result<(), execute_status::FailureStatus> {
+        ReconcileIntentConsumer::consume(self, intent)
     }
 }
 
@@ -128,16 +131,19 @@ impl EffectHandler {
         }
     }
 
-    /// Get a reference to the collected effects.
-    fn effects(&self) -> &Vec<Effect> {
-        &self.effects
-    }
-
     /// Borrow the internal effect buffer for the duration of a single `execute` call.
     ///
     /// The buffer is cleared at the start of each call.
     fn effect_consumer(&mut self) -> EffectConsumer<'_> {
         EffectConsumer::new(&mut self.effects)
+    }
+
+    /// Handle all effects collected during the last execution.
+    fn handle_effects(&self) -> execute_status::ExecuteResult {
+        for effect in self.effects.iter() {
+            println!("Actor {} handling effect: {:?}", -122, effect);
+        }
+        Ok(execute_status::Success)
     }
 }
 
@@ -156,8 +162,9 @@ impl<'a> EffectConsumer<'a> {
     }
 }
 impl<'a> EffectConsumerTrait for EffectConsumer<'a> {
-    fn schedule_effect(&mut self, effect: Effect) {
+    fn schedule_effect(&mut self, effect: Effect) -> Result<(), execute_status::FailureStatus> {
         self.effects.push(effect);
+        Ok(())
     }
 }
 
@@ -167,7 +174,7 @@ impl<'a> EffectConsumerTrait for EffectConsumer<'a> {
 /// - create a fresh intent consumer borrowing the actor’s order buffer (idx starts at 0)
 /// - create a fresh effect consumer borrowing the actor’s effect buffer (clears old effects)
 /// - call `algo.execute(...)`
-/// - if the algorithm returns `Some(())`, handle effects
+/// - if the algorithm returns Ok(_), handle effects
 /// - if it returns `None`, the actor is considered failed and the caller should terminate it
 pub struct Actor<Algo>
 where
@@ -211,25 +218,23 @@ where
         self.algo.contract_deps()
     }
 
-    /// Handle all effects collected during the last execution.
-    fn handle_effects(&self) {
-        for effect in self.effect_handler.effects() {
-            println!("Actor {} handling effect: {:?}", self.id, effect);
-        }
-    }
-
     /// Execute the actor’s algorithm for one tick.
     ///
-    /// Returns `Some(())` on success, or `None` if the algorithm failed.
+    /// Returns `Ok(execute_status::Success)` on success, or `Err(execute_status::Failure)`
+    /// if the algorithm failed.
     ///
     /// Intents are handled by the reconciliator updating the order buffer in-place.
     /// Effects are collected in the effect handler and processed after execution.
-    fn execute(&mut self, context: &ActorExecutionContext) -> Option<()> {
-        let mut intent_consumer = self.reconciliator.intent_consumer();
-        let mut effect_consumer = self.effect_handler.effect_consumer();
+    fn execute(&mut self, context: &ActorExecutionContext) -> execute_status::ExecuteResult {
+        let effect_handler = &mut self.effect_handler;
+        let reconciliator = &mut self.reconciliator;
         self.algo
-            .execute(context, &mut intent_consumer, &mut effect_consumer)
-            .map(|_| self.handle_effects())
+            .execute(
+                context,
+                &mut reconciliator.intent_consumer(),
+                &mut effect_handler.effect_consumer(),
+            )
+            .and_then(|_| effect_handler.handle_effects())
     }
 }
 
@@ -248,8 +253,9 @@ pub trait ActorTrait {
 
     /// Execute the actor’s algorithm for one tick.
     ///
-    /// Returns `Some(())` on success, or `None` if the algorithm failed.
-    fn execute(&mut self, ctx: &ActorExecutionContext) -> Option<()>;
+    /// Returns `Ok(execute_status::Success)` on success, or `Err(execute_status::Failure)`
+    /// if the algorithm failed.
+    fn execute(&mut self, ctx: &ActorExecutionContext) -> execute_status::ExecuteResult;
 }
 
 impl<Algo> ActorTrait for Actor<Algo>
@@ -262,7 +268,7 @@ where
     fn contracts(&self) -> Vec<Contract> {
         Actor::contracts(self)
     }
-    fn execute(&mut self, ctx: &ActorExecutionContext) -> Option<()> {
+    fn execute(&mut self, ctx: &ActorExecutionContext) -> execute_status::ExecuteResult {
         Actor::execute(self, ctx)
     }
 }
@@ -358,27 +364,27 @@ mod tests {
             _context: &ActorExecutionContext,
             intent_consumer: &mut ReconcileIntentConsumer<'a>,
             effect_consumer: &mut EffectConsumer<'a>,
-        ) -> Option<()> {
+        ) -> execute_status::ExecuteResult {
             // Count number of executions
             let run = self.run.get();
             self.run.set(run + 1);
 
             // Fail if configured to do so
             if self.fail_on == Some(run) {
-                return None;
+                return Err(execute_status::Failure);
             }
 
             // Emit intents
             for intent in &self.intents {
-                intent_consumer.consume(intent);
+                intent_consumer.consume(intent)?;
             }
 
             // Emit effects
             for effect in &self.effects {
-                effect_consumer.schedule_effect(effect.clone());
+                effect_consumer.schedule_effect(effect.clone())?;
             }
 
-            Some(())
+            Ok(execute_status::Success)
         }
     }
 
@@ -415,7 +421,7 @@ mod tests {
         let mut actor = Actor::new(1, algo);
 
         let ctx = ActorExecutionContext::new(0);
-        assert!(actor.execute(&ctx).is_some());
+        assert!(actor.execute(&ctx).is_ok());
     }
 
     #[test]
@@ -452,6 +458,6 @@ mod tests {
         let mut actor = Actor::new(1, algo);
 
         let ctx = ActorExecutionContext::new(0);
-        assert!(actor.execute(&ctx).is_none());
+        assert!(actor.execute(&ctx).is_err());
     }
 }

@@ -20,7 +20,7 @@ pub use associated_types::{
 pub use block_spec::BlockSpec;
 pub use block_weave::{BlockEmbedding, BlockPackage};
 pub use effects::*;
-pub use execute_trait::{EffectConsumerTrait, ExecuteTrait, IntentConsumerTrait};
+pub use execute_trait::{execute_status, EffectConsumerTrait, ExecuteTrait, IntentConsumerTrait};
 pub use execution_context::ExecutionContextTrait;
 pub use intents::*;
 
@@ -168,11 +168,12 @@ mod test_types {
             input: Self::Input,
             state: &Self::State,
             _effect_consumer: &mut E,
-        ) -> Option<(Self::Output, Self::State, Self::Intents)> {
+        ) -> Result<(Self::Output, Self::State, Self::Intents), execute_status::FailureStatus>
+        {
             let output = TestOutput {
                 result: input.value * 2,
             };
-            Some((
+            Ok((
                 output,
                 TestState { acc: state.acc + 1 },
                 Self::Intents::new(),
@@ -345,14 +346,15 @@ mod tests {
             input: Self::Input,
             state: &Self::State,
             _effect_consumer: &mut E,
-        ) -> Option<(Self::Output, Self::State, Self::Intents)> {
+        ) -> Result<(Self::Output, Self::State, Self::Intents), execute_status::FailureStatus>
+        {
             let new_state = TestState {
                 acc: state.acc + input.value,
             };
             let output = TestOutput {
                 result: new_state.acc,
             };
-            Some((output, new_state, Self::Intents::new()))
+            Ok((output, new_state, Self::Intents::new()))
         }
     }
 

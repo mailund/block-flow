@@ -26,11 +26,15 @@ impl BlockSpec for DeleteBlock {
     }
 
     #[execute]
-    fn execute<E: EffectConsumerTrait>(&self, Input { should_delete }: Input, effects: &mut E) {
+    fn execute<E: EffectConsumerTrait>(
+        &self,
+        Input { should_delete }: Input,
+        effects: &mut E,
+    ) -> Result<(), execute_status::FailureStatus> {
         if should_delete {
-            // In a real implementation, this would trigger deletion logic.
-            effects.schedule_terminate_effect();
+            effects.schedule_terminate_effect()?;
         }
+        Ok(())
     }
 }
 
