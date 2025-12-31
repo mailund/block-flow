@@ -164,7 +164,7 @@ pub trait ActorTrait {
     fn actor_id(&self) -> u32;
     /// Contracts registered for ticks upon initialization
     fn contracts(&self) -> Vec<Contract>;
-    /// Perform a tick for the actor, returning any orders generated.
+    /// Perform a tick for the actor, returning None if the actor failed and should be terminated.
     fn execute(&mut self, ctx: &ActorExecutionContext) -> Option<()>;
 }
 
